@@ -1,0 +1,278 @@
+-- Phase A catalog seed data.
+-- This seeds only the 3 departments and 18 configured agents. It does not seed tasks,
+-- reviews, reports, activity, metrics, users, or workspaces.
+
+insert into public.departments (id, name, description, color, sort_order)
+values
+  ('research_strategy', 'Research & Strategy', 'Market intelligence, competitive analysis, and strategic planning', '#8B3CDE', 1),
+  ('content_growth', 'Content & Growth', 'Content creation, marketing, and audience engagement', '#F55477', 2),
+  ('sales_operations', 'Sales & Operations', 'Lead generation, customer relations, and performance analytics', '#000000', 3)
+on conflict (id) do update
+set
+  name = excluded.name,
+  description = excluded.description,
+  color = excluded.color,
+  sort_order = excluded.sort_order,
+  updated_at = now();
+
+insert into public.agents (
+  id,
+  department_id,
+  name,
+  role,
+  description,
+  capabilities,
+  example_tasks,
+  icon,
+  color,
+  sort_order,
+  is_active
+)
+values
+  (
+    'market_research',
+    'research_strategy',
+    'Market Research Agent',
+    'Research & Strategy',
+    'Research market trends, analyze industry data, and generate insights about target markets.',
+    array['Market trend analysis', 'Industry data collection', 'Competitive intelligence', 'Consumer behavior analysis', 'Market sizing and forecasting'],
+    array['Analyze the SaaS market in North America', 'Research consumer trends in e-commerce', 'Identify emerging market opportunities'],
+    'Search',
+    '#8B3CDE',
+    1,
+    true
+  ),
+  (
+    'competitor_analysis',
+    'research_strategy',
+    'Competitor Analysis Agent',
+    'Research & Strategy',
+    'Analyze competitor strategies, strengths, weaknesses, and market positioning.',
+    array['Competitor profiling', 'SWOT analysis', 'Pricing strategy analysis', 'Feature comparison', 'Market positioning assessment'],
+    array['Analyze top 5 competitors in fintech', 'Compare pricing strategies', 'Assess competitive threats'],
+    'Target',
+    '#8B3CDE',
+    2,
+    true
+  ),
+  (
+    'audience_persona',
+    'research_strategy',
+    'Audience Persona Agent',
+    'Research & Strategy',
+    'Create detailed buyer personas and audience segments based on market research.',
+    array['Demographic analysis', 'Psychographic profiling', 'Buyer journey mapping', 'Persona development', 'Audience segmentation'],
+    array['Create B2B buyer personas', 'Segment target audience', 'Map customer journey'],
+    'Users',
+    '#8B3CDE',
+    3,
+    true
+  ),
+  (
+    'product_idea',
+    'research_strategy',
+    'Product Idea Agent',
+    'Research & Strategy',
+    'Generate innovative product concepts and validate market opportunities.',
+    array['Idea generation', 'Market validation', 'Feature prioritization', 'Concept testing', 'Innovation frameworks'],
+    array['Generate 10 mobile app ideas', 'Validate product-market fit', 'Prioritize feature roadmap'],
+    'Lightbulb',
+    '#8B3CDE',
+    4,
+    true
+  ),
+  (
+    'seo_keyword',
+    'research_strategy',
+    'SEO Keyword Agent',
+    'Research & Strategy',
+    'Discover high-value keywords and optimize content for search rankings.',
+    array['Keyword research', 'Search intent analysis', 'Competition analysis', 'Content optimization', 'Ranking prediction'],
+    array['Find high-volume keywords', 'Analyze keyword difficulty', 'Optimize content for SEO'],
+    'Search',
+    '#8B3CDE',
+    5,
+    true
+  ),
+  (
+    'strategy_planner',
+    'research_strategy',
+    'Strategy Planner Agent',
+    'Research & Strategy',
+    'Develop comprehensive business strategies and execution roadmaps.',
+    array['Strategic planning', 'Goal setting', 'Roadmap creation', 'Resource allocation', 'Risk assessment'],
+    array['Create go-to-market strategy', 'Develop quarterly roadmap', 'Assess strategic risks'],
+    'BarChart3',
+    '#8B3CDE',
+    6,
+    true
+  ),
+  (
+    'social_media_content',
+    'content_growth',
+    'Social Media Content Agent',
+    'Content & Growth',
+    'Generate engaging social media posts and platform-specific content strategies.',
+    array['Content ideation', 'Platform optimization', 'Hashtag strategy', 'Posting schedule', 'Engagement analysis'],
+    array['Create LinkedIn content calendar', 'Generate Twitter thread series', 'Plan Instagram campaign'],
+    'Megaphone',
+    '#F55477',
+    7,
+    true
+  ),
+  (
+    'copywriting',
+    'content_growth',
+    'Copywriting Agent',
+    'Content & Growth',
+    'Create persuasive marketing copy for landing pages, ads, and promotional materials.',
+    array['Landing page copy', 'Ad copy creation', 'Email copywriting', 'Brand voice consistency', 'Conversion optimization'],
+    array['Write landing page copy', 'Create Facebook ad variations', 'Draft email sequences'],
+    'FileText',
+    '#F55477',
+    8,
+    true
+  ),
+  (
+    'ads_script',
+    'content_growth',
+    'Ads Script Agent',
+    'Content & Growth',
+    'Write compelling advertising scripts for video, display, and paid campaigns.',
+    array['Script writing', 'Storyboarding', 'A/B testing variations', 'Call-to-action optimization', 'Platform adaptation'],
+    array['Create 30-second video ad', 'Write display ad copy', 'Develop YouTube script'],
+    'Megaphone',
+    '#F55477',
+    9,
+    true
+  ),
+  (
+    'email_marketing',
+    'content_growth',
+    'Email Marketing Agent',
+    'Content & Growth',
+    'Design and write effective email campaigns and nurture sequences.',
+    array['Campaign creation', 'Segmentation strategy', 'A/B testing', 'Automation sequences', 'Performance tracking'],
+    array['Create welcome email series', 'Write promotional newsletter', 'Design drip campaign'],
+    'Mail',
+    '#F55477',
+    10,
+    true
+  ),
+  (
+    'blog_seo_article',
+    'content_growth',
+    'Blog SEO Article Agent',
+    'Content & Growth',
+    'Create SEO-optimized blog articles that rank and drive organic traffic.',
+    array['SEO optimization', 'Content structuring', 'Keyword integration', 'Readability scoring', 'Internal linking strategy'],
+    array['Write 2000-word guide', 'Optimize existing content', 'Create content cluster'],
+    'FileText',
+    '#F55477',
+    11,
+    true
+  ),
+  (
+    'visual_brief',
+    'content_growth',
+    'Visual Brief Agent',
+    'Content & Growth',
+    'Generate detailed creative briefs for designers, illustrators, and visual content creators.',
+    array['Brief creation', 'Brand guideline adherence', 'Creative direction', 'Asset specification', 'Quality control'],
+    array['Create infographic brief', 'Design social media template spec', 'Develop style guide'],
+    'Image',
+    '#F55477',
+    12,
+    true
+  ),
+  (
+    'lead_finder',
+    'sales_operations',
+    'Lead Finder Agent',
+    'Sales & Operations',
+    'Identify and qualify potential leads from various sources and databases.',
+    array['Lead sourcing', 'Database mining', 'Contact enrichment', 'Intent detection', 'Lead scoring'],
+    array['Find 100 qualified leads', 'Research target accounts', 'Build prospect database'],
+    'UserPlus',
+    '#000000',
+    13,
+    true
+  ),
+  (
+    'lead_qualifier',
+    'sales_operations',
+    'Lead Qualifier Agent',
+    'Sales & Operations',
+    'Score and qualify leads based on fit, interest, and buying signals.',
+    array['Lead scoring', 'BANT analysis', 'Fit assessment', 'Priority ranking', 'Disqualification filtering'],
+    array['Score 50 incoming leads', 'Qualify MQL to SQL', 'Assess lead readiness'],
+    'UserCheck',
+    '#000000',
+    14,
+    true
+  ),
+  (
+    'outreach_message',
+    'sales_operations',
+    'Outreach Message Agent',
+    'Sales & Operations',
+    'Craft personalized outreach messages for cold emails and prospecting campaigns.',
+    array['Message personalization', 'Template creation', 'Sequence design', 'A/B test variants', 'Response optimization'],
+    array['Create email sequence', 'Write LinkedIn outreach', 'Draft sales pitch'],
+    'MessageCircle',
+    '#000000',
+    15,
+    true
+  ),
+  (
+    'crm_update',
+    'sales_operations',
+    'CRM Update Agent',
+    'Sales & Operations',
+    'Automatically update and maintain CRM records with latest customer interactions.',
+    array['CRM synchronization', 'Data validation', 'Activity logging', 'Report generation', 'Integration management'],
+    array['Sync Salesforce data', 'Update deal stages', 'Generate activity report'],
+    'Database',
+    '#000000',
+    16,
+    true
+  ),
+  (
+    'customer_support',
+    'sales_operations',
+    'Customer Support Agent',
+    'Sales & Operations',
+    'Handle customer inquiries, provide solutions, and maintain support documentation.',
+    array['Ticket triage', 'Knowledge base creation', 'FAQ generation', 'Response drafting', 'Issue categorization'],
+    array['Draft support response', 'Create help documentation', 'Analyze support tickets'],
+    'Headphones',
+    '#000000',
+    17,
+    true
+  ),
+  (
+    'analytics_report',
+    'sales_operations',
+    'Analytics Report Agent',
+    'Sales & Operations',
+    'Generate comprehensive reports from sales data, metrics, and KPIs.',
+    array['Data analysis', 'Report generation', 'KPI tracking', 'Trend identification', 'Dashboard creation'],
+    array['Create monthly report', 'Analyze conversion funnel', 'Generate performance dashboard'],
+    'PieChart',
+    '#000000',
+    18,
+    true
+  )
+on conflict (id) do update
+set
+  department_id = excluded.department_id,
+  name = excluded.name,
+  role = excluded.role,
+  description = excluded.description,
+  capabilities = excluded.capabilities,
+  example_tasks = excluded.example_tasks,
+  icon = excluded.icon,
+  color = excluded.color,
+  sort_order = excluded.sort_order,
+  is_active = excluded.is_active,
+  updated_at = now();

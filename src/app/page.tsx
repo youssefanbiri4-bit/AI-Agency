@@ -1,64 +1,352 @@
-import Image from "next/image";
+import Link from 'next/link';
+import {
+  Activity,
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  ClipboardCheck,
+  FileSearch,
+  Layers3,
+  LineChart,
+  LockKeyhole,
+  MonitorCheck,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  Workflow,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/Badge';
+import { buttonStyles } from '@/components/ui/Button';
+import { DashboardPreview } from '@/components/marketing/DashboardPreview';
+import { FeatureCard } from '@/components/marketing/FeatureCard';
+import { MarketingAgentCard } from '@/components/marketing/MarketingAgentCard';
+import { MarketingDepartmentCard } from '@/components/marketing/MarketingDepartmentCard';
+import { MarketingNavbar } from '@/components/marketing/MarketingNavbar';
+import { SectionHeader } from '@/components/marketing/SectionHeader';
+import { WorkflowSection } from '@/components/marketing/WorkflowSection';
+import { agentCatalog } from '@/data/agents';
+import { DEPARTMENTS } from '@/lib/agents';
+
+const features = [
+  {
+    icon: Users,
+    title: 'Configured agent catalog',
+    description: 'Coordinate research, growth, sales, support, and reporting specialists from one clean workspace.',
+  },
+  {
+    icon: ClipboardCheck,
+    title: 'Structured task intake',
+    description: 'Create clear briefs with priority, department context, agent parameters, and review-ready work records.',
+  },
+  {
+    icon: MonitorCheck,
+    title: 'Readiness controls',
+    description: 'See what is ready, what is guarded, and what still needs production configuration.',
+  },
+  {
+    icon: LineChart,
+    title: 'Reporting foundation',
+    description: 'Prepare reporting views that populate only after real task and review data exists.',
+  },
+];
+
+const trustItems = [
+  {
+    icon: ClipboardCheck,
+    title: 'Task management',
+    description: 'Plan and organize client-ready agent work with consistent status and priority metadata.',
+  },
+  {
+    icon: Activity,
+    title: 'Agent readiness',
+    description: 'Review the configured catalog without inventing live operational status.',
+  },
+  {
+    icon: CheckCircle2,
+    title: 'Review system',
+    description: 'Evaluate completed outputs and collect feedback before work moves forward.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Reports',
+    description: 'Use honest empty states until real task, review, and reporting data is stored.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Supabase workspace setup',
+    description: 'Authenticated workspace persistence is prepared without exposing private keys in the browser.',
+  },
+  {
+    icon: Workflow,
+    title: 'Future n8n workflow integration',
+    description: 'Workflow execution can be connected later through protected server-side routes.',
+  },
+];
+
+const pricingTiers = [
+  {
+    name: 'Foundation',
+    description: 'For teams preparing an AI agency workspace and task review process.',
+    points: ['18-agent catalog', 'Task and review workspace', 'Dashboard and reports'],
+  },
+  {
+    name: 'Agency',
+    description: 'For client-facing teams that need department visibility and repeatable delivery.',
+    points: ['Department dashboards', 'Honest no-data states', 'Client-ready review flow'],
+  },
+  {
+    name: 'Scale',
+    description: 'For teams ready to expand workspace persistence, workflow automation, and reporting pipelines.',
+    points: ['Supabase workspace model', 'n8n-ready workflow boundary', 'Server-side secret handling'],
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <div className="premium-page min-h-screen w-full text-black">
+      <MarketingNavbar />
+
+      <main className="w-full">
+        <section className="relative border-b border-black/8">
+          <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-center lg:gap-12 lg:px-8 lg:py-28">
+            <div className="section-fade min-w-0 max-w-3xl">
+              <Badge tone="brand" className="mb-6">
+                <Sparkles className="h-3.5 w-3.5" />
+                AgentFlow AI operations platform
+              </Badge>
+              <h1 className="max-w-full break-words text-3xl font-black leading-tight tracking-normal text-black sm:text-5xl lg:text-6xl">
+                Run AI agency work from one disciplined workspace
+              </h1>
+              <p className="mt-6 max-w-2xl text-base leading-7 text-black/62 sm:text-lg sm:leading-8">
+                AgentFlow AI brings your configured agents, task briefs, review flow, and reporting foundation into a product surface that stays honest about live data and integration readiness.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href="/auth/signup" className={buttonStyles({ size: 'lg', className: 'h-12 w-full px-6 sm:w-auto' })}>
+                  Get Started
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className={buttonStyles({ variant: 'secondary', size: 'lg', className: 'h-12 w-full px-6 sm:w-auto' })}
+                >
+                  View Dashboard
+                </Link>
+              </div>
+
+              <div className="mt-10 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+                {[
+                  { label: 'Agents', value: '18' },
+                  { label: 'Departments', value: '3' },
+                  { label: 'Metrics', value: 'Awaiting tasks' },
+                ].map((item) => (
+                  <div key={item.label} className="min-w-0 rounded-lg border border-black/8 bg-white/80 p-4 shadow-sm backdrop-blur">
+                    <p className="text-2xl font-black text-black">{item.value}</p>
+                    <p className="mt-1 text-xs font-black uppercase leading-5 tracking-[0.12em] text-black/46">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="section-fade min-w-0">
+              <DashboardPreview agents={agentCatalog} />
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="py-24 sm:py-28">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <SectionHeader
+              eyebrow="Features"
+              title="The operational layer for client-ready agent work"
+              description="A polished SaaS workspace for agent coordination, task intake, quality review, and integration readiness."
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+            <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+              {features.map((feature) => (
+                <FeatureCard key={feature.title} {...feature} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="agents" className="border-y border-black/8 bg-white py-24 sm:py-28">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <SectionHeader
+              eyebrow="Agent catalog"
+              title="18 specialized agents across your agency workflow"
+              description="A focused preview of the configured catalog. The dashboard keeps the full roster available for real workspace tasks."
+            />
+
+            <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {agentCatalog.slice(0, 6).map((agent) => (
+                <MarketingAgentCard key={agent.id} agent={agent} />
+              ))}
+            </div>
+            <div className="mt-8 flex justify-center">
+              <Link href="/dashboard/agents" className={buttonStyles({ variant: 'outline', size: 'lg' })}>
+                View all agents
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-24 sm:py-28">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <SectionHeader
+              eyebrow="Departments"
+              title="Three departments built for agency delivery"
+              description="Research strategy, content growth, and sales operations stay clearly separated while still rolling up into one dashboard."
+            />
+
+            <div className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {DEPARTMENTS.map((department) => (
+                <MarketingDepartmentCard
+                  key={department.id}
+                  department={department}
+                  agents={agentCatalog}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <WorkflowSection />
+
+        <section className="py-24 sm:py-28">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
+              <SectionHeader
+                align="left"
+                eyebrow="Built for AI-powered teams"
+                title="A trusted workspace for teams turning AI agents into repeatable operations"
+                description="The product surface is designed for professional agency delivery: clean handoffs, review checkpoints, and integration boundaries that only show real metrics after data exists."
+              />
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {trustItems.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <article key={item.title} className="card-lift min-w-0 rounded-lg border border-black/8 bg-white p-5 shadow-[0_18px_48px_rgba(0,0,0,0.06)] hover:border-[#8B3CDE]/24">
+                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-[#F0DBEF]/62 text-[#8B3CDE]">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="font-bold text-black">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-black/62">{item.description}</p>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-y border-black/8 bg-white py-24 sm:py-28">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
+              <div>
+                  <Badge tone="accent" className="mb-5">
+                  <Layers3 className="h-3.5 w-3.5" />
+                  Dashboard preview
+                </Badge>
+                <h2 className="text-3xl font-black tracking-normal text-black sm:text-4xl">
+                  A real product surface, not a collection of raw components
+                </h2>
+                <p className="mt-4 text-base leading-7 text-black/62 sm:text-lg">
+                  The dashboard preview shows the core operating model with configured agents, practical empty states, and clear Supabase/n8n readiness.
+                </p>
+                <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {[
+                    { icon: BarChart3, label: 'Department reporting' },
+                    { icon: FileSearch, label: 'Agent task visibility' },
+                    { icon: LockKeyhole, label: 'Server-side integration posture' },
+                    { icon: CheckCircle2, label: 'Review-ready outcomes' },
+                  ].map((item) => {
+                    const Icon = item.icon;
+
+                    return (
+                      <div key={item.label} className="flex min-w-0 items-center gap-3 rounded-lg border border-black/8 bg-[#F0DBEF]/35 p-3 text-sm font-bold text-black/68">
+                        <Icon className="h-4 w-4 text-[#8B3CDE]" />
+                        <span className="min-w-0">{item.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <DashboardPreview agents={agentCatalog.slice(6)} />
+            </div>
+          </div>
+        </section>
+
+        <section id="pricing" className="py-24 sm:py-28">
+          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+            <SectionHeader
+              eyebrow="Pricing"
+              title="A clear path from workspace foundation to connected operations"
+              description="The current product is structured so your team can start with a polished interface, then connect persistence and automation when ready."
+            />
+
+            <div className="mt-14 grid grid-cols-1 gap-5 lg:grid-cols-3">
+              {pricingTiers.map((tier, index) => (
+                <article
+                  key={tier.name}
+                  className={`rounded-lg border p-6 shadow-[0_18px_48px_rgba(0,0,0,0.06)] ${
+                    index === 1
+                      ? 'border-[#8B3CDE]/18 bg-[#F0DBEF]/62'
+                      : 'border-black/8 bg-white'
+                  }`}
+                >
+                  <Badge tone={index === 1 ? 'brand' : 'neutral'}>{tier.name}</Badge>
+                  <p className="mt-5 text-sm leading-6 text-black/62">{tier.description}</p>
+                  <div className="mt-6 space-y-3">
+                    {tier.points.map((point) => (
+                      <div key={point} className="flex gap-2 text-sm font-semibold text-black/68">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#8B3CDE]" />
+                        {point}
+                      </div>
+                    ))}
+                  </div>
+                  <Link
+                    href="/auth/signup"
+                    className={buttonStyles({
+                      variant: index === 1 ? 'primary' : 'outline',
+                      size: 'md',
+                      className: 'mt-7 w-full',
+                    })}
+                  >
+                    Get Started
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-5 pb-24 sm:px-6 sm:pb-28 lg:px-8">
+          <div className="mx-auto max-w-7xl overflow-hidden rounded-lg border border-black bg-black p-8 text-white shadow-[0_30px_80px_rgba(0,0,0,0.24)] sm:p-10 lg:p-12">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <h2 className="break-words text-3xl font-black tracking-normal sm:text-4xl">
+                  Build a client-ready AI agency workspace today.
+                </h2>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-white/68">
+                  Start with a polished dashboard, real agent catalog, structured task flow, and a clean path toward future data and automation integrations.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link href="/auth/signup" className={buttonStyles({ variant: 'secondary', size: 'lg', className: 'h-12 w-full px-6 sm:w-auto' })}>
+                  Get Started
+                </Link>
+                <Link href="/dashboard" className={buttonStyles({ variant: 'ghost', size: 'lg', className: 'h-12 w-full border-white/20 bg-white/10 px-6 text-white hover:bg-white/15 hover:text-white sm:w-auto' })}>
+                  View Dashboard
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

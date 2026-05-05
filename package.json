@@ -2,13 +2,21 @@
   "name": "ai-agency-temp",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "bash scripts/next-node20.sh dev",
+    "build": "bash scripts/next-node20.sh build",
+    "start": "bash scripts/next-node20.sh start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.15.0",
+    "@supabase/supabase-js": "^2.105.1",
+    "axios": "^1.15.2",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.14.0",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4"

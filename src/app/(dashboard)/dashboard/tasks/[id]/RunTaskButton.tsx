@@ -1,0 +1,118 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Play, RotateCw } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Notice } from '@/components/ui/Notice';
+
+const POLL_INTERVAL_MS = 3000;
+const PROCESSING_TIMEOUT_MS = 120000;
+
+interface RunTaskButtonProps {
+  taskId: string;
+  disabled?: boolean;
+  disabledReason?: string;
+}
+
+interface ExecuteTaskResponse {
+  success: boolean;
+  error?: string;
+}
+
+export function RunTaskButton({ taskId, disabled = false, disabledReason }: RunTaskButtonProps) {
+  const router = useRouter();
+  const [isRunning, setIsRunning] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [hasTimedOut, setHasTimedOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isProcessing) return;
+
+    const intervalId = window.setInterval(() => {
+      router.refresh();
+    }, POLL_INTERVAL_MS);
+
+    const timeoutId = window.setTimeout(() => {
+      window.clearInterval(intervalId);
+      setHasTimedOut(true);
+    }, PROCESSING_TIMEOUT_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [isProcessing, router]);
+
+  const runTask = async () => {
+    setError(null);
+    setIsRunning(true);
+    setIsProcessing(true);
+    setHasTimedOut(false);
+
+    try {
+      const response = await fetch('/api/tasks/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ task_id: taskId }),
+      });
+      const payload = (await response.json()) as ExecuteTaskResponse;
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || 'Task could not be sent to n8n.');
+      }
+
+      router.refresh();
+    } catch (err) {
+      setIsProcessing(false);
+      setError(err instanceof Error ? err.message : 'Task could not be sent to n8n.');
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {error && (
+        <Notice tone="danger" title="Task was not sent">
+          {error}
+        </Notice>
+      )}
+
+      {disabled && disabledReason && (
+        <Notice tone="warning" title="Execution guarded">
+          {disabledReason}
+        </Notice>
+      )}
+
+      {hasTimedOut && (
+        <Notice tone="info" title="Still processing">
+          This task is still processing. You can leave this page and come back later.
+        </Notice>
+      )}
+
+      <Button
+        type="button"
+        size="lg"
+        className="w-full"
+        disabled={disabled || isRunning || isProcessing}
+        onClick={runTask}
+      >
+        {isRunning || isProcessing ? (
+          <>
+            <RotateCw className="h-5 w-5 animate-spin" />
+            Processing
+          </>
+        ) : (
+          <>
+            <Play className="h-5 w-5" />
+            {disabled ? 'Run Task Disabled' : 'Run Task'}
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}

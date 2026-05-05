@@ -1,0 +1,36 @@
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
+
+interface PageHeaderProps {
+  title: string;
+  description?: string;
+  eyebrow?: string;
+  actions?: ReactNode;
+  className?: string;
+}
+
+export function PageHeader({ title, description, eyebrow, actions, className }: PageHeaderProps) {
+  return (
+    <div
+      className={cn(
+        'section-fade mb-8 min-w-0 rounded-lg border border-black/8 premium-surface px-4 py-5 shadow-[0_18px_48px_rgba(0,0,0,0.06)] sm:px-6',
+        className
+      )}
+    >
+      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 max-w-3xl">
+          {eyebrow && (
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-[#8B3CDE]">
+              {eyebrow}
+            </p>
+          )}
+          <h1 className="break-words text-2xl font-black tracking-normal text-black sm:text-3xl">
+            {title}
+          </h1>
+          {description && <p className="mt-2 text-sm leading-6 text-black/60 sm:text-base">{description}</p>}
+        </div>
+        {actions && <div className="flex w-full max-w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">{actions}</div>}
+      </div>
+    </div>
+  );
+}
