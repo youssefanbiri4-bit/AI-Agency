@@ -5,6 +5,7 @@ import {
 } from '@/lib/supabase-server';
 import { getTaskById, createTaskEvent, updateTaskExecutionState } from '@/lib/data/tasks';
 import { getAgentById } from '@/lib/data/agents';
+import { getLatestTaskRevisionNotes } from '@/lib/data/reviews';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { reportAppError } from '@/lib/logger';
 import { getN8nReadiness } from '@/lib/n8n';
@@ -97,6 +98,13 @@ export async function POST(request: NextRequest) {
     }
 
     const agent = agentResult.data;
+    const revisionNotesResult = await getLatestTaskRevisionNotes(task.id, workspaceId, supabase);
+
+    if (revisionNotesResult.error) {
+      return jsonError(`Revision notes could not be loaded: ${revisionNotesResult.error}`, 500);
+    }
+
+    const latestRevisionNotes = revisionNotesResult.data;
 
     const processingResult = await updateTaskExecutionState(
       {
@@ -149,9 +157,25 @@ export async function POST(request: NextRequest) {
       workspace_id: workspaceId,
       agent_type: task.agent_type,
       callback_url: callbackUrl,
+      ...(latestRevisionNotes
+        ? {
+            revisionNotes: latestRevisionNotes,
+            revision_notes: latestRevisionNotes,
+          }
+        : {}),
     };
 
-    console.log('n8n task payload:', payload);
+    console.log('n8n payload revision notes present:', Boolean(latestRevisionNotes));
+
+    const loggedPayload = latestRevisionNotes
+      ? {
+          ...payload,
+          revisionNotes: '[redacted]',
+          revision_notes: '[redacted]',
+        }
+      : payload;
+
+    console.log('n8n task payload:', loggedPayload);
 
     const response = await fetch(n8nReadiness.webhookUrl, {
       method: 'POST',

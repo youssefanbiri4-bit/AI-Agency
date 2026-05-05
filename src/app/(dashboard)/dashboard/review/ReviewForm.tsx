@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { CheckCircle2, ChevronDown, RotateCcw, Star } from 'lucide-react';
 import { reviewTaskAction, type ReviewTaskState } from './actions';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +17,15 @@ const initialState: ReviewTaskState = {
 
 export function ReviewForm({ taskId }: ReviewFormProps) {
   const [state, formAction, isPending] = useActionState(reviewTaskAction, initialState);
+  const [isRequestingChanges, setIsRequestingChanges] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const hasRevisionNotes = feedback.trim().length > 0;
+
+  useEffect(() => {
+    if (isRequestingChanges) {
+      document.getElementById(`feedback-${taskId}`)?.focus();
+    }
+  }, [isRequestingChanges, taskId]);
 
   return (
     <form action={formAction} className="space-y-5">
@@ -40,15 +49,35 @@ export function ReviewForm({ taskId }: ReviewFormProps) {
         </Select>
       </div>
 
-      <div>
-        <Label htmlFor={`feedback-${taskId}`}>Feedback</Label>
+      <div
+        className={
+          isRequestingChanges
+            ? 'rounded-lg border border-[#F55477]/18 bg-[#F0DBEF]/38 p-4'
+            : undefined
+        }
+      >
+        <Label htmlFor={`feedback-${taskId}`}>
+          {isRequestingChanges ? 'What should the agent change?' : 'Feedback'}
+        </Label>
         <Textarea
           id={`feedback-${taskId}`}
           name="feedback"
+          value={feedback}
+          onChange={(event) => setFeedback(event.target.value)}
           rows={5}
           disabled={isPending}
-          placeholder="Add review notes. Feedback is required when requesting changes."
+          placeholder={
+            isRequestingChanges
+              ? 'Describe the specific revisions the agent should make next.'
+              : 'Optional review notes. Required when requesting changes.'
+          }
+          aria-describedby={isRequestingChanges ? `revision-help-${taskId}` : undefined}
         />
+        {isRequestingChanges && (
+          <p id={`revision-help-${taskId}`} className="mt-2 text-xs font-semibold text-black/48">
+            Revision notes are required before sending this task back.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -63,17 +92,31 @@ export function ReviewForm({ taskId }: ReviewFormProps) {
           {isPending ? <Star className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
           Approve
         </Button>
-        <Button
-          type="submit"
-          name="intent"
-          value="request_changes"
-          variant="outline"
-          className="flex-1"
-          disabled={isPending}
-        >
-          <RotateCcw className="h-5 w-5" />
-          Request Changes
-        </Button>
+        {isRequestingChanges ? (
+          <Button
+            type="submit"
+            name="intent"
+            value="request_changes"
+            variant="outline"
+            className="flex-1"
+            disabled={isPending || !hasRevisionNotes}
+          >
+            <RotateCcw className="h-5 w-5" />
+            Submit Request
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1"
+            disabled={isPending}
+            aria-expanded={isRequestingChanges}
+            onClick={() => setIsRequestingChanges(true)}
+          >
+            <RotateCcw className="h-5 w-5" />
+            Request Changes
+          </Button>
+        )}
       </div>
     </form>
   );

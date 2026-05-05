@@ -53,6 +53,34 @@ export async function listTaskReviews(
   return emptyDataResult((data ?? []).map(mapTaskReviewRecordToTaskReview), true);
 }
 
+export async function getLatestTaskRevisionNotes(
+  taskId: string,
+  workspaceId: string,
+  client: SupabaseClient<Database> = supabase as SupabaseClient<Database>
+): Promise<DataResult<string | null>> {
+  if (!isSupabaseConfigured) {
+    return emptyDataResult(null, false);
+  }
+
+  const { data, error } = await client
+    .from('task_reviews')
+    .select('feedback')
+    .eq('task_id', taskId)
+    .eq('workspace_id', workspaceId)
+    .neq('feedback', '')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return errorDataResult(null, error.message);
+  }
+
+  const revisionNotes = data?.feedback.trim() || null;
+
+  return emptyDataResult(revisionNotes, true);
+}
+
 export async function createTaskReview(
   input: CreateTaskReviewInput,
   client: SupabaseClient<Database> = supabase as SupabaseClient<Database>

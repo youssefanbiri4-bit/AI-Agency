@@ -52,11 +52,15 @@ The request sent to `N8N_WEBHOOK_URL` is:
   "task_id": "task-uuid",
   "workspace_id": "workspace-uuid",
   "agent_type": "market_research",
-  "callback_url": "https://production-domain.example/api/n8n/callback"
+  "callback_url": "https://production-domain.example/api/n8n/callback",
+  "revisionNotes": "Optional reviewer revision notes when a task is sent back for changes.",
+  "revision_notes": "Optional reviewer revision notes when a task is sent back for changes."
 }
 ```
 
 The duplicate camelCase and snake_case fields are intentional compatibility fields. Keep both in n8n v5.
+
+The `revisionNotes` and `revision_notes` fields are optional. AgentFlow includes them only when a task has non-empty reviewer feedback saved in `task_reviews.feedback`; fresh tasks omit these fields.
 
 ## Callback Endpoint
 
