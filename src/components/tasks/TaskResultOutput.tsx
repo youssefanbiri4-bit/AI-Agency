@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import { CheckCircle2, ClipboardCheck, FileText, Star } from 'lucide-react';
 import type { JsonObject, JsonValue } from '@/types';
 import { CopyReportButton } from './CopyReportButton';
+import { ExportReportButton } from './ExportReportButton';
 import {
   extractStructuredOutput,
   hasRenderableJsonValue,
@@ -29,6 +30,7 @@ interface TaskResultOutputProps {
   result: JsonObject | null;
   emptyState: ResultEmptyState;
   errorMessage?: string | null;
+  reportContext?: TaskReportContext;
 }
 
 interface DetailSection {
@@ -36,6 +38,12 @@ interface DetailSection {
   title: string;
   description: string;
   data: JsonValue;
+}
+
+interface TaskReportContext {
+  taskTitle?: string | null;
+  agentName?: string | null;
+  department?: string | null;
 }
 
 const priorityStyles: Record<StructuredOutputPriority, string> = {
@@ -63,6 +71,27 @@ function formatLabel(key: string) {
 
 function isJsonObject(value: JsonValue | undefined): value is JsonObject {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function cleanReportText(value: string | null | undefined) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+function getPrintableReportMetadata(output: StructuredTaskOutput, context?: TaskReportContext) {
+  const metadataDepartment = cleanReportText(output.metadata?.departmentKey);
+
+  return {
+    taskTitle: cleanReportText(context?.taskTitle) ?? 'Untitled task',
+    agentName: cleanReportText(context?.agentName) ?? cleanReportText(output.metadata?.agentName),
+    department:
+      cleanReportText(context?.department) ??
+      (metadataDepartment ? formatLabel(metadataDepartment) : null),
+  };
 }
 
 function normalizeReportValue(value: JsonValue | undefined): JsonValue | undefined {
@@ -436,7 +465,43 @@ function ClientReportNextActions({ actions }: { actions: StructuredOutputAction[
   );
 }
 
-function ClientReadyReport({ output }: { output: StructuredTaskOutput }) {
+function PrintableReportHeader({
+  output,
+  context,
+}: {
+  output: StructuredTaskOutput;
+  context?: TaskReportContext;
+}) {
+  const metadata = getPrintableReportMetadata(output, context);
+  const items = [
+    { label: 'Task', value: metadata.taskTitle },
+    metadata.agentName ? { label: 'Agent', value: metadata.agentName } : null,
+    metadata.department ? { label: 'Department', value: metadata.department } : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item));
+
+  return (
+    <header className="client-ready-report-print-header">
+      <p className="client-ready-report-print-brand">AgentFlow AI</p>
+      <h1>Client-ready Report</h1>
+      <dl>
+        {items.map((item) => (
+          <div key={item.label}>
+            <dt>{item.label}</dt>
+            <dd>{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </header>
+  );
+}
+
+function ClientReadyReport({
+  output,
+  reportContext,
+}: {
+  output: StructuredTaskOutput;
+  reportContext?: TaskReportContext;
+}) {
   const detailSections = getDetailSections(output);
   const markdown = buildReportMarkdown(output);
 
@@ -445,10 +510,17 @@ function ClientReadyReport({ output }: { output: StructuredTaskOutput }) {
       <CardHeader
         title="Client-ready Report"
         description="A polished report assembled from the existing structured agent output."
-        action={<CopyReportButton markdown={markdown} />}
+        action={
+          <>
+            <CopyReportButton markdown={markdown} />
+            <ExportReportButton />
+          </>
+        }
       />
 
-      <article className="overflow-hidden rounded-lg border border-black/10 bg-white">
+      <article id="client-ready-report-print" className="overflow-hidden rounded-lg border border-black/10 bg-white">
+        <PrintableReportHeader output={output} context={reportContext} />
+
         <section className="border-b border-black/8 bg-[#F0DBEF]/18 p-4 sm:p-5">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-black/42">Executive Summary</p>
           {output.summary ? (
@@ -690,6 +762,7 @@ export function TaskResultOutput({
   result,
   emptyState,
   errorMessage,
+  reportContext,
 }: TaskResultOutputProps) {
   if (errorMessage) {
     return (
@@ -732,7 +805,7 @@ export function TaskResultOutput({
         <h2 className="break-words text-base font-bold text-black sm:text-lg">{title}</h2>
         <p className="mt-1 text-sm leading-6 text-black/58">{description}</p>
       </div>
-      <ClientReadyReport output={structuredOutput} />
+      <ClientReadyReport output={structuredOutput} reportContext={reportContext} />
       <SummaryCard output={structuredOutput} />
       <StructuredDetails output={structuredOutput} />
       <RecommendationsCard recommendations={structuredOutput.recommendations} />

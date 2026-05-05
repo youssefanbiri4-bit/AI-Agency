@@ -135,6 +135,11 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
               title="Stored Result"
               description="Only real result data from Supabase is shown."
               result={selectedTask.result}
+              reportContext={{
+                taskTitle: selectedTask.title,
+                agentName: selectedAgent?.name,
+                department: selectedAgent?.department,
+              }}
               emptyState={{
                 icon: Workflow,
                 title: 'No result yet',

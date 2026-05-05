@@ -163,6 +163,11 @@ export default async function TaskDetailsPage({
             description="Real n8n callback output appears here after processing."
             result={task.result}
             errorMessage={taskErrorMessage}
+            reportContext={{
+              taskTitle: task.title,
+              agentName: agent?.name,
+              department: agent?.department,
+            }}
             emptyState={
               task.status === 'processing'
                 ? {
