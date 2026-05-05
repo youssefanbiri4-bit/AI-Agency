@@ -11,6 +11,8 @@ import { reportAppError } from '@/lib/logger';
 import { getN8nReadiness } from '@/lib/n8n';
 import type { JsonObject } from '@/types';
 
+const EXECUTION_SEND_FAILURE_MESSAGE = 'Task could not be sent to n8n. Please retry.';
+
 function jsonError(error: string, status: number) {
   return NextResponse.json({ success: false, error }, { status });
 }
@@ -33,6 +35,56 @@ function getBaseUrl(request: NextRequest) {
 
 function getCallbackBaseUrl(request: NextRequest) {
   return (process.env.APP_BASE_URL?.trim() || getBaseUrl(request)).replace(/\/+$/, '');
+}
+
+async function markTaskExecutionFailed({
+  supabase,
+  workspaceId,
+  taskId,
+  actorId,
+  message,
+}: {
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  workspaceId: string;
+  taskId: string;
+  actorId: string;
+  message: string;
+}) {
+  const result: JsonObject = { error_message: message };
+  const failedResult = await updateTaskExecutionState(
+    {
+      taskId,
+      workspaceId,
+      status: 'failed',
+      result,
+    },
+    supabase
+  );
+
+  if (failedResult.error) {
+    reportAppError('Task execution failure status update failed', failedResult.error, {
+      taskId,
+      workspaceId,
+    });
+  }
+
+  const eventResult = await createTaskEvent(
+    {
+      workspaceId,
+      taskId,
+      actorId,
+      eventType: 'task_failed_by_n8n',
+      message,
+    },
+    supabase
+  );
+
+  if (eventResult.error) {
+    reportAppError('Task execution failure event insert failed', eventResult.error, {
+      taskId,
+      workspaceId,
+    });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -132,7 +184,20 @@ export async function POST(request: NextRequest) {
     );
 
     if (sentEventResult.error) {
-      return jsonError(sentEventResult.error, 500);
+      await markTaskExecutionFailed({
+        supabase,
+        workspaceId,
+        taskId: task.id,
+        actorId: user.id,
+        message: EXECUTION_SEND_FAILURE_MESSAGE,
+      });
+
+      reportAppError('Task sent event insert failed before n8n handoff', sentEventResult.error, {
+        taskId: task.id,
+        workspaceId,
+      });
+
+      return jsonError(EXECUTION_SEND_FAILURE_MESSAGE, 500);
     }
 
     const callbackBaseUrl = getCallbackBaseUrl(request);
@@ -140,7 +205,7 @@ export async function POST(request: NextRequest) {
 
     console.log('APP_BASE_URL:', process.env.APP_BASE_URL);
     console.log('Callback URL:', callbackUrl);
-    console.log('N8N_WEBHOOK_URL:', process.env.N8N_WEBHOOK_URL);
+    console.log('N8N_WEBHOOK_URL configured:', Boolean(n8nReadiness.webhookUrl));
 
     const payload = {
       taskId: task.id,
@@ -177,38 +242,42 @@ export async function POST(request: NextRequest) {
 
     console.log('n8n task payload:', loggedPayload);
 
-    const response = await fetch(n8nReadiness.webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    let response: Response;
+
+    try {
+      response = await fetch(n8nReadiness.webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      await markTaskExecutionFailed({
+        supabase,
+        workspaceId,
+        taskId: task.id,
+        actorId: user.id,
+        message: EXECUTION_SEND_FAILURE_MESSAGE,
+      });
+
+      reportAppError('n8n webhook request failed before response', error, {
+        taskId: task.id,
+        workspaceId,
+      });
+
+      return jsonError(EXECUTION_SEND_FAILURE_MESSAGE, 502);
+    }
 
     if (!response.ok) {
       const message = `n8n webhook request failed with status ${response.status}`;
-      const result: JsonObject = { error_message: message };
-
-      await updateTaskExecutionState(
-        {
-          taskId: task.id,
-          workspaceId,
-          status: 'failed',
-          result,
-        },
-        supabase
-      );
-
-      await createTaskEvent(
-        {
-          workspaceId,
-          taskId: task.id,
-          actorId: user.id,
-          eventType: 'task_failed_by_n8n',
-          message,
-        },
-        supabase
-      );
+      await markTaskExecutionFailed({
+        supabase,
+        workspaceId,
+        taskId: task.id,
+        actorId: user.id,
+        message,
+      });
 
       return jsonError(message, 502);
     }

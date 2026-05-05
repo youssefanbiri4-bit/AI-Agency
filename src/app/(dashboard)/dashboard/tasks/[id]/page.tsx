@@ -64,8 +64,10 @@ export default async function TaskDetailsPage({
   const inputEntries = Object.entries(task.input_data || {});
   const n8nReadiness = getN8nReadiness();
   const taskErrorMessage =
-    task.status === 'failed' && typeof task.result?.error_message === 'string'
-      ? task.result.error_message
+    task.status === 'failed'
+      ? typeof task.result?.error_message === 'string'
+        ? task.result.error_message
+        : 'This task failed during execution. You can retry it from the Execution panel.'
       : null;
 
   return (
@@ -101,6 +103,12 @@ export default async function TaskDetailsPage({
         <Notice tone="success" title="Task completed">
           This task has been approved and completed
           {task.completed_at ? ` on ${formatDateTime(task.completed_at)}` : ''}.
+        </Notice>
+      )}
+
+      {task.status === 'failed' && taskErrorMessage && (
+        <Notice tone="danger" title="Task failed">
+          {taskErrorMessage}
         </Notice>
       )}
 
@@ -237,11 +245,12 @@ export default async function TaskDetailsPage({
             {task.status === 'pending' || task.status === 'failed' ? (
               <RunTaskButton
                 taskId={task.id}
+                mode={task.status === 'failed' ? 'retry' : 'run'}
                 disabled={!n8nReadiness.canExecute}
                 disabledReason={!n8nReadiness.canExecute ? n8nReadiness.message : undefined}
               />
             ) : task.status === 'processing' ? (
-              <TaskProcessingPoller />
+              <TaskProcessingPoller taskId={task.id} updatedAt={task.updated_at} />
             ) : (
               <Notice tone="info" title="Execution unavailable">
                 Run Task is only available for pending or failed tasks.

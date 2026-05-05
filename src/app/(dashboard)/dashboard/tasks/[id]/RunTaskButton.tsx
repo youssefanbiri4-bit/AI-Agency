@@ -11,6 +11,7 @@ const PROCESSING_TIMEOUT_MS = 120000;
 
 interface RunTaskButtonProps {
   taskId: string;
+  mode?: 'run' | 'retry';
   disabled?: boolean;
   disabledReason?: string;
 }
@@ -20,12 +21,20 @@ interface ExecuteTaskResponse {
   error?: string;
 }
 
-export function RunTaskButton({ taskId, disabled = false, disabledReason }: RunTaskButtonProps) {
+export function RunTaskButton({
+  taskId,
+  mode = 'run',
+  disabled = false,
+  disabledReason,
+}: RunTaskButtonProps) {
   const router = useRouter();
   const [isRunning, setIsRunning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasTimedOut, setHasTimedOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isRetry = mode === 'retry';
+  const readyLabel = isRetry ? 'Retry Task' : 'Run Task';
+  const disabledLabel = isRetry ? 'Retry Disabled' : 'Run Task Disabled';
 
   useEffect(() => {
     if (!isProcessing) return;
@@ -69,6 +78,7 @@ export function RunTaskButton({ taskId, disabled = false, disabledReason }: RunT
     } catch (err) {
       setIsProcessing(false);
       setError(err instanceof Error ? err.message : 'Task could not be sent to n8n.');
+      router.refresh();
     } finally {
       setIsRunning(false);
     }
@@ -108,8 +118,8 @@ export function RunTaskButton({ taskId, disabled = false, disabledReason }: RunT
           </>
         ) : (
           <>
-            <Play className="h-5 w-5" />
-            {disabled ? 'Run Task Disabled' : 'Run Task'}
+            {isRetry ? <RotateCw className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+            {disabled ? disabledLabel : readyLabel}
           </>
         )}
       </Button>

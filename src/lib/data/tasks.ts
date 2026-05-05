@@ -47,6 +47,13 @@ export interface UpdateTaskExecutionStateInput {
   result?: JsonObject | null;
 }
 
+export interface MarkStaleProcessingTaskFailedInput {
+  taskId: string;
+  workspaceId: string;
+  staleBefore: string;
+  errorMessage: string;
+}
+
 export function mapTaskRecordToTask(record: TaskRecord): Task {
   return {
     id: record.id,
@@ -246,4 +253,34 @@ export async function updateTaskExecutionState(
   }
 
   return emptyDataResult(mapTaskRecordToTask(data), true);
+}
+
+export async function markStaleProcessingTaskFailed(
+  input: MarkStaleProcessingTaskFailedInput,
+  client: SupabaseClient<Database> = supabase as SupabaseClient<Database>
+): Promise<DataResult<Task | null>> {
+  if (!isSupabaseConfigured) {
+    return emptyDataResult(null, false);
+  }
+
+  const { data, error } = await client
+    .from('tasks')
+    .update({
+      status: 'failed',
+      result: {
+        error_message: input.errorMessage,
+      },
+    })
+    .eq('id', input.taskId)
+    .eq('workspace_id', input.workspaceId)
+    .eq('status', 'processing')
+    .lt('updated_at', input.staleBefore)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    return errorDataResult(null, error.message);
+  }
+
+  return emptyDataResult(data ? mapTaskRecordToTask(data) : null, true);
 }
