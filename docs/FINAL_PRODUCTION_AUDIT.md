@@ -1,0 +1,158 @@
+# Final Production Audit
+
+Project: AgentFlow AI / AI Agency Dashboard
+Date: 2026-05-06
+Production URL: https://agentflow-ai-sigma.vercel.app
+
+This audit records the current portfolio-ready production state. It is documentation-only and does not change application code, environment variables, Supabase schema, n8n workflow, callback routes, callback payloads, or task execution logic.
+
+## Auth
+
+Status: Passed
+
+- Protected dashboard routes require login.
+- Supabase Auth is used for user sessions.
+- Signed-out users cannot access workspace dashboard pages.
+
+## Workspace
+
+Status: Passed
+
+- Workspace onboarding works.
+- Active workspace context works.
+- Dashboard data is scoped by workspace.
+
+## Agents
+
+Status: Passed
+
+- 18 agents are available.
+- Agents are organized across 3 departments.
+- Agent pages load successfully.
+
+## Task Creation
+
+Status: Passed
+
+- Task creation works.
+- Required field validation works.
+- Created tasks start as `pending`.
+- Created tasks appear on the Tasks page and Task Details page.
+
+## n8n Execution
+
+Status: Passed
+
+- n8n v5/7B production execution works.
+- Research, Content, and Sales tasks work.
+- Tasks move from `pending` to `processing` when executed.
+- Task payloads preserve the stable n8n contract.
+
+## Callback
+
+Status: Passed
+
+- n8n callback path works.
+- Successful callbacks store the result and move tasks to `needs_review`.
+- Failed callbacks store error data and move tasks to `failed`.
+- Callback secret validation remains part of the integration boundary.
+
+## Review System
+
+Status: Passed
+
+- Tasks with `needs_review` status can be reviewed.
+- Review records are created for review actions.
+- Review actions are unavailable for inappropriate statuses.
+
+## Approve
+
+Status: Passed
+
+- Approve works.
+- Approved tasks move from `needs_review` to `completed`.
+- Completed tasks remain visible as generated reports.
+
+## Request Changes v2
+
+Status: Passed
+
+- Request Changes v2 works.
+- Feedback is required.
+- Tasks move from `needs_review` back to `pending`.
+- Revision feedback is saved as review data.
+
+## revisionNotes Loop
+
+Status: Passed
+
+- Saved revision feedback reaches n8n as `revisionNotes`.
+- Saved revision feedback also reaches n8n as `revision_notes`.
+- n8n uses the notes in the prompt for revised task runs.
+
+## Reports
+
+Status: Passed
+
+- Client-ready Report works on Task Details.
+- Reports Page works at `/dashboard/reports`.
+- Reports Page lists generated reports from `completed` and `needs_review` tasks.
+- Pending, processing, and failed tasks are excluded.
+- Search works.
+- Department filter works.
+- Status filter works.
+- Open Report links to Task Details.
+
+## Copy Report
+
+Status: Passed
+
+- Copy Report works.
+- Copied output is suitable for client handoff.
+- Internal callback metadata is not the focus of client report output.
+
+## Export PDF
+
+Status: Passed
+
+- Export PDF works.
+- Exported reports are suitable for client delivery.
+
+## Error Handling
+
+Status: Passed
+
+- Failed tasks display error information.
+- Failure state is distinct from pending, processing, needs_review, and completed states.
+- Failed automation runs do not appear as generated reports.
+
+## Retry
+
+Status: Passed
+
+- Retry works for failed tasks.
+- Failed tasks can re-enter the execution flow.
+
+## Vercel Production
+
+Status: Passed
+
+- Production deployment works.
+- Production URL works.
+- `/dashboard/reports` works in production.
+
+## Known Limitations
+
+- Automated test coverage is still limited compared with a commercial SaaS production system.
+- Direct ads API integrations are not part of the current version.
+- Advanced analytics are planned but not yet implemented.
+- Public SaaS features such as billing, organization roles, and self-serve customer onboarding are outside the current portfolio scope.
+- n8n workflow details live outside this repository and must be kept aligned with the documented contract.
+
+## Final Readiness Score
+
+Personal portfolio readiness: 9/10
+
+AgentFlow AI is ready to present as a professional Full Stack Developer / AI Automation Developer portfolio project. It demonstrates a real production deployment, authenticated workspace flows, database-backed task management, n8n automation, human review, revision loops, client-ready reports, PDF export, and a reports dashboard.
+
+Commercial SaaS readiness would require more automated tests, observability, billing, permissions, and operating runbooks before broad public launch.

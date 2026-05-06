@@ -1,0 +1,214 @@
+# Architecture
+
+Project: AgentFlow AI / AI Agency Dashboard
+
+This document describes the current production-tested architecture at the Phase 10A documentation-only baseline. It does not include secret values.
+
+## Frontend App
+
+AgentFlow AI is a Next.js application with a marketing entry point, authentication pages, onboarding, and a protected dashboard. The app uses TypeScript, React, and CSS/Tailwind styling.
+
+The frontend is responsible for:
+
+- Navigation and layout.
+- Authentication UI.
+- Workspace onboarding.
+- Agent catalog views.
+- Task creation.
+- Task list and task details.
+- Review actions.
+- Report rendering.
+- Copy and PDF export interactions.
+- Reports search and filters.
+
+## Dashboard Routes
+
+Key routes include:
+
+- `/`
+- `/auth/login`
+- `/auth/signup`
+- `/auth/callback`
+- `/onboarding`
+- `/dashboard`
+- `/dashboard/agents`
+- `/dashboard/agents/[id]`
+- `/dashboard/create-task`
+- `/dashboard/tasks`
+- `/dashboard/tasks/[id]`
+- `/dashboard/review`
+- `/dashboard/reports`
+- `/dashboard/settings`
+- `/privacy`
+- `/terms`
+
+## Supabase Auth And Database
+
+Supabase provides authentication and persistence. The app uses Supabase for:
+
+- User sessions.
+- Workspace records.
+- Workspace membership.
+- Department and agent catalog records.
+- Tasks.
+- Task events.
+- Task reviews.
+- Stored task results.
+
+Client-side code uses public Supabase configuration only. Server-only code handles privileged reads and writes where needed, including automation callbacks.
+
+## Workspace Model
+
+AgentFlow AI scopes dashboard data by active workspace. A signed-in user needs an active workspace before using the operational dashboard. Tasks, reviews, and events are tied to the workspace, which keeps user data separated by workspace context.
+
+## Task Lifecycle
+
+Primary lifecycle:
+
+```text
+pending -> processing -> needs_review -> completed
+```
+
+Revision lifecycle:
+
+```text
+needs_review -> pending -> processing -> needs_review
+```
+
+Failure lifecycle:
+
+```text
+processing -> failed -> retry -> processing
+```
+
+Supported task statuses include:
+
+- `draft`
+- `pending`
+- `processing`
+- `needs_review`
+- `completed`
+- `failed`
+- `cancelled`
+
+The active production flow uses `pending`, `processing`, `needs_review`, `completed`, and `failed`.
+
+## n8n Webhook Flow
+
+Task execution begins from the Task Details page. A server-side route validates the user, workspace, task ownership, and task status. It then sends a task payload to the configured n8n production webhook.
+
+The payload includes:
+
+- Task ID.
+- Workspace ID.
+- Agent ID.
+- Agent name.
+- Department.
+- Task title.
+- Task description.
+- Priority.
+- Callback URL.
+- Compatibility fields in camelCase and snake_case.
+- Optional revision notes when the task was previously sent back for changes.
+
+Before the n8n request, the app moves the task to `processing`.
+
+## Callback Flow
+
+n8n calls back into AgentFlow AI after workflow execution. The callback endpoint validates the configured callback secret header before processing the payload.
+
+On success:
+
+- The result is stored on the task.
+- The task moves to `needs_review`.
+- A task event is created.
+
+On failure:
+
+- The error message is stored.
+- The task moves to `failed`.
+- A task event is created.
+
+The stable callback contract is documented in `docs/N8N_V5_CONTRACT.md`.
+
+## Review Flow
+
+Tasks with `needs_review` status can be reviewed by the user. Review actions are intentionally unavailable for statuses that should not be approved or revised.
+
+Approve:
+
+```text
+needs_review -> completed
+```
+
+Request Changes:
+
+```text
+needs_review -> pending
+```
+
+Both actions create review records.
+
+## Request Changes v2 And Revision Notes
+
+Request Changes v2 requires feedback. That feedback is stored as a review record and becomes revision context for the next automation run.
+
+When the task is rerun, the latest non-empty review feedback is included in the n8n request as:
+
+- `revisionNotes`
+- `revision_notes`
+
+This keeps the n8n workflow compatible with both camelCase and snake_case input styles.
+
+## Reports Generation
+
+AgentFlow AI extracts structured output from stored task results. The report renderer supports:
+
+- Summary.
+- Analysis.
+- Content plan.
+- Outreach plan.
+- Recommendations.
+- Next actions.
+- Quality notes.
+- Metadata.
+- Raw JSON fallback.
+
+The Reports Page builds a generated report list from tasks that:
+
+- Have `completed` or `needs_review` status.
+- Have a stored result.
+
+It excludes `pending`, `processing`, and `failed` tasks.
+
+## Error Handling And Retry
+
+Failed workflow responses move tasks to `failed` and store an error object. The Task Details page shows the failure state and exposes Retry for failed tasks.
+
+Retry sends the task back through the same execution path:
+
+```text
+failed -> processing
+```
+
+If the rerun succeeds, the task returns to `needs_review`.
+
+## Deployment On Vercel
+
+The app is deployed on Vercel and has been verified in production at:
+
+```text
+https://agentflow-ai-sigma.vercel.app
+```
+
+Vercel hosts the Next.js application and server routes. Environment variables are managed in the hosting environment and should not be committed to the repository.
+
+## Security Notes
+
+- Do not commit secret values.
+- Keep `SUPABASE_SERVICE_ROLE_KEY` server-only.
+- Keep n8n webhook URL and callback secret server-side.
+- Do not expose callback secret values in UI, logs, reports, or exports.
+- Preserve callback route validation.
+- Preserve the stable `callbackPayload` shape unless a planned integration migration is approved.
+- Keep workspace scoping intact for task, review, and report data.
