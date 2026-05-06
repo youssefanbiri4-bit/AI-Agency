@@ -27,7 +27,6 @@ const productionLaunchChecklist = [
   'Update Meta Redirect URI',
   'Update Pinterest Redirect URI',
   'Update Google Ads Redirect URI',
-  'Update LinkedIn Redirect URI',
   'Redeploy production',
   'Test login',
   'Test Run Task',

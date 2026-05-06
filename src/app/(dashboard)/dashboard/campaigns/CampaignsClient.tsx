@@ -152,7 +152,7 @@ export function CampaignsClient({
                 <Input
                   id="platforms"
                   name="platforms"
-                  placeholder="Meta Ads, TikTok, LinkedIn, Google Search"
+                  placeholder="Meta Ads, TikTok, Google Search"
                   required
                   disabled={isPlannerPending}
                 />
@@ -226,7 +226,7 @@ export function CampaignsClient({
 
             <div className="grid gap-5 lg:grid-cols-2">
               <Field id="platform" label="Platform" required>
-                <Input id="platform" name="platform" placeholder="Meta Ads, TikTok, LinkedIn" required disabled={isAnalyzerPending} />
+                <Input id="platform" name="platform" placeholder="Meta Ads, TikTok, Google Ads" required disabled={isAnalyzerPending} />
               </Field>
 
               <Field id="analyzerCampaignGoal" label="Campaign goal" required>

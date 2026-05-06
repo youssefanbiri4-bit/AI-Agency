@@ -260,21 +260,6 @@ Current supported Google Ads behavior:
 
 Google Ads token storage is not enabled yet. The current `ad_connections` database check constraint allows only `meta`, so a future migration will be required to allow `google_ads` before a successful Google Ads OAuth token can be stored. `GOOGLE_ADS_CLIENT_SECRET` and `GOOGLE_ADS_DEVELOPER_TOKEN` must stay only in Vercel environment variables. No Google Ads publishing is connected.
 
-## LinkedIn Ads Provider Foundation
-
-The Campaigns page also includes a safe-disabled LinkedIn Ads provider foundation.
-
-Current supported LinkedIn Ads behavior:
-
-- Read server-only LinkedIn Ads configuration readiness.
-- Show setup-required UI when `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, or `LINKEDIN_REDIRECT_URI` is missing.
-- Build a LinkedIn OAuth URL only when all required environment variables exist.
-- Request read-only LinkedIn Ads scopes only: `r_ads` and `r_ads_reporting`.
-- Explain that LinkedIn Marketing/Advertising API access may require approval in LinkedIn Developer Portal.
-- Provide placeholder connect and callback routes under `/api/ads/linkedin`.
-
-LinkedIn Ads token storage is not enabled yet. The current `ad_connections` database check constraint allows only `meta`, so a future migration will be required to allow `linkedin` before a successful LinkedIn Ads OAuth token can be stored. `LINKEDIN_CLIENT_SECRET` must stay only in Vercel environment variables. No LinkedIn Ads publishing is connected.
-
 ## Error Handling And Retry
 
 Failed workflow responses move tasks to `failed` and store an error object. The Task Details page shows the failure state and exposes Retry for failed tasks.
@@ -306,16 +291,14 @@ Vercel hosts the Next.js application and server routes. Environment variables ar
 - Keep `PINTEREST_APP_SECRET` server-only.
 - Keep `GOOGLE_ADS_CLIENT_SECRET` server-only.
 - Keep `GOOGLE_ADS_DEVELOPER_TOKEN` server-only.
-- Keep `LINKEDIN_CLIENT_SECRET` server-only.
 - Keep `AD_TOKEN_ENCRYPTION_KEY` server-only.
 - Decrypt Meta access tokens only in server helpers.
 - Do not expose callback secret values in UI, logs, reports, or exports.
-- Do not expose Meta, Pinterest, Google Ads, or LinkedIn Ads tokens, encrypted tokens, OAuth codes, full API URLs with paging cursors, or secrets in UI, logs, reports, or exports.
+- Do not expose Meta, Pinterest, or Google Ads tokens, encrypted tokens, OAuth codes, full API URLs with paging cursors, or secrets in UI, logs, reports, or exports.
 - Keep notifications scoped by `workspace_id` and `user_id`; do not show cross-workspace or cross-user notifications.
 - Keep Meta OAuth scopes read-only unless a separate publishing plan is approved.
 - Keep Pinterest OAuth scopes read-only unless a separate publishing plan is approved.
 - Keep Google Ads OAuth scopes read-only unless a separate publishing plan is approved.
-- Keep LinkedIn Ads OAuth scopes read-only unless a separate publishing plan is approved.
 - Preserve callback route validation.
 - Preserve the stable `callbackPayload` shape unless a planned integration migration is approved.
 - Keep workspace scoping intact for task, review, and report data.

@@ -14,10 +14,6 @@ import {
   getGoogleAdsConfigReadiness,
   type GoogleAdsConfigReadiness,
 } from '@/lib/ads/google-ads';
-import {
-  getLinkedInConfigReadiness,
-  type LinkedInConfigReadiness,
-} from '@/lib/ads/linkedin';
 import { listAgentCatalog } from '@/lib/data/agents';
 import { listTasks } from '@/lib/data/tasks';
 import { extractStructuredOutput } from '@/lib/task-results';
@@ -119,12 +115,6 @@ function formatMissingGoogleAdsEnv(readiness: GoogleAdsConfigReadiness) {
   return readiness.missingEnvironmentVariables.length > 0
     ? readiness.missingEnvironmentVariables.join(', ')
     : 'GOOGLE_ADS_CLIENT_SECRET';
-}
-
-function formatMissingLinkedInEnv(readiness: LinkedInConfigReadiness) {
-  return readiness.missingEnvironmentVariables.length > 0
-    ? readiness.missingEnvironmentVariables.join(', ')
-    : 'LINKEDIN_CLIENT_SECRET';
 }
 
 function PinterestAdsConnectionCard({
@@ -234,64 +224,6 @@ function GoogleAdsConnectionCard({
   );
 }
 
-function LinkedInAdsConnectionCard({
-  readiness,
-}: {
-  readiness: LinkedInConfigReadiness;
-}) {
-  const isConfigured = readiness.isConfigured;
-
-  return (
-    <div className="mt-4 muted-panel flex min-w-0 flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="break-words text-base font-bold text-black">
-            LinkedIn Ads
-          </h3>
-          <StatusBadge
-            status={isConfigured ? 'Not Connected' : 'Setup Required'}
-            type="system"
-            size="sm"
-          />
-        </div>
-        <p className="mt-2 text-sm leading-6 text-black/58">
-          Read-only LinkedIn Ads provider foundation. Actual connection stays disabled until the server environment and LinkedIn API access are complete.
-        </p>
-        <p className="mt-2 text-sm leading-6 text-black/58">
-          LinkedIn Marketing/Advertising API access may require approval in LinkedIn Developer Portal.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
-          <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
-            Scopes: {readiness.scopes.join(', ')}
-          </span>
-          {!isConfigured && (
-            <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
-              Missing environment variables: {formatMissingLinkedInEnv(readiness)}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {isConfigured ? (
-        <Link
-          href="/api/ads/linkedin/connect"
-          className={buttonStyles({ variant: 'primary' })}
-        >
-          Connect LinkedIn Ads
-        </Link>
-      ) : (
-        <button
-          type="button"
-          disabled
-          className={buttonStyles({ variant: 'outline' })}
-        >
-          Setup in Vercel first
-        </button>
-      )}
-    </div>
-  );
-}
-
 interface CampaignsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
@@ -301,10 +233,8 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
   const metaParam = getSingleSearchParam(params, 'meta');
   const pinterestParam = getSingleSearchParam(params, 'pinterest');
   const googleAdsParam = getSingleSearchParam(params, 'google_ads');
-  const linkedinParam = getSingleSearchParam(params, 'linkedin');
   const pinterestReadiness = getPinterestConfigReadiness();
   const googleAdsReadiness = getGoogleAdsConfigReadiness();
-  const linkedinReadiness = getLinkedInConfigReadiness();
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -409,24 +339,6 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         </Notice>
       )}
 
-      {linkedinParam === 'setup_required' && (
-        <Notice tone="warning" title="LinkedIn Ads setup required">
-          Add the missing LinkedIn Ads server environment variables before connecting.
-        </Notice>
-      )}
-
-      {linkedinParam === 'storage_not_ready' && (
-        <Notice tone="warning" title="LinkedIn Ads storage is not enabled yet">
-          LinkedIn OAuth reached the callback, but storing LinkedIn Ads tokens needs a future provider migration first.
-        </Notice>
-      )}
-
-      {linkedinParam === 'error' && (
-        <Notice tone="warning" title="LinkedIn Ads connection was not completed">
-          The LinkedIn Ads connection could not be completed. Check the LinkedIn OAuth setup and Marketing/Advertising API access approval.
-        </Notice>
-      )}
-
       <PageHeader
         eyebrow="Ads & Growth"
         title="Campaigns"
@@ -510,8 +422,6 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         <PinterestAdsConnectionCard readiness={pinterestReadiness} />
 
         <GoogleAdsConnectionCard readiness={googleAdsReadiness} />
-
-        <LinkedInAdsConnectionCard readiness={linkedinReadiness} />
       </Card>
 
       <CampaignsClient

@@ -188,23 +188,7 @@ Production URL: https://agentflow-ai-sigma.vercel.app
 - Confirm no write or publish route exists.
 - Confirm no Supabase migration was added for this foundation phase.
 
-## 18. LinkedIn Ads Provider Foundation
-
-- Open `/dashboard/campaigns`.
-- Confirm the LinkedIn Ads card appears under Ad Platform Connections.
-- With missing LinkedIn env vars, confirm the card shows Setup Required.
-- Confirm the card lists missing environment variable names only, not values.
-- Confirm the button is disabled and reads Setup in Vercel first.
-- Confirm the card explains LinkedIn Marketing/Advertising API access may require approval.
-- Confirm only read-only scopes are shown: `r_ads` and `r_ads_reporting`.
-- Visit `/api/ads/linkedin/connect` while env vars are missing.
-- Confirm it redirects back to `/dashboard/campaigns?linkedin=setup_required`.
-- Confirm no LinkedIn token is stored.
-- Confirm no LinkedIn publishing action exists.
-- Confirm no write or publish route exists.
-- Confirm no Supabase migration was added for this foundation phase.
-
-## 19. Production Domain & Launch Readiness
+## 18. Production Domain & Launch Readiness
 
 - Open `/dashboard/settings`.
 - Confirm the Production Domain & Launch Readiness section appears.
@@ -215,7 +199,7 @@ Production URL: https://agentflow-ai-sigma.vercel.app
 - Confirm the warning explains domain connection is managed in Vercel and DNS provider.
 - Confirm there is no Vercel API connection or custom domain database form.
 
-## 20. In-app Notifications Foundation
+## 19. In-app Notifications Foundation
 
 - Confirm a notification bell appears in the dashboard topbar.
 - Confirm the bell opens a dropdown or panel.
@@ -233,7 +217,7 @@ Production URL: https://agentflow-ai-sigma.vercel.app
 - Confirm no browser push notification is sent.
 - Confirm no secrets or tokens are shown in notification title, message, metadata UI, or links.
 
-## 21. Regression Guardrails
+## 20. Regression Guardrails
 
 Before changing task execution, callback handling, reports, or review behavior, verify:
 
@@ -249,5 +233,3 @@ Before changing task execution, callback handling, reports, or review behavior, 
 - No Pinterest publishing behavior is added without a future approval flow.
 - No Google Ads OAuth scope changes are needed.
 - No Google Ads publishing behavior is added without a future approval flow.
-- No LinkedIn Ads OAuth scope changes are needed.
-- No LinkedIn Ads publishing behavior is added without a future approval flow.
