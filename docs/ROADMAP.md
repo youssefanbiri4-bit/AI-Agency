@@ -5,9 +5,9 @@ Project: AgentFlow AI / AI Agency Dashboard
 
 ## Current Stable State
 
-AgentFlow AI is currently in a production-tested portfolio state. The core SaaS dashboard, Supabase-backed workspace model, n8n automation flow, review system, report rendering, retry path, reports dashboard, and read-only Meta Ads tracking foundation have been verified or prepared for production smoke testing.
+AgentFlow AI is currently in a production-tested portfolio state. The core SaaS dashboard, Supabase-backed workspace model, n8n automation flow, review system, report rendering, retry path, reports dashboard, in-app notifications foundation, domain launch-readiness UI, and read-only Meta Ads tracking foundation have been verified or prepared for production smoke testing.
 
-The Meta Ads integration remains read-only. It requests `ads_read`, does not request `ads_management`, does not publish ads, and does not create, update, pause, or delete ad platform resources.
+The Meta Ads integration remains read-only. It requests `ads_read`, does not request `ads_management`, does not publish ads, and does not create, update, pause, or delete ad platform resources. Pinterest Ads, Google Ads, and LinkedIn Ads provider foundations are prepared but disabled until required server environment variables and platform API access are available.
 
 ## Completed
 
@@ -37,6 +37,14 @@ The Meta Ads integration remains read-only. It requests `ads_read`, does not req
 - Meta last 30 days campaign insights display.
 - Local deterministic Meta performance diagnosis.
 - Normal AgentFlow AI analysis task creation from real Meta campaign metrics.
+- Pinterest Ads provider foundation with read-only OAuth scopes.
+- Pinterest setup-required state on the Campaigns page.
+- Google Ads provider foundation with OAuth readiness checks.
+- Google Ads setup-required state on the Campaigns page.
+- LinkedIn Ads provider foundation with OAuth readiness checks.
+- LinkedIn setup-required state on the Campaigns page.
+- Production Domain & Launch Readiness UI in Settings.
+- In-app notifications foundation with workspace/user scoped unread state.
 - Production deployment on Vercel.
 
 ## Stable Task Flow
@@ -68,6 +76,8 @@ processing -> failed -> retry -> processing
 
 These documents should be reviewed before changing task execution, callback handling, report rendering, review transitions, or n8n workflow behavior.
 
+Custom domain connection remains a Vercel and DNS provider operation. AgentFlow AI shows launch-readiness guidance only and does not call the Vercel API or store domain settings in the database in this phase.
+
 ## Next Product Directions
 
 ### Ads & Growth Command Center
@@ -78,6 +88,9 @@ Build a focused command center for marketing operators and growth teams.
 - Channel and objective selection.
 - Campaign status and performance summaries.
 - Read-only Meta Ads / Instagram and Facebook tracking.
+- Pinterest Ads read-only provider foundation.
+- Google Ads read-only provider foundation.
+- LinkedIn Ads read-only provider foundation.
 - Last 30 days spend, delivery, click, and summarized conversion metrics.
 - Safe local performance diagnosis from real metrics.
 - AI analysis task creation from imported Meta metrics.
@@ -104,22 +117,33 @@ Improve visibility into real usage and delivery outcomes.
 - Report generation trends.
 - Workspace-level activity metrics.
 
+### Notifications
+
+In-app notifications are now prepared for dashboard events. Email notifications, browser push notifications, realtime subscriptions, and notification preference persistence are future improvements.
+
 ### Future Ads API Write Integrations
 
 Read-only Meta tracking is connected first. Real publishing remains future work and will require a separate approval flow, extra platform permissions, and careful operational safeguards.
 
 - Meta publishing with explicit human approval.
-- Google Ads API.
+- Google Ads API full connection.
 - TikTok Ads API.
-- LinkedIn Ads API.
+- LinkedIn Ads API full connection.
 
 `ads_management` is not requested in the current Meta integration. Publishing should stay disconnected until the app has a dedicated approval UX, audit trail, and permission review.
+
+Pinterest Ads connection requires `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`, and `PINTEREST_REDIRECT_URI` in Vercel. The current database provider constraint only allows `meta`, so storing a successful Pinterest token will require a future migration to allow `pinterest` before enabling the full connection.
+
+Google Ads connection requires `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`, and `GOOGLE_ADS_REDIRECT_URI` in Vercel. Optional readiness variables are `GOOGLE_ADS_LOGIN_CUSTOMER_ID` and `GOOGLE_ADS_API_VERSION`. The current database provider constraint only allows `meta`, so storing a successful Google Ads token will require a future migration to allow `google_ads` before enabling the full connection. This foundation phase does not include publishing.
+
+LinkedIn Ads connection requires `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `LINKEDIN_REDIRECT_URI`, and LinkedIn Marketing/Advertising API access approval. Optional readiness variable is `LINKEDIN_API_VERSION`. The current database provider constraint only allows `meta`, so storing a successful LinkedIn Ads token will require a future migration to allow `linkedin` before enabling the full connection. This foundation phase does not include publishing.
 
 ### Public SaaS Features
 
 Add public SaaS capabilities only if the project moves beyond personal portfolio scope.
 
 - Billing.
+- Custom domain automation beyond Vercel/DNS setup notes.
 - Team roles and permissions.
 - Organization settings.
 - Public documentation.
@@ -144,4 +168,10 @@ Do not change the following without a separate implementation plan:
 - Vercel project settings.
 - Meta OAuth scopes.
 - Meta publishing behavior.
+- Pinterest OAuth scopes.
+- Pinterest publishing behavior.
+- Google Ads OAuth scopes.
+- Google Ads publishing behavior.
+- LinkedIn Ads OAuth scopes.
+- LinkedIn Ads publishing behavior.
 - Meta task execution, callback, review, or report rendering contracts.

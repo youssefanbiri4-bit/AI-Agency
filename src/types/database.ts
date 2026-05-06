@@ -6,6 +6,15 @@ export type SupabaseConnectionStatus = 'not_configured' | 'configured';
 export type N8nConnectionStatus = 'not_connected' | 'prepared' | 'connected';
 export type AdConnectionProvider = 'meta';
 export type AdConnectionStatus = 'connected' | 'expired' | 'revoked' | 'error';
+export type NotificationType =
+  | 'task_needs_review'
+  | 'task_completed'
+  | 'task_failed'
+  | 'report_ready'
+  | 'campaign_task_created'
+  | 'meta_connection_connected'
+  | 'ad_platform_setup_required';
+export type NotificationStatus = 'unread' | 'read';
 
 export interface Database {
   public: {
@@ -351,6 +360,41 @@ export interface Database {
         };
         Relationships: [];
       };
+      notifications: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string;
+          type: NotificationType;
+          title: string;
+          message: string;
+          status: NotificationStatus;
+          metadata: JsonObject;
+          created_at: string;
+          read_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id: string;
+          type: NotificationType;
+          title: string;
+          message: string;
+          status?: NotificationStatus;
+          metadata?: JsonObject;
+          created_at?: string;
+          read_at?: string | null;
+        };
+        Update: {
+          type?: NotificationType;
+          title?: string;
+          message?: string;
+          status?: NotificationStatus;
+          metadata?: JsonObject;
+          read_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -380,3 +424,4 @@ export type UserPreferenceRecord = Database['public']['Tables']['user_preference
 export type IntegrationSettingsRecord =
   Database['public']['Tables']['integration_settings']['Row'];
 export type AdConnectionRecord = Database['public']['Tables']['ad_connections']['Row'];
+export type NotificationRecord = Database['public']['Tables']['notifications']['Row'];

@@ -4,6 +4,10 @@ import {
   getActiveWorkspaceIdFromCookie,
   isSupabaseServerConfigured,
 } from '@/lib/supabase-server';
+import {
+  countUnreadNotifications,
+  listLatestNotifications,
+} from '@/lib/data/notifications';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -33,6 +37,24 @@ export default async function DashboardLayout({
     redirect('/onboarding');
   }
 
+  const [notificationsResult, unreadCountResult] = await Promise.all([
+    listLatestNotifications(
+      {
+        workspaceId: workspaceResult.data.id,
+        userId: user.id,
+        limit: 6,
+      },
+      supabase
+    ),
+    countUnreadNotifications(
+      {
+        workspaceId: workspaceResult.data.id,
+        userId: user.id,
+      },
+      supabase
+    ),
+  ]);
+
   return (
     <DashboardShell
       user={{
@@ -48,6 +70,8 @@ export default async function DashboardLayout({
         name: workspaceResult.data.name,
         slug: workspaceResult.data.slug,
       }}
+      initialNotifications={notificationsResult.error ? [] : notificationsResult.data}
+      initialUnreadCount={unreadCountResult.error ? 0 : unreadCountResult.data}
     >
       {children}
     </DashboardShell>

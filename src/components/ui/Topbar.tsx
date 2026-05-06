@@ -3,14 +3,17 @@
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Menu, Search, Settings, X } from 'lucide-react';
+import { Menu, Search, Settings, X } from 'lucide-react';
 import { buttonStyles } from './Button';
-import { cn } from '@/lib/utils';
 import { useDashboardContext } from '@/components/layout/DashboardContext';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import type { NotificationRecord } from '@/types/database';
 
 interface TopbarProps {
   onMenuClick?: () => void;
   isMobileMenuOpen?: boolean;
+  initialNotifications?: NotificationRecord[];
+  initialUnreadCount?: number;
 }
 
 const pageTitles: Record<string, { title: string; description: string }> = {
@@ -42,6 +45,10 @@ const pageTitles: Record<string, { title: string; description: string }> = {
     title: 'Reports',
     description: 'Reporting workspace waiting for real task data',
   },
+  '/dashboard/notifications': {
+    title: 'Notifications',
+    description: 'Workspace updates and task readiness alerts',
+  },
   '/dashboard/settings': {
     title: 'Settings',
     description: 'Manage account and integration readiness',
@@ -60,7 +67,12 @@ function getPageMeta(pathname: string) {
   return pageTitles[pathname] ?? pageTitles['/dashboard'];
 }
 
-export function Topbar({ onMenuClick, isMobileMenuOpen }: TopbarProps) {
+export function Topbar({
+  onMenuClick,
+  isMobileMenuOpen,
+  initialNotifications,
+  initialUnreadCount,
+}: TopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const pageMeta = getPageMeta(pathname);
@@ -149,13 +161,10 @@ export function Topbar({ onMenuClick, isMobileMenuOpen }: TopbarProps) {
         </form>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-          <Link
-            href="/dashboard/tasks"
-            aria-label="Open task workspace"
-            className={cn(buttonStyles({ variant: 'ghost', size: 'icon' }), 'relative')}
-          >
-            <Bell className="h-5 w-5" />
-          </Link>
+          <NotificationBell
+            initialNotifications={initialNotifications}
+            initialUnreadCount={initialUnreadCount}
+          />
           <Link
             href="/dashboard/settings"
             aria-label="Open settings"

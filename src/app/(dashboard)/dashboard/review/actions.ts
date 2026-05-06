@@ -7,6 +7,7 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { createTaskReview } from '@/lib/data/reviews';
+import { createNotification } from '@/lib/data/notifications';
 import {
   createTaskEvent,
   getTaskById,
@@ -128,6 +129,27 @@ export async function reviewTaskAction(
 
   if (eventResult.error) {
     return { error: eventResult.error };
+  }
+
+  if (intent === 'approve') {
+    try {
+      await createNotification(
+        {
+          workspaceId,
+          userId: taskResult.data.user_id,
+          type: 'task_completed',
+          title: 'Task completed',
+          message: `${taskResult.data.title} was approved and marked completed.`,
+          metadata: {
+            task_id: taskId,
+            review_id: reviewResult.data.id,
+          },
+        },
+        supabase
+      );
+    } catch {
+      // Notifications must not affect review approval behavior.
+    }
   }
 
   revalidatePath('/dashboard');

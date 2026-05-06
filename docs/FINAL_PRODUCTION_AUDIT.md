@@ -4,7 +4,7 @@ Project: AgentFlow AI / AI Agency Dashboard
 Date: 2026-05-06
 Production URL: https://agentflow-ai-sigma.vercel.app
 
-This audit records the current portfolio-ready production state and the read-only Meta Ads tracking status. It does not require environment variable changes, Supabase schema changes, n8n workflow changes, callback route changes, callback payload changes, or task execution route changes.
+This audit records the current portfolio-ready production state, launch-readiness UI, in-app notifications foundation, and read-only ad provider status. It does not require environment variable changes, n8n workflow changes, callback payload changes, or task execution contract changes.
 
 ## Auth
 
@@ -103,6 +103,28 @@ Status: Passed
 - Status filter works.
 - Open Report links to Task Details.
 
+## Domain Launch Readiness
+
+Status: Implemented
+
+- Settings includes Production Domain & Launch Readiness.
+- Current production URL is visible.
+- Custom domain is shown as not connected yet.
+- Manual Vercel/DNS launch checklist is visible.
+- The app does not call the Vercel API or store custom domain settings.
+
+## In-app Notifications
+
+Status: Foundation implemented
+
+- Notifications table is prepared with workspace/user scoping.
+- RLS protects notification reads and updates by active user and workspace membership.
+- Dashboard topbar includes a notification bell and unread count.
+- `/dashboard/notifications` lists current-user notifications for the active workspace.
+- Mark as read and mark all as read are available.
+- Task review readiness, task completion, task failure, and campaign task creation can create in-app notifications.
+- Email and browser push notifications are not implemented.
+
 ## Campaigns And Meta Ads
 
 Status: Implemented, read-only
@@ -164,6 +186,8 @@ Status: Passed
 - Meta Ads is read-only. Real ad publishing is not connected yet.
 - `ads_management` is not requested yet.
 - Publishing will require a future approval flow and extra platform permissions.
+- Custom domain connection still happens through Vercel and DNS provider.
+- Email and push notifications are future improvements.
 - Advanced analytics are planned but not yet implemented.
 - Public SaaS features such as billing, organization roles, and self-serve customer onboarding are outside the current portfolio scope.
 - n8n workflow details live outside this repository and must be kept aligned with the documented contract.

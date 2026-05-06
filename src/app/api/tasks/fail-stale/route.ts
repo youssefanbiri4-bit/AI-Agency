@@ -8,6 +8,7 @@ import {
   getTaskById,
   markStaleProcessingTaskFailed,
 } from '@/lib/data/tasks';
+import { createNotification } from '@/lib/data/notifications';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { reportAppError } from '@/lib/logger';
 
@@ -148,6 +149,25 @@ export async function POST(request: NextRequest) {
         taskId: task.id,
         workspaceId,
       });
+    }
+
+    try {
+      await createNotification(
+        {
+          workspaceId,
+          userId: task.user_id,
+          type: 'task_failed',
+          title: 'Task failed',
+          message: `${task.title} failed after a processing timeout.`,
+          metadata: {
+            task_id: task.id,
+            source: 'stale_processing_timeout',
+          },
+        },
+        supabase
+      );
+    } catch {
+      // Notifications must not affect stale task failure handling.
     }
 
     return NextResponse.json({

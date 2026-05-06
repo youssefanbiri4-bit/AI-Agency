@@ -6,6 +6,18 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { getMetaConnectionStatus } from '@/lib/data/ad-connections';
+import {
+  getPinterestConfigReadiness,
+  type PinterestConfigReadiness,
+} from '@/lib/ads/pinterest';
+import {
+  getGoogleAdsConfigReadiness,
+  type GoogleAdsConfigReadiness,
+} from '@/lib/ads/google-ads';
+import {
+  getLinkedInConfigReadiness,
+  type LinkedInConfigReadiness,
+} from '@/lib/ads/linkedin';
 import { listAgentCatalog } from '@/lib/data/agents';
 import { listTasks } from '@/lib/data/tasks';
 import { extractStructuredOutput } from '@/lib/task-results';
@@ -97,6 +109,189 @@ function buildPendingCampaignTasks(tasks: Task[], agents: Agent[]): PendingCampa
     }));
 }
 
+function formatMissingPinterestEnv(readiness: PinterestConfigReadiness) {
+  return readiness.missingEnvironmentVariables.length > 0
+    ? readiness.missingEnvironmentVariables.join(', ')
+    : 'PINTEREST_APP_SECRET';
+}
+
+function formatMissingGoogleAdsEnv(readiness: GoogleAdsConfigReadiness) {
+  return readiness.missingEnvironmentVariables.length > 0
+    ? readiness.missingEnvironmentVariables.join(', ')
+    : 'GOOGLE_ADS_CLIENT_SECRET';
+}
+
+function formatMissingLinkedInEnv(readiness: LinkedInConfigReadiness) {
+  return readiness.missingEnvironmentVariables.length > 0
+    ? readiness.missingEnvironmentVariables.join(', ')
+    : 'LINKEDIN_CLIENT_SECRET';
+}
+
+function PinterestAdsConnectionCard({
+  readiness,
+}: {
+  readiness: PinterestConfigReadiness;
+}) {
+  const isConfigured = readiness.isConfigured;
+
+  return (
+    <div className="mt-4 muted-panel flex min-w-0 flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="break-words text-base font-bold text-black">
+            Pinterest Ads
+          </h3>
+          <StatusBadge
+            status={isConfigured ? 'Not Connected' : 'Setup Required'}
+            type="system"
+            size="sm"
+          />
+        </div>
+        <p className="mt-2 text-sm leading-6 text-black/58">
+          Read-only Pinterest Ads provider foundation. Actual connection stays disabled until the server environment is complete.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
+          <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+            Scopes: {readiness.scopes.join(', ')}
+          </span>
+          {!isConfigured && (
+            <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+              Missing environment variables: {formatMissingPinterestEnv(readiness)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {isConfigured ? (
+        <Link
+          href="/api/ads/pinterest/connect"
+          className={buttonStyles({ variant: 'primary' })}
+        >
+          Connect Pinterest Ads
+        </Link>
+      ) : (
+        <button
+          type="button"
+          disabled
+          className={buttonStyles({ variant: 'outline' })}
+        >
+          Setup in Vercel first
+        </button>
+      )}
+    </div>
+  );
+}
+
+function GoogleAdsConnectionCard({
+  readiness,
+}: {
+  readiness: GoogleAdsConfigReadiness;
+}) {
+  const isConfigured = readiness.isConfigured;
+
+  return (
+    <div className="mt-4 muted-panel flex min-w-0 flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="break-words text-base font-bold text-black">
+            Google Ads
+          </h3>
+          <StatusBadge
+            status={isConfigured ? 'Not Connected' : 'Setup Required'}
+            type="system"
+            size="sm"
+          />
+        </div>
+        <p className="mt-2 text-sm leading-6 text-black/58">
+          Read-only Google Ads provider foundation. Actual connection stays disabled until the server environment is complete.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
+          {!isConfigured && (
+            <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+              Missing environment variables: {formatMissingGoogleAdsEnv(readiness)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {isConfigured ? (
+        <Link
+          href="/api/ads/google/connect"
+          className={buttonStyles({ variant: 'primary' })}
+        >
+          Connect Google Ads
+        </Link>
+      ) : (
+        <button
+          type="button"
+          disabled
+          className={buttonStyles({ variant: 'outline' })}
+        >
+          Setup in Vercel first
+        </button>
+      )}
+    </div>
+  );
+}
+
+function LinkedInAdsConnectionCard({
+  readiness,
+}: {
+  readiness: LinkedInConfigReadiness;
+}) {
+  const isConfigured = readiness.isConfigured;
+
+  return (
+    <div className="mt-4 muted-panel flex min-w-0 flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="break-words text-base font-bold text-black">
+            LinkedIn Ads
+          </h3>
+          <StatusBadge
+            status={isConfigured ? 'Not Connected' : 'Setup Required'}
+            type="system"
+            size="sm"
+          />
+        </div>
+        <p className="mt-2 text-sm leading-6 text-black/58">
+          Read-only LinkedIn Ads provider foundation. Actual connection stays disabled until the server environment and LinkedIn API access are complete.
+        </p>
+        <p className="mt-2 text-sm leading-6 text-black/58">
+          LinkedIn Marketing/Advertising API access may require approval in LinkedIn Developer Portal.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
+          <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+            Scopes: {readiness.scopes.join(', ')}
+          </span>
+          {!isConfigured && (
+            <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+              Missing environment variables: {formatMissingLinkedInEnv(readiness)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {isConfigured ? (
+        <Link
+          href="/api/ads/linkedin/connect"
+          className={buttonStyles({ variant: 'primary' })}
+        >
+          Connect LinkedIn Ads
+        </Link>
+      ) : (
+        <button
+          type="button"
+          disabled
+          className={buttonStyles({ variant: 'outline' })}
+        >
+          Setup in Vercel first
+        </button>
+      )}
+    </div>
+  );
+}
+
 interface CampaignsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
@@ -104,6 +299,12 @@ interface CampaignsPageProps {
 export default async function CampaignsPage({ searchParams }: CampaignsPageProps) {
   const params = await searchParams;
   const metaParam = getSingleSearchParam(params, 'meta');
+  const pinterestParam = getSingleSearchParam(params, 'pinterest');
+  const googleAdsParam = getSingleSearchParam(params, 'google_ads');
+  const linkedinParam = getSingleSearchParam(params, 'linkedin');
+  const pinterestReadiness = getPinterestConfigReadiness();
+  const googleAdsReadiness = getGoogleAdsConfigReadiness();
+  const linkedinReadiness = getLinkedInConfigReadiness();
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -169,6 +370,60 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
       {metaConnectionResult.error && (
         <Notice tone="warning" title="Meta Ads connection notice">
           {metaConnectionResult.error}
+        </Notice>
+      )}
+
+      {pinterestParam === 'setup_required' && (
+        <Notice tone="warning" title="Pinterest Ads setup required">
+          Add the missing Pinterest Ads server environment variables before connecting.
+        </Notice>
+      )}
+
+      {pinterestParam === 'storage_not_ready' && (
+        <Notice tone="warning" title="Pinterest Ads storage is not enabled yet">
+          Pinterest OAuth reached the callback, but storing Pinterest tokens needs a future provider migration first.
+        </Notice>
+      )}
+
+      {pinterestParam === 'error' && (
+        <Notice tone="warning" title="Pinterest Ads connection was not completed">
+          The Pinterest Ads connection could not be completed. Check the Pinterest app setup and try again.
+        </Notice>
+      )}
+
+      {googleAdsParam === 'setup_required' && (
+        <Notice tone="warning" title="Google Ads setup required">
+          Add the missing Google Ads server environment variables before connecting.
+        </Notice>
+      )}
+
+      {googleAdsParam === 'storage_not_ready' && (
+        <Notice tone="warning" title="Google Ads storage is not enabled yet">
+          Google Ads OAuth reached the callback, but storing Google Ads tokens needs a future provider migration first.
+        </Notice>
+      )}
+
+      {googleAdsParam === 'error' && (
+        <Notice tone="warning" title="Google Ads connection was not completed">
+          The Google Ads connection could not be completed. Check the Google Ads OAuth setup and try again.
+        </Notice>
+      )}
+
+      {linkedinParam === 'setup_required' && (
+        <Notice tone="warning" title="LinkedIn Ads setup required">
+          Add the missing LinkedIn Ads server environment variables before connecting.
+        </Notice>
+      )}
+
+      {linkedinParam === 'storage_not_ready' && (
+        <Notice tone="warning" title="LinkedIn Ads storage is not enabled yet">
+          LinkedIn OAuth reached the callback, but storing LinkedIn Ads tokens needs a future provider migration first.
+        </Notice>
+      )}
+
+      {linkedinParam === 'error' && (
+        <Notice tone="warning" title="LinkedIn Ads connection was not completed">
+          The LinkedIn Ads connection could not be completed. Check the LinkedIn OAuth setup and Marketing/Advertising API access approval.
         </Notice>
       )}
 
@@ -251,6 +506,12 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         </div>
 
         <MetaAdAccounts workspaceId={workspaceId} userId={user?.id} />
+
+        <PinterestAdsConnectionCard readiness={pinterestReadiness} />
+
+        <GoogleAdsConnectionCard readiness={googleAdsReadiness} />
+
+        <LinkedInAdsConnectionCard readiness={linkedinReadiness} />
       </Card>
 
       <CampaignsClient

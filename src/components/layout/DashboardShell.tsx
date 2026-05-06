@@ -9,14 +9,23 @@ import {
   type DashboardUserProfile,
   type DashboardWorkspaceProfile,
 } from './DashboardContext';
+import type { NotificationRecord } from '@/types/database';
 
 interface DashboardShellProps {
   children: ReactNode;
   user: DashboardUserProfile;
   workspace: DashboardWorkspaceProfile;
+  initialNotifications?: NotificationRecord[];
+  initialUnreadCount?: number;
 }
 
-export function DashboardShell({ children, user, workspace }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  user,
+  workspace,
+  initialNotifications,
+  initialUnreadCount,
+}: DashboardShellProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -36,6 +45,8 @@ export function DashboardShell({ children, user, workspace }: DashboardShellProp
           <Topbar
             onMenuClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
             isMobileMenuOpen={isMobileMenuOpen}
+            initialNotifications={initialNotifications}
+            initialUnreadCount={initialUnreadCount}
           />
           <main className="mx-auto w-full max-w-[1500px] px-3 pb-10 pt-24 sm:px-6 lg:px-8">
             {children}

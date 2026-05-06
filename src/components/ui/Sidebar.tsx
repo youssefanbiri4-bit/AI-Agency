@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  Bell,
   ClipboardCheck,
   FileText,
   Home,
@@ -30,6 +31,7 @@ const menuItems = [
   { icon: Megaphone, label: 'Campaigns', href: '/dashboard/campaigns' },
   { icon: ClipboardCheck, label: 'Reviews', href: '/dashboard/review' },
   { icon: BarChart3, label: 'Reports', href: '/dashboard/reports' },
+  { icon: Bell, label: 'Notifications', href: '/dashboard/notifications' },
   { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
 ];
 

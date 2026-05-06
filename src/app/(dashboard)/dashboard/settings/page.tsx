@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Building2, Check, Database, LogOut, ShieldCheck, SlidersHorizontal, Workflow } from 'lucide-react';
+import { ArrowLeft, Building2, Check, Database, Globe2, LogOut, ShieldCheck, SlidersHorizontal, Workflow } from 'lucide-react';
 import { isSupabaseConfigured, logout, supabase } from '@/lib/supabase-client';
 import { reportAppError } from '@/lib/logger';
 import { useDashboardContext } from '@/components/layout/DashboardContext';
@@ -17,6 +17,24 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getIntegrationSettings } from '@/lib/data/workspaces';
 import type { IntegrationSettingsRecord } from '@/types/database';
+
+const productionLaunchChecklist = [
+  'Buy a custom domain',
+  'Add the domain in Vercel Project Settings',
+  'Configure DNS records',
+  'Wait for SSL verification',
+  'Update APP_BASE_URL to the custom domain',
+  'Update Meta Redirect URI',
+  'Update Pinterest Redirect URI',
+  'Update Google Ads Redirect URI',
+  'Update LinkedIn Redirect URI',
+  'Redeploy production',
+  'Test login',
+  'Test Run Task',
+  'Test n8n callback',
+  'Test Reports',
+  'Test Campaigns and ad platform connections',
+] as const;
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -322,6 +340,57 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-8">
+          <Card>
+            <CardHeader
+              title="Production Domain & Launch Readiness"
+              description="Custom domain readiness for the production launch path."
+              action={<StatusBadge status="Ready" type="system" size="sm" />}
+            />
+
+            <div className="space-y-4">
+              <div className="muted-panel p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-black/70">
+                    <Globe2 className="h-4 w-4 text-[#8B3CDE]" />
+                    Current Production URL
+                  </span>
+                  <StatusBadge status="Ready" type="system" size="sm" />
+                </div>
+                <p className="mt-2 break-all text-sm leading-6 text-black/58">
+                  https://agentflow-ai-sigma.vercel.app
+                </p>
+              </div>
+
+              <div className="muted-panel p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-black/70">Custom Domain</span>
+                  <StatusBadge status="Not Connected" type="system" size="sm" />
+                </div>
+                <p className="mt-2 text-sm leading-6 text-black/58">
+                  Ready to connect custom domain from Vercel.
+                </p>
+              </div>
+
+              <Notice tone="warning" title="Domain management">
+                Domain connection is managed in Vercel and DNS provider, not from inside AgentFlow AI.
+              </Notice>
+
+              <div className="rounded-lg border border-black/8 bg-white p-4">
+                <p className="text-sm font-bold text-black">Launch checklist</p>
+                <ol className="mt-4 grid gap-2 text-sm leading-6 text-black/62">
+                  {productionLaunchChecklist.map((item, index) => (
+                    <li key={item} className="flex gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F0DBEF] text-xs font-black text-[#8B3CDE]">
+                        {index + 1}
+                      </span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          </Card>
+
           <Card>
             <CardHeader
               title="Integration Readiness"

@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { createTaskEvent, mapTaskRecordToTask, updateTaskExecutionState } from '@/lib/data/tasks';
+import { createNotification } from '@/lib/data/notifications';
 import { reportAppError } from '@/lib/logger';
 import { getN8nCallbackSecret } from '@/lib/n8n';
 import type { JsonObject, JsonValue, TaskStatus } from '@/types';
@@ -133,6 +134,27 @@ export async function POST(request: NextRequest) {
 
     if (eventResult.error) {
       return jsonError(eventResult.error, 500);
+    }
+
+    try {
+      await createNotification(
+        {
+          workspaceId: taskRecord.workspace_id,
+          userId: taskRecord.user_id,
+          type: failed ? 'task_failed' : 'task_needs_review',
+          title: failed ? 'Task failed' : 'Task needs review',
+          message: failed
+            ? `${task.title} failed during automation.`
+            : `${task.title} is ready for review.`,
+          metadata: {
+            task_id: task.id,
+            source: 'n8n_callback',
+          },
+        },
+        adminClient
+      );
+    } catch {
+      // Notifications must never block the stable n8n callback response.
     }
 
     return NextResponse.json({

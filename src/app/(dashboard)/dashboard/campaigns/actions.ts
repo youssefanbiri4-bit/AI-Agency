@@ -8,6 +8,7 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { createTask } from '@/lib/data/tasks';
+import { createNotification } from '@/lib/data/notifications';
 import {
   getMetaAdAccountsForWorkspace,
   type MetaAdAccountCampaignsData,
@@ -254,6 +255,25 @@ async function createCampaignTask({
 
   if (taskResult.error || !taskResult.data) {
     return { error: taskResult.error ?? 'Campaign task could not be created.' };
+  }
+
+  try {
+    await createNotification(
+      {
+        workspaceId: workspaceResult.data.id,
+        userId: user.id,
+        type: 'campaign_task_created',
+        title: 'Campaign task created',
+        message: `${taskResult.data.title} was created and is ready to run manually.`,
+        metadata: {
+          task_id: taskResult.data.id,
+          source: 'campaigns_page',
+        },
+      },
+      supabase
+    );
+  } catch {
+    // Notifications must not affect campaign task creation.
   }
 
   revalidatePath('/dashboard');
