@@ -4,6 +4,8 @@ export type WorkspaceRole = 'owner' | 'admin' | 'member';
 export type TaskPriority = 'Low' | 'Normal' | 'High';
 export type SupabaseConnectionStatus = 'not_configured' | 'configured';
 export type N8nConnectionStatus = 'not_connected' | 'prepared' | 'connected';
+export type AdConnectionProvider = 'meta';
+export type AdConnectionStatus = 'connected' | 'expired' | 'revoked' | 'error';
 
 export interface Database {
   public: {
@@ -303,6 +305,52 @@ export interface Database {
         };
         Relationships: [];
       };
+      ad_connections: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string;
+          provider: AdConnectionProvider;
+          status: AdConnectionStatus;
+          access_token: string;
+          refresh_token: string | null;
+          token_expires_at: string | null;
+          ad_account_id: string | null;
+          ad_account_name: string | null;
+          scopes: string[];
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id: string;
+          provider: AdConnectionProvider;
+          status: AdConnectionStatus;
+          access_token: string;
+          refresh_token?: string | null;
+          token_expires_at?: string | null;
+          ad_account_id?: string | null;
+          ad_account_name?: string | null;
+          scopes?: string[];
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: AdConnectionStatus;
+          access_token?: string;
+          refresh_token?: string | null;
+          token_expires_at?: string | null;
+          ad_account_id?: string | null;
+          ad_account_name?: string | null;
+          scopes?: string[];
+          metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -331,3 +379,4 @@ export type TaskEventRecord = Database['public']['Tables']['task_events']['Row']
 export type UserPreferenceRecord = Database['public']['Tables']['user_preferences']['Row'];
 export type IntegrationSettingsRecord =
   Database['public']['Tables']['integration_settings']['Row'];
+export type AdConnectionRecord = Database['public']['Tables']['ad_connections']['Row'];

@@ -1,16 +1,21 @@
+import Link from 'next/link';
 import { Megaphone, Plus, TrendingUp } from 'lucide-react';
 import {
   createSupabaseServerClient,
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
+import { getMetaConnectionStatus } from '@/lib/data/ad-connections';
 import { listAgentCatalog } from '@/lib/data/agents';
 import { listTasks } from '@/lib/data/tasks';
 import { extractStructuredOutput } from '@/lib/task-results';
 import { formatDateTime } from '@/lib/utils';
+import { buttonStyles } from '@/components/ui/Button';
+import { Card, CardHeader } from '@/components/ui/Card';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { Agent, Task } from '@/types';
 import { CampaignsClient, type CampaignReportItem, type PendingCampaignTaskItem } from './CampaignsClient';
 
@@ -31,6 +36,14 @@ function truncatePreview(value: string, length = 220) {
 
 function getAgentName(task: Task, agents: Agent[]) {
   return agents.find((agent) => agent.id === task.agent_type)?.name ?? task.agent_type;
+}
+
+function getSingleSearchParam(
+  params: Record<string, string | string[] | undefined> | undefined,
+  key: string
+) {
+  const value = params?.[key];
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function buildCampaignReports(tasks: Task[], agents: Agent[]): CampaignReportItem[] {
@@ -82,21 +95,48 @@ function buildPendingCampaignTasks(tasks: Task[], agents: Agent[]): PendingCampa
     }));
 }
 
-export default async function CampaignsPage() {
+interface CampaignsPageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function CampaignsPage({ searchParams }: CampaignsPageProps) {
+  const params = await searchParams;
+  const metaParam = getSingleSearchParam(params, 'meta');
   const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
   const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
   const workspaceId = workspaceResult.data?.id;
-  const [catalogResult, tasksResult] = await Promise.all([
+  const [catalogResult, tasksResult, metaConnectionResult] = await Promise.all([
     listAgentCatalog(supabase),
     workspaceId
       ? listTasks({ workspaceId }, supabase)
       : Promise.resolve({ data: [], error: null, isConfigured: true }),
+    workspaceId && user?.id
+      ? getMetaConnectionStatus(workspaceId, user.id)
+      : Promise.resolve({
+          data: {
+            provider: 'meta' as const,
+            status: 'not_connected' as const,
+            scopes: [],
+            connectedAt: null,
+            updatedAt: null,
+            tokenExpiresAt: null,
+            adAccountId: null,
+            adAccountName: null,
+          },
+          error: null,
+          isConfigured: true,
+        }),
   ]);
   const tasks = tasksResult.data;
   const campaignTasks = tasks.filter(isCampaignTask);
   const campaignReports = buildCampaignReports(tasks, catalogResult.data.agents);
   const pendingCampaignTasks = buildPendingCampaignTasks(tasks, catalogResult.data.agents);
+  const metaConnection = metaConnectionResult.data;
+  const metaIsConnected = metaConnection.status === 'connected';
   const preferredAgent =
     catalogResult.data.agents.find((agent) => agent.id === 'social_media_content') ??
     catalogResult.data.agents.find((agent) => agent.department === 'Content & Growth') ??
@@ -107,6 +147,24 @@ export default async function CampaignsPage() {
       {(workspaceResult.error || catalogResult.error || tasksResult.error) && (
         <Notice tone="warning" title="Campaign data notice">
           {workspaceResult.error ?? catalogResult.error ?? tasksResult.error}
+        </Notice>
+      )}
+
+      {metaParam === 'connected' && (
+        <Notice tone="success" title="Meta Ads connected">
+          Meta Ads is connected with read-only access. Campaign fetching comes next.
+        </Notice>
+      )}
+
+      {metaParam === 'error' && (
+        <Notice tone="warning" title="Meta Ads connection was not completed">
+          The Meta Ads connection could not be completed. Check the Meta app setup and try again.
+        </Notice>
+      )}
+
+      {metaConnectionResult.error && (
+        <Notice tone="warning" title="Meta Ads connection notice">
+          {metaConnectionResult.error}
         </Notice>
       )}
 
@@ -139,6 +197,55 @@ export default async function CampaignsPage() {
           subtitle="Tasks are created pending"
         />
       </div>
+
+      <Card>
+        <CardHeader
+          title="Ad Platform Connections"
+          description="Connect read-only ad platform access before importing campaign performance."
+          action={
+            <StatusBadge
+              status={metaIsConnected ? 'Ready' : 'Not Connected'}
+              type="system"
+              size="sm"
+            />
+          }
+        />
+
+        <div className="muted-panel flex min-w-0 flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="break-words text-base font-bold text-black">
+                Meta Ads / Instagram & Facebook
+              </h3>
+              <StatusBadge
+                status={metaIsConnected ? 'Ready' : 'Not Connected'}
+                type="system"
+                size="sm"
+              />
+            </div>
+            <p className="mt-2 text-sm leading-6 text-black/58">
+              Read-only connection foundation. Campaign fetching comes next.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
+              <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+                Scope: {metaConnection.scopes.includes('ads_read') ? 'ads_read' : 'ads_read required'}
+              </span>
+              {metaConnection.connectedAt && (
+                <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+                  Connected {formatDateTime(metaConnection.connectedAt)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <Link
+            href="/api/ads/meta/connect"
+            className={buttonStyles({ variant: metaIsConnected ? 'outline' : 'primary' })}
+          >
+            {metaIsConnected ? 'Reconnect Meta Ads' : 'Connect Meta Ads'}
+          </Link>
+        </div>
+      </Card>
 
       <CampaignsClient
         campaignReports={campaignReports}
