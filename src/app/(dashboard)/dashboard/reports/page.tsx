@@ -6,9 +6,9 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { listAgentCatalog } from '@/lib/data/agents';
-import { listTasks } from '@/lib/data/tasks';
-import { buildReportSummary, getReportSummary } from '@/lib/data/reports';
+import { buildReportSummary, getGeneratedReports, getReportSummary } from '@/lib/data/reports';
 import { getDepartmentMetrics } from '@/lib/stats';
+import { ReportsListClient } from './ReportsListClient';
 import { buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -24,12 +24,12 @@ export default async function ReportsPage() {
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
   const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
   const workspaceId = workspaceResult.data?.id;
+  const catalogResult = await listAgentCatalog(supabase);
 
-  const [catalogResult, tasksResult, reportResult] = await Promise.all([
-    listAgentCatalog(supabase),
+  const [generatedReportsResult, reportResult] = await Promise.all([
     workspaceId
-      ? listTasks({ workspaceId }, supabase)
-      : Promise.resolve({ data: [], error: null, isConfigured: true }),
+      ? getGeneratedReports(workspaceId, catalogResult.data.agents, supabase)
+      : Promise.resolve({ data: { tasks: [], reports: [] }, error: null, isConfigured: true }),
     workspaceId
       ? getReportSummary(workspaceId, supabase)
       : Promise.resolve({ data: buildReportSummary([]), error: null, isConfigured: true }),
@@ -38,23 +38,23 @@ export default async function ReportsPage() {
   const departments = getDepartmentMetrics(
     catalogResult.data.departments,
     catalogResult.data.agents,
-    tasksResult.data
+    generatedReportsResult.data.tasks
   );
   const taskStats = reportResult.data.taskStats;
   const n8nReadiness = getN8nReadiness();
 
   return (
     <div className="space-y-8">
-      {(workspaceResult.error || catalogResult.error || tasksResult.error || reportResult.error) && (
+      {(workspaceResult.error || catalogResult.error || generatedReportsResult.error || reportResult.error) && (
         <Notice tone="warning" title="Report data notice">
-          {workspaceResult.error ?? catalogResult.error ?? tasksResult.error ?? reportResult.error}
+          {workspaceResult.error ?? catalogResult.error ?? generatedReportsResult.error ?? reportResult.error}
         </Notice>
       )}
 
       <PageHeader
         eyebrow="Performance"
         title="Reports"
-        description="Reporting remains empty until real task, review, and workflow data is connected."
+        description="Browse generated reports from completed and review-ready task outputs."
         actions={
           <Link href="/dashboard/tasks" className={buttonStyles({ size: 'lg' })}>
             <FileText className="h-5 w-5" />
@@ -62,6 +62,8 @@ export default async function ReportsPage() {
           </Link>
         }
       />
+
+      <ReportsListClient reports={generatedReportsResult.data.reports} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <StatCard
@@ -181,7 +183,7 @@ export default async function ReportsPage() {
           title="Workload Snapshot"
           description="Status distribution is generated only from stored task records."
         />
-        {tasksResult.data.length === 0 ? (
+        {generatedReportsResult.data.tasks.length === 0 ? (
           <EmptyState
             icon={FileText}
             title="Reports are waiting for activity"
