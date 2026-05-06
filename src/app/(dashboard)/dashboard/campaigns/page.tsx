@@ -18,11 +18,13 @@ import { StatCard } from '@/components/ui/StatCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { Agent, Task } from '@/types';
 import { CampaignsClient, type CampaignReportItem, type PendingCampaignTaskItem } from './CampaignsClient';
+import { MetaAdAccounts } from './MetaAdAccounts';
 
 const campaignPrefixes = [
   '[Campaign Planner]',
   '[Performance Analyzer]',
   '[Manual Campaign Tracker]',
+  '[Meta Campaign Analysis]',
 ] as const;
 
 function isCampaignTask(task: Task) {
@@ -137,6 +139,8 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
   const pendingCampaignTasks = buildPendingCampaignTasks(tasks, catalogResult.data.agents);
   const metaConnection = metaConnectionResult.data;
   const metaIsConnected = metaConnection.status === 'connected';
+  const metaActionLabel =
+    metaConnection.status === 'not_connected' ? 'Connect Meta Ads' : 'Reconnect Meta Ads';
   const preferredAgent =
     catalogResult.data.agents.find((agent) => agent.id === 'social_media_content') ??
     catalogResult.data.agents.find((agent) => agent.department === 'Content & Growth') ??
@@ -152,7 +156,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
 
       {metaParam === 'connected' && (
         <Notice tone="success" title="Meta Ads connected">
-          Meta Ads is connected with read-only access. Campaign fetching comes next.
+          Meta Ads is connected with read-only access. Ad accounts, campaigns, and last 30 days insights can now be displayed.
         </Notice>
       )}
 
@@ -171,7 +175,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
       <PageHeader
         eyebrow="Ads & Growth"
         title="Campaigns"
-        description="Plan campaigns, track manual ad performance, and turn performance issues into normal AgentFlow AI tasks."
+        description="Plan campaigns, track manual ad performance, and turn read-only Meta campaign metrics into normal AgentFlow AI tasks."
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -224,7 +228,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
               />
             </div>
             <p className="mt-2 text-sm leading-6 text-black/58">
-              Read-only connection foundation. Campaign fetching comes next.
+              Read-only Meta Ads tracking for ad accounts, campaigns, last 30 days insights, and local performance diagnosis.
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
               <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
@@ -242,9 +246,11 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
             href="/api/ads/meta/connect"
             className={buttonStyles({ variant: metaIsConnected ? 'outline' : 'primary' })}
           >
-            {metaIsConnected ? 'Reconnect Meta Ads' : 'Connect Meta Ads'}
+            {metaActionLabel}
           </Link>
         </div>
+
+        <MetaAdAccounts workspaceId={workspaceId} userId={user?.id} />
       </Card>
 
       <CampaignsClient

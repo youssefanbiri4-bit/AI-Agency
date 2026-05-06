@@ -123,7 +123,35 @@ Production URL: https://agentflow-ai-sigma.vercel.app
 - Click Open Report.
 - Confirm the link opens the matching Task Details page.
 
-## 14. Production Smoke Check
+## 14. Campaigns And Meta Ads Read-only Tracking
+
+- Open `/dashboard/campaigns`.
+- Confirm the Meta connection state is visible.
+- Confirm the connect/reconnect action points to the Meta OAuth flow.
+- Confirm only `ads_read` is presented as the required Meta scope.
+- With a connected Meta account, confirm ad accounts are displayed.
+- Confirm campaigns are displayed under each ad account.
+- Confirm last 30 days campaign insights are displayed when available.
+- Confirm metrics show spend, impressions, reach, clicks, CTR, CPC, CPM, leads, and conversions.
+- Confirm raw Meta JSON, raw `actions`, tokens, encrypted tokens, OAuth codes, full Graph URLs, and `paging.next` are not shown.
+- Confirm no ad sets, ads, creatives, or lead records are fetched or displayed.
+- Confirm token invalid state prompts reconnect.
+- Confirm permission issue state is clear and does not hide the whole Campaigns page.
+- Confirm no campaigns state is clear.
+- Confirm no insights state is clear.
+- Confirm local diagnosis appears and uses cautious wording.
+- Click Create AI Analysis Task under a campaign with loaded insights.
+- Confirm the task is created as a normal `pending` AgentFlow task.
+- Confirm the app redirects to Task Details after creation.
+- Confirm the task title starts with `[Meta Campaign Analysis]`.
+- Confirm the task brief includes Meta platform, ad account, campaign, campaign ID, status, objective, last_30d date range, metrics, local diagnosis, and requested analysis sections.
+- Confirm the task does not run automatically.
+- Run the task manually from Task Details and confirm the normal flow remains `pending -> processing -> needs_review -> completed`.
+- Confirm the completed task appears in Reports after approval/completion.
+- Confirm no Meta publishing action exists.
+- Confirm `ads_management` is not requested.
+
+## 15. Production Smoke Check
 
 - Confirm the production URL loads.
 - Confirm `/dashboard/reports` opens in production.
@@ -131,7 +159,7 @@ Production URL: https://agentflow-ai-sigma.vercel.app
 - Confirm desktop and mobile layouts do not have page-level horizontal scroll.
 - Confirm no deployment or environment changes are required for this checklist.
 
-## 15. Regression Guardrails
+## 16. Regression Guardrails
 
 Before changing task execution, callback handling, reports, or review behavior, verify:
 
@@ -141,3 +169,5 @@ Before changing task execution, callback handling, reports, or review behavior, 
 - No `callbackPayload` shape changes are needed.
 - No task execution logic changes are needed.
 - No environment variable changes are needed.
+- No Meta OAuth scope changes are needed.
+- No Meta publishing behavior is added without a future approval flow.

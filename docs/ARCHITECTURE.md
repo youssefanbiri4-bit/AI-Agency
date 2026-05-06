@@ -38,6 +38,7 @@ Key routes include:
 - `/dashboard/tasks/[id]`
 - `/dashboard/review`
 - `/dashboard/reports`
+- `/dashboard/campaigns`
 - `/dashboard/settings`
 - `/privacy`
 - `/terms`
@@ -181,6 +182,27 @@ The Reports Page builds a generated report list from tasks that:
 
 It excludes `pending`, `processing`, and `failed` tasks.
 
+## Meta Ads Read-only Tracking
+
+The Campaigns page includes a read-only Meta Ads / Instagram and Facebook integration.
+
+Current supported Meta behavior:
+
+- Connect Meta through OAuth with `ads_read`.
+- Store the Meta access token encrypted server-side.
+- Display connected Meta ad accounts.
+- Display campaigns for each connected ad account.
+- Fetch campaign-level last 30 days insights server-side.
+- Show spend, impressions, reach, clicks, CTR, CPC, CPM, and summarized lead/conversion counts.
+- Generate deterministic local performance diagnosis from real metrics.
+- Create a normal pending AgentFlow task from a selected Meta campaign analysis brief.
+
+The insights request uses the Graph API campaign insights endpoint with `date_preset=last_30d`, `level=campaign`, and safe read-only fields only. Access tokens are sent in the `Authorization: Bearer` header and are not placed in query params.
+
+The app does not fetch Meta ad sets, ads, creatives, or lead records in the current integration. Raw Meta `actions` are summarized server-side into lead and conversion counts before reaching the UI.
+
+Meta publishing is not connected. The app does not request `ads_management` and does not create, update, pause, delete, or publish ads or campaigns. Publishing will require a future approval flow and additional Meta permissions.
+
 ## Error Handling And Retry
 
 Failed workflow responses move tasks to `failed` and store an error object. The Task Details page shows the failure state and exposes Retry for failed tasks.
@@ -208,7 +230,12 @@ Vercel hosts the Next.js application and server routes. Environment variables ar
 - Do not commit secret values.
 - Keep `SUPABASE_SERVICE_ROLE_KEY` server-only.
 - Keep n8n webhook URL and callback secret server-side.
+- Keep `META_APP_SECRET` server-only.
+- Keep `AD_TOKEN_ENCRYPTION_KEY` server-only.
+- Decrypt Meta access tokens only in server helpers.
 - Do not expose callback secret values in UI, logs, reports, or exports.
+- Do not expose Meta tokens, encrypted tokens, OAuth codes, Graph URLs with paging cursors, or secrets in UI, logs, reports, or exports.
+- Keep Meta OAuth scopes read-only unless a separate publishing plan is approved.
 - Preserve callback route validation.
 - Preserve the stable `callbackPayload` shape unless a planned integration migration is approved.
 - Keep workspace scoping intact for task, review, and report data.

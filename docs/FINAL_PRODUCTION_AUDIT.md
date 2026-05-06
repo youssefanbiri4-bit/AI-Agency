@@ -4,7 +4,7 @@ Project: AgentFlow AI / AI Agency Dashboard
 Date: 2026-05-06
 Production URL: https://agentflow-ai-sigma.vercel.app
 
-This audit records the current portfolio-ready production state. It is documentation-only and does not change application code, environment variables, Supabase schema, n8n workflow, callback routes, callback payloads, or task execution logic.
+This audit records the current portfolio-ready production state and the read-only Meta Ads tracking status. It does not require environment variable changes, Supabase schema changes, n8n workflow changes, callback route changes, callback payload changes, or task execution route changes.
 
 ## Auth
 
@@ -103,6 +103,23 @@ Status: Passed
 - Status filter works.
 - Open Report links to Task Details.
 
+## Campaigns And Meta Ads
+
+Status: Implemented, read-only
+
+- Campaigns Page works at `/dashboard/campaigns`.
+- Meta OAuth connection uses read-only `ads_read`.
+- `ads_management` is not requested.
+- Connected Meta ad accounts can be displayed.
+- Campaigns can be displayed under each connected ad account.
+- Campaign-level last 30 days insights can be displayed.
+- Metrics include spend, impressions, reach, clicks, CTR, CPC, CPM, and summarized leads/conversions.
+- Raw Meta `actions` are summarized server-side and are not shown as raw JSON.
+- Local performance diagnosis is available from real metrics.
+- A normal pending AgentFlow AI analysis task can be created from Meta campaign metrics.
+- No Meta publishing is implemented.
+- No ad sets, ads, creatives, or lead records are fetched.
+
 ## Copy Report
 
 Status: Passed
@@ -144,7 +161,9 @@ Status: Passed
 ## Known Limitations
 
 - Automated test coverage is still limited compared with a commercial SaaS production system.
-- Direct ads API integrations are not part of the current version.
+- Meta Ads is read-only. Real ad publishing is not connected yet.
+- `ads_management` is not requested yet.
+- Publishing will require a future approval flow and extra platform permissions.
 - Advanced analytics are planned but not yet implemented.
 - Public SaaS features such as billing, organization roles, and self-serve customer onboarding are outside the current portfolio scope.
 - n8n workflow details live outside this repository and must be kept aligned with the documented contract.

@@ -8,6 +8,15 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { createTask } from '@/lib/data/tasks';
+import {
+  getMetaAdAccountsForWorkspace,
+  type MetaAdAccountCampaignsData,
+  type MetaCampaignWithInsights,
+} from '@/lib/data/ad-connections';
+import {
+  buildMetaPerformanceDiagnosis,
+  formatMetaDiagnosisForBrief,
+} from '@/lib/ads/meta-diagnosis';
 import type { AgentType } from '@/types';
 
 const preferredCampaignAgentIds: AgentType[] = [
@@ -28,6 +37,138 @@ function readField(formData: FormData, key: string) {
 
 function valueOrFallback(value: string) {
   return value || 'Not specified';
+}
+
+function formatMetricValue(value: number | null | undefined, suffix = '') {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 'Not available';
+  }
+
+  return `${new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 2,
+  }).format(value)}${suffix}`;
+}
+
+function formatMoneyMetric(value: number | null | undefined, currency: string | null) {
+  const formatted = formatMetricValue(value);
+
+  if (formatted === 'Not available') {
+    return formatted;
+  }
+
+  return currency ? `${formatted} ${currency}` : formatted;
+}
+
+function normalizeAccountMatchValue(value: string | null | undefined) {
+  return value?.trim().replace(/^act_/i, '') ?? '';
+}
+
+function findMetaCampaignForAnalysis({
+  accounts,
+  accountId,
+  campaignId,
+}: {
+  accounts: MetaAdAccountCampaignsData[];
+  accountId: string;
+  campaignId: string;
+}) {
+  const normalizedAccountId = normalizeAccountMatchValue(accountId);
+
+  const account = accounts.find((item) => {
+    const accountValues = [item.accountId, item.id].map(normalizeAccountMatchValue);
+    return accountValues.includes(normalizedAccountId);
+  });
+
+  if (!account) {
+    return {
+      account: null,
+      campaign: null,
+    };
+  }
+
+  return {
+    account,
+    campaign: account.campaigns.find((item) => item.id === campaignId) ?? null,
+  };
+}
+
+function buildMetaCampaignAnalysisDescription({
+  account,
+  campaign,
+}: {
+  account: MetaAdAccountCampaignsData;
+  campaign: MetaCampaignWithInsights;
+}) {
+  const insights = campaign.insights;
+  const diagnosis = buildMetaPerformanceDiagnosis(insights);
+  const accountLabel = account.name ?? account.accountId ?? account.id ?? 'Not available';
+  const campaignLabel = campaign.name ?? campaign.id ?? 'Not available';
+
+  return `META CAMPAIGN PERFORMANCE BRIEF
+
+Platform:
+Meta Ads / Instagram & Facebook
+
+Ad account:
+${accountLabel}
+
+Campaign:
+${campaignLabel}
+
+Campaign ID:
+${campaign.id ?? 'Not available'}
+
+Status:
+${valueOrFallback(campaign.effectiveStatus ?? campaign.status ?? '')}
+
+Objective:
+${valueOrFallback(campaign.objective ?? '')}
+
+Date range:
+last_30d
+
+Metrics:
+Spend:
+${formatMoneyMetric(insights?.spend, account.currency)}
+
+Impressions:
+${formatMetricValue(insights?.impressions)}
+
+Reach:
+${formatMetricValue(insights?.reach)}
+
+Clicks:
+${formatMetricValue(insights?.clicks)}
+
+CTR:
+${formatMetricValue(insights?.ctr, '%')}
+
+CPC:
+${formatMoneyMetric(insights?.cpc, account.currency)}
+
+CPM:
+${formatMoneyMetric(insights?.cpm, account.currency)}
+
+Leads:
+${formatMetricValue(insights?.leads)}
+
+Conversions:
+${formatMetricValue(insights?.conversions)}
+
+Local diagnosis:
+${formatMetaDiagnosisForBrief(diagnosis)}
+
+Please analyze:
+- Why performance may be weak or strong
+- Platform fit
+- Audience fit
+- Creative and hook issues
+- Offer/message issues
+- Landing page issues
+- Budget efficiency
+- What to change next
+- Recommendations
+- Next actions`;
 }
 
 async function getCampaignAgent(
@@ -384,6 +525,110 @@ Please analyze:
 - What to change next
 - Recommendations
 - Next actions`;
+
+  return createCampaignTask({ title, description });
+}
+
+export async function createMetaCampaignAnalysisTask(
+  _state: CampaignTaskState,
+  formData: FormData
+): Promise<CampaignTaskState> {
+  const accountId = readField(formData, 'accountId');
+  const campaignId = readField(formData, 'campaignId');
+
+  if (!accountId) {
+    return { error: 'Meta ad account is missing.' };
+  }
+
+  if (!campaignId) {
+    return { error: 'Meta campaign is missing.' };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/auth/login?redirectTo=/dashboard/campaigns');
+  }
+
+  const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
+  const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
+
+  if (!workspaceResult.data) {
+    redirect('/onboarding');
+  }
+
+  const metaResult = await getMetaAdAccountsForWorkspace(workspaceResult.data.id, user.id);
+
+  if (metaResult.error) {
+    return { error: 'Meta campaign metrics could not be loaded.' };
+  }
+
+  if (metaResult.data.state === 'not_connected') {
+    return { error: 'Connect Meta Ads before creating a campaign analysis task.' };
+  }
+
+  if (metaResult.data.state === 'token_invalid') {
+    return { error: 'Meta token expired or invalid. Reconnect Meta Ads first.' };
+  }
+
+  if (metaResult.data.state === 'permission_issue') {
+    return { error: 'Meta API permission issue. Check ads_read access first.' };
+  }
+
+  if (metaResult.data.state !== 'connected') {
+    return { error: 'Meta ad accounts could not be loaded.' };
+  }
+
+  const { account, campaign } = findMetaCampaignForAnalysis({
+    accounts: metaResult.data.accounts,
+    accountId,
+    campaignId,
+  });
+
+  if (!account) {
+    return { error: 'Meta ad account could not be found.' };
+  }
+
+  if (account.campaignsState === 'token_invalid') {
+    return { error: 'Meta token expired or invalid. Reconnect Meta Ads first.' };
+  }
+
+  if (account.campaignsState === 'permission_issue') {
+    return { error: 'Meta API permission issue. Check ads_read access first.' };
+  }
+
+  if (account.campaignsState !== 'connected') {
+    return { error: 'Meta campaigns could not be loaded for this ad account.' };
+  }
+
+  if (!campaign) {
+    return { error: 'Meta campaign could not be found.' };
+  }
+
+  if (campaign.insightsState === 'not_requested') {
+    return {
+      error:
+        'Insights were not loaded for this campaign because this page uses safe Meta API limits.',
+    };
+  }
+
+  if (campaign.insightsState === 'token_invalid') {
+    return { error: 'Meta token expired or invalid. Reconnect Meta Ads first.' };
+  }
+
+  if (campaign.insightsState === 'permission_issue') {
+    return { error: 'Meta API permission issue. Check ads_read access first.' };
+  }
+
+  if (campaign.insightsState === 'error') {
+    return { error: 'Meta campaign insights could not be loaded.' };
+  }
+
+  const title = `[Meta Campaign Analysis] ${campaign.name ?? campaign.id ?? 'Meta campaign'}`;
+  const description = buildMetaCampaignAnalysisDescription({ account, campaign });
 
   return createCampaignTask({ title, description });
 }
