@@ -30,6 +30,10 @@ const pageTitles: Record<string, { title: string; description: string }> = {
     title: 'Create Task',
     description: 'Prepare structured agent work requests',
   },
+  '/dashboard/campaigns': {
+    title: 'Campaigns',
+    description: 'Plan campaigns and analyze ad performance',
+  },
   '/dashboard/review': {
     title: 'Reviews',
     description: 'Quality review area waiting for real task outputs',
@@ -83,6 +87,18 @@ export function Topbar({ onMenuClick, isMobileMenuOpen }: TopbarProps) {
       return;
     }
 
+    if (
+      normalizedQuery.includes('campaign') ||
+      normalizedQuery.includes('ads') ||
+      normalizedQuery.includes('growth') ||
+      normalizedQuery.includes('marketing') ||
+      normalizedQuery.includes('performance') ||
+      normalizedQuery.includes('lead generation')
+    ) {
+      router.push('/dashboard/campaigns');
+      return;
+    }
+
     if (normalizedQuery.includes('review')) {
       router.push('/dashboard/review');
       return;
@@ -125,7 +141,7 @@ export function Topbar({ onMenuClick, isMobileMenuOpen }: TopbarProps) {
           <input
             type="search"
             aria-label="Search workspace"
-            placeholder="Search agents, tasks, reports..."
+            placeholder="Search agents, tasks, campaigns..."
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             className="ml-2 w-full border-0 bg-transparent text-sm text-black outline-none placeholder:text-black/34"
