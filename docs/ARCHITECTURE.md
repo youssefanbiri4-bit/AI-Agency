@@ -244,11 +244,11 @@ Current supported Pinterest behavior:
 - Request read-only scopes only: `ads:read` and `user_accounts:read`.
 - Provide placeholder connect and callback routes under `/api/ads/pinterest`.
 
-Pinterest token storage is not enabled yet. The current `ad_connections` database check constraint allows only `meta`, so a future migration will be required to allow `pinterest` before a successful Pinterest OAuth token can be stored. No Pinterest publishing is connected.
+Pinterest token exchange and storage are not enabled yet. The `ad_connections` database check constraint allows `pinterest`, but the Pinterest callback remains safe-disabled until a future connection phase. No Pinterest publishing is connected.
 
-## Google Ads Provider Foundation
+## Google Ads Read-Only Connection
 
-The Campaigns page also includes a safe-disabled Google Ads provider foundation.
+The Campaigns page includes a Google Ads OAuth connection for read-only customer account discovery.
 
 Current supported Google Ads behavior:
 
@@ -256,9 +256,14 @@ Current supported Google Ads behavior:
 - Show setup-required UI when `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`, or `GOOGLE_ADS_REDIRECT_URI` is missing.
 - Build a Google OAuth URL only when all required environment variables exist.
 - Request only the Google Ads API OAuth scope: `https://www.googleapis.com/auth/adwords`.
-- Provide placeholder connect and callback routes under `/api/ads/google`.
+- Validate signed-in user, active workspace, and OAuth CSRF state.
+- Exchange Google OAuth codes server-side.
+- Store Google access and refresh tokens encrypted in `ad_connections` with provider `google_ads`.
+- Refresh expired Google access tokens server-side from the encrypted refresh token.
+- List accessible Google Ads customer resource names through `customers:listAccessibleCustomers`.
+- Display safe customer IDs/resource names only.
 
-Google Ads token storage is not enabled yet. The current `ad_connections` database check constraint allows only `meta`, so a future migration will be required to allow `google_ads` before a successful Google Ads OAuth token can be stored. `GOOGLE_ADS_CLIENT_SECRET` and `GOOGLE_ADS_DEVELOPER_TOKEN` must stay only in Vercel environment variables. No Google Ads publishing is connected.
+Google Ads campaign fetching, metrics, GAQL reporting, campaign creation, edits, pauses, deletes, and publishing are not connected in this phase. `GOOGLE_ADS_CLIENT_SECRET` and `GOOGLE_ADS_DEVELOPER_TOKEN` must stay only in server environment variables.
 
 ## Error Handling And Retry
 
@@ -292,7 +297,7 @@ Vercel hosts the Next.js application and server routes. Environment variables ar
 - Keep `GOOGLE_ADS_CLIENT_SECRET` server-only.
 - Keep `GOOGLE_ADS_DEVELOPER_TOKEN` server-only.
 - Keep `AD_TOKEN_ENCRYPTION_KEY` server-only.
-- Decrypt Meta access tokens only in server helpers.
+- Decrypt ad platform tokens only in server helpers.
 - Do not expose callback secret values in UI, logs, reports, or exports.
 - Do not expose Meta, Pinterest, or Google Ads tokens, encrypted tokens, OAuth codes, full API URLs with paging cursors, or secrets in UI, logs, reports, or exports.
 - Keep notifications scoped by `workspace_id` and `user_id`; do not show cross-workspace or cross-user notifications.

@@ -4,7 +4,14 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { getGoogleAdsConfigReadiness } from '@/lib/ads/google-ads';
+import { encryptToken } from '@/lib/ads/encryption';
+import {
+  exchangeGoogleCodeForTokens,
+  getGoogleAdsConfigReadiness,
+  getGoogleAdsReadOnlyScopes,
+} from '@/lib/ads/google-ads';
+import { upsertGoogleAdsConnection } from '@/lib/data/ad-connections';
+import type { JsonObject } from '@/types';
 
 export const runtime = 'nodejs';
 
@@ -45,6 +52,25 @@ function redirectToCampaigns(
   return response;
 }
 
+function buildTokenExpiresAt(expiresIn: number | null) {
+  if (!expiresIn) {
+    return null;
+  }
+
+  return new Date(Date.now() + expiresIn * 1000).toISOString();
+}
+
+function getGrantedScopes(scope: string | null) {
+  if (!scope) {
+    return [];
+  }
+
+  return scope
+    .split(/\s+/)
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 export async function GET(request: NextRequest) {
   const readiness = getGoogleAdsConfigReadiness();
 
@@ -63,7 +89,9 @@ export async function GET(request: NextRequest) {
     return redirectToCampaigns(request, 'error', 'oauth_denied');
   }
 
-  if (!request.nextUrl.searchParams.get('code')) {
+  const code = request.nextUrl.searchParams.get('code');
+
+  if (!code) {
     return redirectToCampaigns(request, 'error', 'missing_code');
   }
 
@@ -85,9 +113,35 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 
-  return redirectToCampaigns(
-    request,
-    'storage_not_ready',
-    'provider_migration_required'
-  );
+  try {
+    const token = await exchangeGoogleCodeForTokens(code);
+
+    if (!token.refreshToken) {
+      return redirectToCampaigns(request, 'error', 'missing_refresh_token');
+    }
+
+    const metadata: JsonObject = {
+      connected_via: 'google_ads_oauth',
+      token_type: token.tokenType,
+      granted_scopes: getGrantedScopes(token.scope),
+      has_refresh_token: true,
+    };
+    const connectionResult = await upsertGoogleAdsConnection({
+      workspaceId: workspaceResult.data.id,
+      userId: user.id,
+      encryptedAccessToken: encryptToken(token.accessToken),
+      encryptedRefreshToken: encryptToken(token.refreshToken),
+      tokenExpiresAt: buildTokenExpiresAt(token.expiresIn),
+      scopes: [...getGoogleAdsReadOnlyScopes()],
+      metadata,
+    });
+
+    if (connectionResult.error) {
+      return redirectToCampaigns(request, 'error', 'connection_store_failed');
+    }
+
+    return redirectToCampaigns(request, 'connected');
+  } catch {
+    return redirectToCampaigns(request, 'error', 'token_exchange_failed');
+  }
 }

@@ -5,7 +5,13 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { getMetaConnectionStatus } from '@/lib/data/ad-connections';
+import {
+  getGoogleAdsAccessibleCustomersForWorkspace,
+  getGoogleAdsConnectionStatus,
+  getMetaConnectionStatus,
+  type GoogleAdsAccessibleCustomersForWorkspaceData,
+  type GoogleAdsConnectionStatusData,
+} from '@/lib/data/ad-connections';
 import {
   getPinterestConfigReadiness,
   type PinterestConfigReadiness,
@@ -117,6 +123,20 @@ function formatMissingGoogleAdsEnv(readiness: GoogleAdsConfigReadiness) {
     : 'GOOGLE_ADS_CLIENT_SECRET';
 }
 
+const notConnectedGoogleAdsConnection: GoogleAdsConnectionStatusData = {
+  provider: 'google_ads',
+  status: 'not_connected',
+  scopes: [],
+  connectedAt: null,
+  updatedAt: null,
+  tokenExpiresAt: null,
+};
+
+const notConnectedGoogleAdsCustomers: GoogleAdsAccessibleCustomersForWorkspaceData = {
+  state: 'not_connected',
+  customers: [],
+};
+
 function PinterestAdsConnectionCard({
   readiness,
 }: {
@@ -174,51 +194,159 @@ function PinterestAdsConnectionCard({
 
 function GoogleAdsConnectionCard({
   readiness,
+  connection,
+  customers,
 }: {
   readiness: GoogleAdsConfigReadiness;
+  connection: GoogleAdsConnectionStatusData;
+  customers: GoogleAdsAccessibleCustomersForWorkspaceData;
 }) {
   const isConfigured = readiness.isConfigured;
+  const needsReconnect =
+    connection.status === 'expired' ||
+    connection.status === 'revoked' ||
+    connection.status === 'error' ||
+    customers.state === 'token_invalid' ||
+    customers.state === 'permission_issue';
+  const isConnected =
+    isConfigured && connection.status === 'connected' && !needsReconnect;
+  const badgeStatus = !isConfigured
+    ? 'Setup Required'
+    : isConnected
+      ? 'Ready'
+      : connection.status === 'not_connected'
+        ? 'Not Connected'
+        : 'Setup Required';
+  const actionLabel = needsReconnect
+    ? 'Reconnect Google Ads'
+    : connection.status === 'not_connected'
+      ? 'Connect Google Ads'
+      : null;
 
   return (
-    <div className="mt-4 muted-panel flex min-w-0 flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="break-words text-base font-bold text-black">
-            Google Ads
-          </h3>
-          <StatusBadge
-            status={isConfigured ? 'Not Connected' : 'Setup Required'}
-            type="system"
-            size="sm"
-          />
-        </div>
-        <p className="mt-2 text-sm leading-6 text-black/58">
-          Read-only Google Ads provider foundation. Actual connection stays disabled until the server environment is complete.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
-          {!isConfigured && (
+    <div className="mt-4 muted-panel min-w-0 p-4">
+      <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="break-words text-base font-bold text-black">
+              Google Ads
+            </h3>
+            <StatusBadge
+              status={badgeStatus}
+              type="system"
+              size="sm"
+            />
+          </div>
+          <p className="mt-2 text-sm leading-6 text-black/58">
+            Read-only Google Ads connection for accessible customer account discovery. Campaigns, metrics, and publishing are not enabled in this phase.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
             <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
-              Missing environment variables: {formatMissingGoogleAdsEnv(readiness)}
+              Scope: {readiness.scopes.join(', ')}
             </span>
-          )}
+            {!isConfigured && (
+              <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+                Missing environment variables: {formatMissingGoogleAdsEnv(readiness)}
+              </span>
+            )}
+            {connection.connectedAt && (
+              <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+                Connected {formatDateTime(connection.connectedAt)}
+              </span>
+            )}
+          </div>
         </div>
+
+        {isConfigured && actionLabel ? (
+          <Link
+            href="/api/ads/google/connect"
+            className={buttonStyles({
+              variant: actionLabel.startsWith('Reconnect') ? 'outline' : 'primary',
+            })}
+          >
+            {actionLabel}
+          </Link>
+        ) : !isConfigured ? (
+          <button
+            type="button"
+            disabled
+            className={buttonStyles({ variant: 'outline' })}
+          >
+            Setup in Vercel first
+          </button>
+        ) : null}
       </div>
 
-      {isConfigured ? (
-        <Link
-          href="/api/ads/google/connect"
-          className={buttonStyles({ variant: 'primary' })}
-        >
-          Connect Google Ads
-        </Link>
-      ) : (
-        <button
-          type="button"
-          disabled
-          className={buttonStyles({ variant: 'outline' })}
-        >
-          Setup in Vercel first
-        </button>
+      {isConnected && customers.state === 'connected' && (
+        <div className="mt-4 min-w-0 space-y-3">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h4 className="break-words text-sm font-bold text-black">
+                Accessible Google Ads customer accounts
+              </h4>
+              <p className="mt-1 text-sm leading-6 text-black/58">
+                {customers.customers.length} accessible {customers.customers.length === 1 ? 'account' : 'accounts'}
+              </p>
+            </div>
+            <StatusBadge status="Ready" type="system" size="sm" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            {customers.customers.map((customer) => (
+              <article
+                key={customer.resourceName}
+                className="rounded-md border border-black/10 bg-white p-4"
+              >
+                <dl className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="min-w-0">
+                    <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
+                      customer_id
+                    </dt>
+                    <dd className="mt-1 break-words text-sm font-semibold text-black">
+                      {customer.customerId}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
+                      display_name
+                    </dt>
+                    <dd className="mt-1 break-words text-sm font-semibold text-black">
+                      {customer.displayName ?? customer.customerId}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
+                      resource_name
+                    </dt>
+                    <dd className="mt-1 break-words text-sm font-semibold text-black">
+                      {customer.resourceName}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
+                      account_hint
+                    </dt>
+                    <dd className="mt-1 break-words text-sm font-semibold text-black">
+                      {customer.accountTypeHint ?? 'Accessible customer'}
+                    </dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isConnected && customers.state === 'empty' && (
+        <p className="mt-4 text-sm leading-6 text-black/58">
+          Google Ads connected, but no accessible customer accounts were returned.
+        </p>
+      )}
+
+      {needsReconnect && (
+        <p className="mt-4 text-sm leading-6 text-black/58">
+          Google Ads needs reconnect before accessible customer accounts can be displayed.
+        </p>
       )}
     </div>
   );
@@ -242,7 +370,13 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
   const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
   const workspaceId = workspaceResult.data?.id;
-  const [catalogResult, tasksResult, metaConnectionResult] = await Promise.all([
+  const [
+    catalogResult,
+    tasksResult,
+    metaConnectionResult,
+    googleAdsConnectionResult,
+    googleAdsCustomersResult,
+  ] = await Promise.all([
     listAgentCatalog(supabase),
     workspaceId
       ? listTasks({ workspaceId }, supabase)
@@ -263,12 +397,28 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
           error: null,
           isConfigured: true,
         }),
+    workspaceId && user?.id
+      ? getGoogleAdsConnectionStatus(workspaceId, user.id)
+      : Promise.resolve({
+          data: notConnectedGoogleAdsConnection,
+          error: null,
+          isConfigured: true,
+        }),
+    workspaceId && user?.id && googleAdsReadiness.isConfigured
+      ? getGoogleAdsAccessibleCustomersForWorkspace(workspaceId, user.id)
+      : Promise.resolve({
+          data: notConnectedGoogleAdsCustomers,
+          error: null,
+          isConfigured: true,
+        }),
   ]);
   const tasks = tasksResult.data;
   const campaignTasks = tasks.filter(isCampaignTask);
   const campaignReports = buildCampaignReports(tasks, catalogResult.data.agents);
   const pendingCampaignTasks = buildPendingCampaignTasks(tasks, catalogResult.data.agents);
   const metaConnection = metaConnectionResult.data;
+  const googleAdsConnection = googleAdsConnectionResult.data;
+  const googleAdsCustomers = googleAdsCustomersResult.data;
   const metaIsConnected = metaConnection.status === 'connected';
   const metaActionLabel =
     metaConnection.status === 'not_connected' ? 'Connect Meta Ads' : 'Reconnect Meta Ads';
@@ -327,15 +477,21 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         </Notice>
       )}
 
-      {googleAdsParam === 'storage_not_ready' && (
-        <Notice tone="warning" title="Google Ads storage is not enabled yet">
-          Google Ads OAuth reached the callback, but storing Google Ads tokens needs a future provider migration first.
+      {googleAdsParam === 'connected' && (
+        <Notice tone="success" title="Google Ads connected">
+          Google Ads is connected for read-only accessible customer account discovery.
         </Notice>
       )}
 
       {googleAdsParam === 'error' && (
         <Notice tone="warning" title="Google Ads connection was not completed">
           The Google Ads connection could not be completed. Check the Google Ads OAuth setup and try again.
+        </Notice>
+      )}
+
+      {(googleAdsConnectionResult.error || googleAdsCustomersResult.error) && (
+        <Notice tone="warning" title="Google Ads connection notice">
+          {googleAdsConnectionResult.error ?? googleAdsCustomersResult.error}
         </Notice>
       )}
 
@@ -421,7 +577,11 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
 
         <PinterestAdsConnectionCard readiness={pinterestReadiness} />
 
-        <GoogleAdsConnectionCard readiness={googleAdsReadiness} />
+        <GoogleAdsConnectionCard
+          readiness={googleAdsReadiness}
+          connection={googleAdsConnection}
+          customers={googleAdsCustomers}
+        />
       </Card>
 
       <CampaignsClient

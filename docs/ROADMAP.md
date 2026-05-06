@@ -7,7 +7,7 @@ Project: AgentFlow AI / AI Agency Dashboard
 
 AgentFlow AI is currently in a production-tested portfolio state. The core SaaS dashboard, Supabase-backed workspace model, n8n automation flow, review system, report rendering, retry path, reports dashboard, in-app notifications foundation, domain launch-readiness UI, and read-only Meta Ads tracking foundation have been verified or prepared for production smoke testing.
 
-The Meta Ads integration remains read-only. It requests `ads_read`, does not request `ads_management`, does not publish ads, and does not create, update, pause, or delete ad platform resources. Pinterest Ads and Google Ads provider foundations are prepared but disabled until required server environment variables and platform API access are available.
+The Meta Ads integration remains read-only. It requests `ads_read`, does not request `ads_management`, does not publish ads, and does not create, update, pause, or delete ad platform resources. Pinterest Ads remains a provider foundation. Google Ads OAuth can connect, store encrypted tokens server-side, and list accessible customer accounts only.
 
 ## Completed
 
@@ -39,8 +39,8 @@ The Meta Ads integration remains read-only. It requests `ads_read`, does not req
 - Normal AgentFlow AI analysis task creation from real Meta campaign metrics.
 - Pinterest Ads provider foundation with read-only OAuth scopes.
 - Pinterest setup-required state on the Campaigns page.
-- Google Ads provider foundation with OAuth readiness checks.
-- Google Ads setup-required state on the Campaigns page.
+- Google Ads OAuth connection with encrypted token storage.
+- Google Ads accessible customer account display.
 - Production Domain & Launch Readiness UI in Settings.
 - In-app notifications foundation with workspace/user scoped unread state.
 - Production deployment on Vercel.
@@ -87,7 +87,7 @@ Build a focused command center for marketing operators and growth teams.
 - Campaign status and performance summaries.
 - Read-only Meta Ads / Instagram and Facebook tracking.
 - Pinterest Ads read-only provider foundation.
-- Google Ads read-only provider foundation.
+- Google Ads read-only customer account discovery.
 - Last 30 days spend, delivery, click, and summarized conversion metrics.
 - Safe local performance diagnosis from real metrics.
 - AI analysis task creation from imported Meta metrics.
@@ -128,9 +128,9 @@ Read-only Meta tracking is connected first. Real publishing remains future work 
 
 `ads_management` is not requested in the current Meta integration. Publishing should stay disconnected until the app has a dedicated approval UX, audit trail, and permission review.
 
-Pinterest Ads connection requires `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`, and `PINTEREST_REDIRECT_URI` in Vercel. The current database provider constraint only allows `meta`, so storing a successful Pinterest token will require a future migration to allow `pinterest` before enabling the full connection.
+Pinterest Ads connection requires `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`, and `PINTEREST_REDIRECT_URI` in Vercel. The database provider constraint allows `pinterest`, but Pinterest token exchange and storage remain disabled until a future connection phase.
 
-Google Ads connection requires `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`, and `GOOGLE_ADS_REDIRECT_URI` in Vercel. Optional readiness variables are `GOOGLE_ADS_LOGIN_CUSTOMER_ID` and `GOOGLE_ADS_API_VERSION`. The current database provider constraint only allows `meta`, so storing a successful Google Ads token will require a future migration to allow `google_ads` before enabling the full connection. This foundation phase does not include publishing.
+Google Ads connection requires `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`, and `GOOGLE_ADS_REDIRECT_URI` in Vercel. Optional variables are `GOOGLE_ADS_LOGIN_CUSTOMER_ID` and `GOOGLE_ADS_API_VERSION`. Google Ads tokens are encrypted server-side in `ad_connections` with provider `google_ads`. The current phase lists accessible customer accounts only; it does not fetch campaigns, metrics, or publishing surfaces.
 
 ### Public SaaS Features
 

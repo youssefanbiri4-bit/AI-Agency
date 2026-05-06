@@ -1,5 +1,12 @@
 import { getSupabaseAdmin } from '@/lib/supabase-server';
-import { decryptToken } from '@/lib/ads/encryption';
+import { decryptToken, encryptToken } from '@/lib/ads/encryption';
+import {
+  getGoogleAdsReadOnlyScopes,
+  GoogleAdsApiError,
+  listAccessibleGoogleAdsCustomers,
+  refreshGoogleAccessToken,
+  type GoogleAdsAccessibleCustomer,
+} from '@/lib/ads/google-ads';
 import {
   fetchMetaAdAccounts,
   fetchMetaCampaignInsights,
@@ -9,7 +16,7 @@ import {
   type MetaCampaign,
   type MetaCampaignInsights,
 } from '@/lib/ads/meta';
-import type { AdConnectionStatus } from '@/types/database';
+import type { AdConnectionProvider, AdConnectionStatus } from '@/types/database';
 import type { JsonObject } from '@/types';
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
@@ -29,6 +36,25 @@ export interface UpsertMetaConnectionInput {
   userId: string;
   encryptedAccessToken: string;
   encryptedRefreshToken?: string | null;
+  tokenExpiresAt?: string | null;
+  scopes: string[];
+  metadata?: JsonObject;
+}
+
+export interface GoogleAdsConnectionStatusData {
+  provider: 'google_ads';
+  status: AdConnectionStatus | 'not_connected';
+  scopes: string[];
+  connectedAt: string | null;
+  updatedAt: string | null;
+  tokenExpiresAt: string | null;
+}
+
+export interface UpsertGoogleAdsConnectionInput {
+  workspaceId: string;
+  userId: string;
+  encryptedAccessToken: string;
+  encryptedRefreshToken: string;
   tokenExpiresAt?: string | null;
   scopes: string[];
   metadata?: JsonObject;
@@ -72,6 +98,21 @@ export interface MetaAdAccountsForWorkspaceData {
   accounts: MetaAdAccountCampaignsData[];
 }
 
+export type GoogleAdsCustomersState =
+  | 'not_connected'
+  | 'connected'
+  | 'empty'
+  | 'token_invalid'
+  | 'permission_issue'
+  | 'error';
+
+export type GoogleAdsCustomerAccount = GoogleAdsAccessibleCustomer;
+
+export interface GoogleAdsAccessibleCustomersForWorkspaceData {
+  state: GoogleAdsCustomersState;
+  customers: GoogleAdsCustomerAccount[];
+}
+
 type ConnectedMetaAccessTokenResult =
   | {
       state: 'connected';
@@ -81,12 +122,26 @@ type ConnectedMetaAccessTokenResult =
       state: Exclude<MetaAdAccountsState, 'connected' | 'empty'>;
     };
 
+type ConnectedGoogleAdsAccessTokenResult =
+  | {
+      state: 'connected';
+      accessToken: string;
+    }
+  | {
+      state: Exclude<GoogleAdsCustomersState, 'connected' | 'empty'>;
+    };
+
 const SAFE_META_CONNECTION_SELECT =
   'provider, status, token_expires_at, ad_account_id, ad_account_name, scopes, created_at, updated_at';
 const CONNECTED_META_TOKEN_SELECT = 'access_token, token_expires_at, scopes';
+const SAFE_GOOGLE_ADS_CONNECTION_SELECT =
+  'provider, status, token_expires_at, scopes, created_at, updated_at';
+const CONNECTED_GOOGLE_ADS_TOKEN_SELECT =
+  'access_token, refresh_token, token_expires_at, scopes, status, metadata';
 const META_CAMPAIGN_ACCOUNT_BATCH_SIZE = 3;
 const META_CAMPAIGN_INSIGHTS_MAX_PER_ACCOUNT = 25;
 const META_CAMPAIGN_INSIGHTS_MAX_TOTAL = 50;
+const GOOGLE_ADS_ACCESS_TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
 
 const notConnectedMetaConnection: MetaConnectionStatusData = {
   provider: 'meta',
@@ -97,6 +152,15 @@ const notConnectedMetaConnection: MetaConnectionStatusData = {
   tokenExpiresAt: null,
   adAccountId: null,
   adAccountName: null,
+};
+
+const notConnectedGoogleAdsConnection: GoogleAdsConnectionStatusData = {
+  provider: 'google_ads',
+  status: 'not_connected',
+  scopes: [],
+  connectedAt: null,
+  updatedAt: null,
+  tokenExpiresAt: null,
 };
 
 function getAdConnectionAdminClient() {
@@ -118,6 +182,12 @@ function assertServerOnlyMetaAccounts() {
   }
 }
 
+function assertServerOnlyGoogleAds() {
+  if (typeof window !== 'undefined') {
+    throw new Error('Google Ads helpers can only run on the server.');
+  }
+}
+
 function emptyMetaAdAccountsData(
   state: MetaAdAccountsState,
   accounts: MetaAdAccountCampaignsData[] = []
@@ -125,6 +195,16 @@ function emptyMetaAdAccountsData(
   return {
     state,
     accounts,
+  };
+}
+
+function emptyGoogleAdsAccessibleCustomersData(
+  state: GoogleAdsCustomersState,
+  customers: GoogleAdsCustomerAccount[] = []
+): GoogleAdsAccessibleCustomersForWorkspaceData {
+  return {
+    state,
+    customers,
   };
 }
 
@@ -159,7 +239,7 @@ function normalizeMetaConnectionStatus(
 }
 
 function mapMetaConnectionRow(row: {
-  provider: 'meta';
+  provider: AdConnectionProvider;
   status: AdConnectionStatus;
   token_expires_at: string | null;
   ad_account_id: string | null;
@@ -169,7 +249,7 @@ function mapMetaConnectionRow(row: {
   updated_at: string;
 }): MetaConnectionStatusData {
   return {
-    provider: row.provider,
+    provider: 'meta',
     status: normalizeMetaConnectionStatus(row.status, row.token_expires_at),
     scopes: row.scopes ?? [],
     connectedAt: row.created_at,
@@ -178,6 +258,48 @@ function mapMetaConnectionRow(row: {
     adAccountId: row.ad_account_id,
     adAccountName: row.ad_account_name,
   };
+}
+
+function mapGoogleAdsConnectionRow(row: {
+  provider: AdConnectionProvider;
+  status: AdConnectionStatus;
+  token_expires_at: string | null;
+  scopes: string[];
+  created_at: string;
+  updated_at: string;
+}): GoogleAdsConnectionStatusData {
+  return {
+    provider: 'google_ads',
+    status: row.status,
+    scopes: row.scopes ?? [],
+    connectedAt: row.created_at,
+    updatedAt: row.updated_at,
+    tokenExpiresAt: row.token_expires_at,
+  };
+}
+
+function buildGoogleAdsTokenExpiresAt(expiresIn: number | null) {
+  if (!expiresIn) {
+    return null;
+  }
+
+  return new Date(Date.now() + expiresIn * 1000).toISOString();
+}
+
+function shouldRefreshGoogleAdsAccessToken(tokenExpiresAt: string | null) {
+  if (!tokenExpiresAt) {
+    return false;
+  }
+
+  return Date.parse(tokenExpiresAt) <= Date.now() + GOOGLE_ADS_ACCESS_TOKEN_REFRESH_BUFFER_MS;
+}
+
+function safeMetadata(value: JsonObject | null | undefined): JsonObject {
+  if (!value || Array.isArray(value) || typeof value !== 'object') {
+    return {};
+  }
+
+  return value;
 }
 
 export async function getMetaConnectionStatus(
@@ -210,6 +332,38 @@ export async function getMetaConnectionStatus(
   }
 
   return emptyDataResult(mapMetaConnectionRow(data), true);
+}
+
+export async function getGoogleAdsConnectionStatus(
+  workspaceId: string,
+  userId: string
+): Promise<DataResult<GoogleAdsConnectionStatusData>> {
+  const { client, error } = getAdConnectionAdminClient();
+
+  if (!client) {
+    return errorDataResult(
+      notConnectedGoogleAdsConnection,
+      error ?? 'Supabase server credentials are not configured.'
+    );
+  }
+
+  const { data, error: selectError } = await client
+    .from('ad_connections')
+    .select(SAFE_GOOGLE_ADS_CONNECTION_SELECT)
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', userId)
+    .eq('provider', 'google_ads')
+    .maybeSingle();
+
+  if (selectError) {
+    return errorDataResult(notConnectedGoogleAdsConnection, selectError.message);
+  }
+
+  if (!data) {
+    return emptyDataResult(notConnectedGoogleAdsConnection, true);
+  }
+
+  return emptyDataResult(mapGoogleAdsConnectionRow(data), true);
 }
 
 async function loadCampaignsForMetaAdAccount(
@@ -399,6 +553,132 @@ async function loadConnectedMetaAccessToken(
   }
 }
 
+async function markGoogleAdsConnectionStatus(
+  workspaceId: string,
+  userId: string,
+  status: AdConnectionStatus
+) {
+  const { client } = getAdConnectionAdminClient();
+
+  if (!client) {
+    return;
+  }
+
+  await client
+    .from('ad_connections')
+    .update({ status })
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', userId)
+    .eq('provider', 'google_ads');
+}
+
+async function loadConnectedGoogleAdsAccessToken(
+  workspaceId: string,
+  userId: string,
+  options: { forceRefresh?: boolean } = {}
+): Promise<DataResult<ConnectedGoogleAdsAccessTokenResult>> {
+  assertServerOnlyGoogleAds();
+
+  const { client, error } = getAdConnectionAdminClient();
+
+  if (!client) {
+    return errorDataResult(
+      { state: 'error' },
+      error ?? 'Supabase server credentials are not configured.'
+    );
+  }
+
+  const { data, error: selectError } = await client
+    .from('ad_connections')
+    .select(CONNECTED_GOOGLE_ADS_TOKEN_SELECT)
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', userId)
+    .eq('provider', 'google_ads')
+    .maybeSingle();
+
+  if (selectError) {
+    return errorDataResult({ state: 'error' }, selectError.message);
+  }
+
+  if (!data) {
+    return emptyDataResult({ state: 'not_connected' }, true);
+  }
+
+  if (data.status !== 'connected') {
+    return emptyDataResult({ state: 'token_invalid' }, true);
+  }
+
+  if (!data.scopes?.includes(getGoogleAdsReadOnlyScopes()[0])) {
+    return emptyDataResult({ state: 'permission_issue' }, true);
+  }
+
+  const shouldRefresh =
+    options.forceRefresh || shouldRefreshGoogleAdsAccessToken(data.token_expires_at);
+
+  if (shouldRefresh) {
+    if (!data.refresh_token) {
+      await markGoogleAdsConnectionStatus(workspaceId, userId, 'expired');
+      return emptyDataResult({ state: 'token_invalid' }, true);
+    }
+
+    try {
+      const refreshToken = decryptToken(data.refresh_token);
+      const refreshedToken = await refreshGoogleAccessToken(refreshToken);
+      const tokenExpiresAt = buildGoogleAdsTokenExpiresAt(refreshedToken.expiresIn);
+      const encryptedAccessToken = encryptToken(refreshedToken.accessToken);
+      const metadata: JsonObject = {
+        ...safeMetadata(data.metadata),
+        token_type: refreshedToken.tokenType,
+        last_refreshed_at: new Date().toISOString(),
+      };
+      const { error: updateError } = await client
+        .from('ad_connections')
+        .update({
+          access_token: encryptedAccessToken,
+          token_expires_at: tokenExpiresAt,
+          status: 'connected',
+          scopes: [...getGoogleAdsReadOnlyScopes()],
+          metadata,
+        })
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', userId)
+        .eq('provider', 'google_ads');
+
+      if (updateError) {
+        return errorDataResult({ state: 'error' }, updateError.message);
+      }
+
+      return emptyDataResult(
+        {
+          state: 'connected',
+          accessToken: refreshedToken.accessToken,
+        },
+        true
+      );
+    } catch (error) {
+      if (error instanceof GoogleAdsApiError && error.kind === 'permission') {
+        return emptyDataResult({ state: 'permission_issue' }, true);
+      }
+
+      await markGoogleAdsConnectionStatus(workspaceId, userId, 'expired');
+      return emptyDataResult({ state: 'token_invalid' }, true);
+    }
+  }
+
+  try {
+    return emptyDataResult(
+      {
+        state: 'connected',
+        accessToken: decryptToken(data.access_token),
+      },
+      true
+    );
+  } catch {
+    await markGoogleAdsConnectionStatus(workspaceId, userId, 'expired');
+    return emptyDataResult({ state: 'token_invalid' }, true);
+  }
+}
+
 export async function getMetaAdAccountsForWorkspace(
   workspaceId: string,
   userId: string
@@ -455,6 +735,108 @@ export async function getMetaAdAccountsForWorkspace(
   }
 }
 
+export async function getGoogleAdsAccessibleCustomersForWorkspace(
+  workspaceId: string,
+  userId: string
+): Promise<DataResult<GoogleAdsAccessibleCustomersForWorkspaceData>> {
+  assertServerOnlyGoogleAds();
+
+  let tokenResult = await loadConnectedGoogleAdsAccessToken(workspaceId, userId);
+
+  if (tokenResult.error) {
+    return errorDataResult(
+      emptyGoogleAdsAccessibleCustomersData('error'),
+      'Google Ads customer accounts could not be loaded.',
+      tokenResult.isConfigured
+    );
+  }
+
+  if (tokenResult.data.state !== 'connected') {
+    return emptyDataResult(
+      emptyGoogleAdsAccessibleCustomersData(tokenResult.data.state),
+      true
+    );
+  }
+
+  try {
+    const customers = await listAccessibleGoogleAdsCustomers(tokenResult.data.accessToken);
+
+    if (customers.length === 0) {
+      return emptyDataResult(emptyGoogleAdsAccessibleCustomersData('empty'), true);
+    }
+
+    return emptyDataResult(
+      emptyGoogleAdsAccessibleCustomersData('connected', customers),
+      true
+    );
+  } catch (error) {
+    if (error instanceof GoogleAdsApiError && error.kind === 'invalid_token') {
+      tokenResult = await loadConnectedGoogleAdsAccessToken(workspaceId, userId, {
+        forceRefresh: true,
+      });
+
+      if (tokenResult.error) {
+        return errorDataResult(
+          emptyGoogleAdsAccessibleCustomersData('error'),
+          'Google Ads customer accounts could not be loaded.',
+          tokenResult.isConfigured
+        );
+      }
+
+      if (tokenResult.data.state !== 'connected') {
+        return emptyDataResult(
+          emptyGoogleAdsAccessibleCustomersData(tokenResult.data.state),
+          true
+        );
+      }
+
+      try {
+        const customers = await listAccessibleGoogleAdsCustomers(tokenResult.data.accessToken);
+
+        if (customers.length === 0) {
+          return emptyDataResult(emptyGoogleAdsAccessibleCustomersData('empty'), true);
+        }
+
+        return emptyDataResult(
+          emptyGoogleAdsAccessibleCustomersData('connected', customers),
+          true
+        );
+      } catch (retryError) {
+        if (retryError instanceof GoogleAdsApiError) {
+          if (retryError.kind === 'invalid_token') {
+            await markGoogleAdsConnectionStatus(workspaceId, userId, 'expired');
+            return emptyDataResult(
+              emptyGoogleAdsAccessibleCustomersData('token_invalid'),
+              true
+            );
+          }
+
+          if (retryError.kind === 'permission') {
+            return emptyDataResult(
+              emptyGoogleAdsAccessibleCustomersData('permission_issue'),
+              true
+            );
+          }
+        }
+      }
+    }
+
+    if (error instanceof GoogleAdsApiError) {
+      if (error.kind === 'permission') {
+        return emptyDataResult(
+          emptyGoogleAdsAccessibleCustomersData('permission_issue'),
+          true
+        );
+      }
+    }
+
+    return errorDataResult(
+      emptyGoogleAdsAccessibleCustomersData('error'),
+      'Google Ads customer accounts could not be loaded.'
+    );
+  }
+}
+
 export async function upsertMetaConnection(
   input: UpsertMetaConnectionInput
 ): Promise<DataResult<MetaConnectionStatusData | null>> {
@@ -490,6 +872,43 @@ export async function upsertMetaConnection(
   }
 
   return emptyDataResult(mapMetaConnectionRow(data), true);
+}
+
+export async function upsertGoogleAdsConnection(
+  input: UpsertGoogleAdsConnectionInput
+): Promise<DataResult<GoogleAdsConnectionStatusData | null>> {
+  const { client, error } = getAdConnectionAdminClient();
+
+  if (!client) {
+    return errorDataResult(null, error ?? 'Supabase server credentials are not configured.');
+  }
+
+  const { data, error: upsertError } = await client
+    .from('ad_connections')
+    .upsert(
+      {
+        workspace_id: input.workspaceId,
+        user_id: input.userId,
+        provider: 'google_ads',
+        status: 'connected',
+        access_token: input.encryptedAccessToken,
+        refresh_token: input.encryptedRefreshToken,
+        token_expires_at: input.tokenExpiresAt ?? null,
+        scopes: input.scopes,
+        metadata: input.metadata ?? {},
+      },
+      {
+        onConflict: 'workspace_id,user_id,provider',
+      }
+    )
+    .select(SAFE_GOOGLE_ADS_CONNECTION_SELECT)
+    .single();
+
+  if (upsertError) {
+    return errorDataResult(null, upsertError.message);
+  }
+
+  return emptyDataResult(mapGoogleAdsConnectionRow(data), true);
 }
 
 export async function disconnectMetaConnection(

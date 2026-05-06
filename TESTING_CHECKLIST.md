@@ -173,20 +173,28 @@ Production URL: https://agentflow-ai-sigma.vercel.app
 - Confirm no Pinterest publishing action exists.
 - Confirm no write scopes are requested.
 
-## 17. Google Ads Provider Foundation
+## 17. Google Ads Read-Only Connection
 
 - Open `/dashboard/campaigns`.
 - Confirm the Google Ads card appears under Ad Platform Connections.
 - With missing Google Ads env vars, confirm the card shows Setup Required.
 - Confirm the card lists missing environment variable names only, not values.
 - Confirm the button is disabled and reads Setup in Vercel first.
-- When configured later, confirm the OAuth URL requests only the Google Ads API scope: `https://www.googleapis.com/auth/adwords`.
+- With Google Ads env vars configured, confirm the card allows Connect Google Ads.
+- Confirm the OAuth URL requests only the Google Ads API scope: `https://www.googleapis.com/auth/adwords`.
 - Visit `/api/ads/google/connect` while env vars are missing.
 - Confirm it redirects back to `/dashboard/campaigns?google_ads=setup_required`.
-- Confirm no Google Ads token is stored.
+- Complete Google OAuth and confirm redirect back to `/dashboard/campaigns?google_ads=connected`.
+- Confirm Google Ads access and refresh tokens are stored encrypted server-side only.
+- Confirm the Campaigns page shows connected Google Ads state.
+- Confirm accessible Google Ads customer accounts are listed by safe customer ID/resource name only.
+- Confirm no Google Ads token, refresh token, client secret, developer token, auth code, or credentialed API URL appears in UI, logs, reports, notifications, or exports.
+- Confirm expired access tokens refresh server-side from the encrypted refresh token.
 - Confirm no Google Ads publishing action exists.
+- Confirm no Google Ads campaigns are fetched yet.
+- Confirm no Google Ads metrics are fetched yet.
 - Confirm no write or publish route exists.
-- Confirm no Supabase migration was added for this foundation phase.
+- Confirm the provider constraint allows `meta`, `google_ads`, and `pinterest`, and does not allow LinkedIn.
 
 ## 18. Production Domain & Launch Readiness
 

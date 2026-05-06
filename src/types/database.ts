@@ -4,7 +4,7 @@ export type WorkspaceRole = 'owner' | 'admin' | 'member';
 export type TaskPriority = 'Low' | 'Normal' | 'High';
 export type SupabaseConnectionStatus = 'not_configured' | 'configured';
 export type N8nConnectionStatus = 'not_connected' | 'prepared' | 'connected';
-export type AdConnectionProvider = 'meta';
+export type AdConnectionProvider = 'meta' | 'google_ads' | 'pinterest';
 export type AdConnectionStatus = 'connected' | 'expired' | 'revoked' | 'error';
 export type NotificationType =
   | 'task_needs_review'
