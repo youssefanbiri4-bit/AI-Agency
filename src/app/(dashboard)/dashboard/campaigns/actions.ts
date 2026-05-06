@@ -284,3 +284,106 @@ Please analyze:
 
   return createCampaignTask({ title, description });
 }
+
+export async function createManualCampaignTrackerTask(
+  _state: CampaignTaskState,
+  formData: FormData
+): Promise<CampaignTaskState> {
+  const campaignName = readField(formData, 'campaignName');
+  const platform = readField(formData, 'platform');
+  const campaignGoal = readField(formData, 'campaignGoal');
+  const budgetSpent = readField(formData, 'budgetSpent');
+  const impressions = readField(formData, 'impressions');
+  const clicks = readField(formData, 'clicks');
+  const ctr = readField(formData, 'ctr');
+  const cpc = readField(formData, 'cpc');
+  const leads = readField(formData, 'leads');
+  const conversions = readField(formData, 'conversions');
+  const creativeType = readField(formData, 'creativeType');
+  const audience = readField(formData, 'audience');
+  const offer = readField(formData, 'offer');
+  const landingPage = readField(formData, 'landingPage');
+  const problemObserved = readField(formData, 'problemObserved');
+  const notes = readField(formData, 'notes');
+
+  if (campaignName.length < 2) {
+    return { error: 'Add the campaign name before creating the tracking analysis task.' };
+  }
+
+  if (platform.length < 2) {
+    return { error: 'Add the platform before creating the tracking analysis task.' };
+  }
+
+  if (campaignGoal.length < 2) {
+    return { error: 'Add the campaign goal before creating the tracking analysis task.' };
+  }
+
+  if (problemObserved.length < 2) {
+    return { error: 'Add the observed performance issue before creating the tracking analysis task.' };
+  }
+
+  const title = `[Manual Campaign Tracker] ${campaignName} - ${platform}`;
+  const description = `MANUAL CAMPAIGN TRACKER BRIEF
+
+Campaign name:
+${valueOrFallback(campaignName)}
+
+Platform:
+${valueOrFallback(platform)}
+
+Campaign goal:
+${valueOrFallback(campaignGoal)}
+
+Budget spent:
+${valueOrFallback(budgetSpent)}
+
+Impressions:
+${valueOrFallback(impressions)}
+
+Clicks:
+${valueOrFallback(clicks)}
+
+CTR:
+${valueOrFallback(ctr)}
+
+CPC:
+${valueOrFallback(cpc)}
+
+Leads:
+${valueOrFallback(leads)}
+
+Conversions:
+${valueOrFallback(conversions)}
+
+Creative type:
+${valueOrFallback(creativeType)}
+
+Audience:
+${valueOrFallback(audience)}
+
+Offer:
+${valueOrFallback(offer)}
+
+Landing page:
+${valueOrFallback(landingPage)}
+
+Problem observed:
+${valueOrFallback(problemObserved)}
+
+Notes:
+${valueOrFallback(notes)}
+
+Please analyze:
+- Why performance may be weak
+- Platform fit
+- Audience fit
+- Creative and hook issues
+- Offer and message issues
+- Landing page issues
+- Budget efficiency
+- What to change next
+- Recommendations
+- Next actions`;
+
+  return createCampaignTask({ title, description });
+}

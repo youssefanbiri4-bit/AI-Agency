@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   BarChart3,
   ChevronDown,
+  ClipboardList,
   Clock,
   FileText,
   Send,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import {
   createCampaignPlannerTask,
+  createManualCampaignTrackerTask,
   createPerformanceAnalyzerTask,
   type CampaignTaskState,
 } from './actions';
@@ -86,6 +88,10 @@ export function CampaignsClient({
   );
   const [analyzerState, analyzerAction, isAnalyzerPending] = useActionState(
     createPerformanceAnalyzerTask,
+    initialState
+  );
+  const [trackerState, trackerAction, isTrackerPending] = useActionState(
+    createManualCampaignTrackerTask,
     initialState
   );
 
@@ -324,6 +330,193 @@ export function CampaignsClient({
 
       <Card>
         <CardHeader
+          title="Manual Campaign Tracker"
+          description="Log live ad performance and create a pending campaign analysis task."
+          action={<StatusBadge status="Prepared" type="system" size="sm" />}
+        />
+
+        <form action={trackerAction} className="space-y-5">
+          {trackerState?.error && (
+            <Notice tone="danger" title="Tracking analysis task was not created">
+              {trackerState.error}
+            </Notice>
+          )}
+
+          <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
+            <Field id="trackerCampaignName" label="Campaign name" required>
+              <Input
+                id="trackerCampaignName"
+                name="campaignName"
+                placeholder="Spring booked calls test"
+                required
+                disabled={isTrackerPending}
+              />
+            </Field>
+
+            <Field id="trackerPlatform" label="Platform" required>
+              <Input
+                id="trackerPlatform"
+                name="platform"
+                placeholder="Meta Ads, TikTok, Google Search"
+                required
+                disabled={isTrackerPending}
+              />
+            </Field>
+
+            <Field id="trackerCampaignGoal" label="Campaign goal" required>
+              <Input
+                id="trackerCampaignGoal"
+                name="campaignGoal"
+                placeholder="Lead generation, sales, booked calls"
+                required
+                disabled={isTrackerPending}
+              />
+            </Field>
+
+            <Field id="trackerBudgetSpent" label="Budget spent">
+              <Input id="trackerBudgetSpent" name="budgetSpent" placeholder="$740" disabled={isTrackerPending} />
+            </Field>
+
+            <Field id="trackerImpressions" label="Impressions">
+              <Input
+                id="trackerImpressions"
+                name="impressions"
+                type="number"
+                min="0"
+                placeholder="25000"
+                disabled={isTrackerPending}
+              />
+            </Field>
+
+            <Field id="trackerClicks" label="Clicks">
+              <Input
+                id="trackerClicks"
+                name="clicks"
+                type="number"
+                min="0"
+                placeholder="480"
+                disabled={isTrackerPending}
+              />
+            </Field>
+
+            <Field id="trackerCtr" label="CTR">
+              <Input id="trackerCtr" name="ctr" placeholder="1.9%" disabled={isTrackerPending} />
+            </Field>
+
+            <Field id="trackerCpc" label="CPC">
+              <Input id="trackerCpc" name="cpc" placeholder="$1.54" disabled={isTrackerPending} />
+            </Field>
+
+            <Field id="trackerLeads" label="Leads">
+              <Input
+                id="trackerLeads"
+                name="leads"
+                type="number"
+                min="0"
+                placeholder="32"
+                disabled={isTrackerPending}
+              />
+            </Field>
+
+            <Field id="trackerConversions" label="Conversions">
+              <Input
+                id="trackerConversions"
+                name="conversions"
+                type="number"
+                min="0"
+                placeholder="7"
+                disabled={isTrackerPending}
+              />
+            </Field>
+
+            <Field id="trackerCreativeType" label="Creative type">
+              <Input
+                id="trackerCreativeType"
+                name="creativeType"
+                placeholder="UGC video, carousel, static image"
+                disabled={isTrackerPending}
+              />
+            </Field>
+
+            <Field id="trackerOffer" label="Offer">
+              <Input
+                id="trackerOffer"
+                name="offer"
+                placeholder="Free audit, discount, consultation"
+                disabled={isTrackerPending}
+              />
+            </Field>
+
+            <div className="lg:col-span-2">
+              <Field id="trackerAudience" label="Audience">
+                <Textarea
+                  id="trackerAudience"
+                  name="audience"
+                  rows={3}
+                  placeholder="Targeting, interests, lookalikes, geo, exclusions"
+                  disabled={isTrackerPending}
+                />
+              </Field>
+            </div>
+
+            <div className="lg:col-span-2">
+              <Field id="trackerLandingPage" label="Landing page">
+                <Textarea
+                  id="trackerLandingPage"
+                  name="landingPage"
+                  rows={3}
+                  placeholder="Landing page URL, conversion path, page notes"
+                  disabled={isTrackerPending}
+                />
+              </Field>
+            </div>
+
+            <div className="lg:col-span-2">
+              <Field id="trackerProblemObserved" label="Problem observed" required>
+                <Textarea
+                  id="trackerProblemObserved"
+                  name="problemObserved"
+                  rows={3}
+                  placeholder="Low CTR, expensive leads, no conversions, weak hook"
+                  required
+                  disabled={isTrackerPending}
+                />
+              </Field>
+            </div>
+
+            <div className="lg:col-span-2">
+              <Field id="trackerNotes" label="Notes">
+                <Textarea
+                  id="trackerNotes"
+                  name="notes"
+                  rows={3}
+                  placeholder="Tests already tried, context, constraints, hypotheses"
+                  disabled={isTrackerPending}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button type="submit" size="lg" disabled={isTrackerPending}>
+              {isTrackerPending ? (
+                <>
+                  <Clock className="h-5 w-5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <ClipboardList className="h-5 w-5" />
+                  Create Tracking Analysis Task
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      <Card>
+        <CardHeader
           title="Recent Campaign Reports"
           description="Completed and review-ready campaign tasks with generated report output."
           action={
@@ -338,7 +531,7 @@ export function CampaignsClient({
           <EmptyState
             icon={TrendingUp}
             title="No generated campaign reports yet"
-            description="Create a planner or analyzer task, run it from Task Details, then review the generated report."
+            description="Create a planner, tracker, or analyzer task, run it from Task Details, then review the generated report."
           />
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
@@ -369,7 +562,7 @@ export function CampaignsClient({
         <Card>
           <CardHeader
             title="Draft/Pending Campaign Tasks"
-            description="Campaign briefs created as normal pending tasks and ready to run."
+            description="Campaign briefs and tracking analyses created as normal pending tasks."
           />
 
           <div className="grid gap-3 md:grid-cols-2">

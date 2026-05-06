@@ -14,7 +14,11 @@ import { StatCard } from '@/components/ui/StatCard';
 import type { Agent, Task } from '@/types';
 import { CampaignsClient, type CampaignReportItem, type PendingCampaignTaskItem } from './CampaignsClient';
 
-const campaignPrefixes = ['[Campaign Planner]', '[Performance Analyzer]'] as const;
+const campaignPrefixes = [
+  '[Campaign Planner]',
+  '[Performance Analyzer]',
+  '[Manual Campaign Tracker]',
+] as const;
 
 function isCampaignTask(task: Task) {
   return campaignPrefixes.some((prefix) => task.title.startsWith(prefix));
@@ -109,7 +113,7 @@ export default async function CampaignsPage() {
       <PageHeader
         eyebrow="Ads & Growth"
         title="Campaigns"
-        description="Plan campaigns and turn performance issues into normal AgentFlow AI tasks."
+        description="Plan campaigns, track manual ad performance, and turn performance issues into normal AgentFlow AI tasks."
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -118,7 +122,7 @@ export default async function CampaignsPage() {
           value={campaignTasks.length}
           icon={Megaphone}
           tone="brand"
-          subtitle="Planner and analyzer briefs"
+          subtitle="Planner, tracker, and analyzer briefs"
         />
         <StatCard
           title="Generated Reports"
