@@ -17,6 +17,8 @@ import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 
 export interface ReviewTaskState {
   error: string | null;
+  message?: string | null;
+  taskId?: string | null;
 }
 
 function readField(formData: FormData, key: string) {
@@ -131,32 +133,44 @@ export async function reviewTaskAction(
     return { error: eventResult.error };
   }
 
-  if (intent === 'approve') {
-    try {
-      await createNotification(
-        {
-          workspaceId,
-          userId: taskResult.data.user_id,
-          type: 'task_completed',
-          title: 'Task completed',
-          message: `${taskResult.data.title} was approved and marked completed.`,
-          metadata: {
-            task_id: taskId,
-            review_id: reviewResult.data.id,
-          },
+  try {
+    await createNotification(
+      {
+        workspaceId,
+        userId: taskResult.data.user_id,
+        type: intent === 'approve' ? 'review_approved' : 'review_changes_requested',
+        severity: intent === 'approve' ? 'success' : 'warning',
+        title: intent === 'approve' ? 'Review approved' : 'Changes requested',
+        message:
+          intent === 'approve'
+            ? `${taskResult.data.title} was approved and marked completed.`
+            : `${taskResult.data.title} needs changes before completion.`,
+        relatedEntityType: 'review',
+        relatedEntityId: taskId,
+        relatedUrl: `/dashboard/tasks/${taskId}`,
+        metadata: {
+          category: 'review',
+          task_id: taskId,
+          review_id: reviewResult.data.id,
+          intent,
         },
-        supabase
-      );
-    } catch {
-      // Notifications must not affect review approval behavior.
-    }
+      },
+      supabase
+    );
+  } catch {
+    // Notifications must not affect review approval behavior.
   }
 
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard', 'layout');
   revalidatePath('/dashboard/review');
   revalidatePath('/dashboard/tasks');
   revalidatePath(`/dashboard/tasks/${taskId}`);
   revalidatePath(`/dashboard/agents/${taskResult.data.agent_type}`);
 
-  redirect(`/dashboard/tasks/${taskId}`);
+  return {
+    error: null,
+    message: intent === 'approve' ? 'Review approved.' : 'Changes requested.',
+    taskId,
+  };
 }

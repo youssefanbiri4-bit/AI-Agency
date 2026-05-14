@@ -1,15 +1,22 @@
 import Link from 'next/link';
-import { Megaphone, Plus, TrendingUp } from 'lucide-react';
+import {
+  CheckCircle2,
+  Clock3,
+  Megaphone,
+  RadioTower,
+  ShieldAlert,
+  Sparkles,
+} from 'lucide-react';
 import {
   createSupabaseServerClient,
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import {
-  getGoogleAdsAccessibleCustomersForWorkspace,
+  getGoogleAdsCampaignMetricsForWorkspace,
   getGoogleAdsConnectionStatus,
   getMetaConnectionStatus,
-  type GoogleAdsAccessibleCustomersForWorkspaceData,
+  type GoogleAdsCampaignMetricsForWorkspaceData,
   type GoogleAdsConnectionStatusData,
 } from '@/lib/data/ad-connections';
 import {
@@ -23,15 +30,19 @@ import {
 import { listAgentCatalog } from '@/lib/data/agents';
 import { listTasks } from '@/lib/data/tasks';
 import { extractStructuredOutput } from '@/lib/task-results';
-import { formatDateTime } from '@/lib/utils';
+import { cn, formatDateTime } from '@/lib/utils';
 import { buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Notice } from '@/components/ui/Notice';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { StatCard } from '@/components/ui/StatCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { Agent, Task } from '@/types';
-import { CampaignsClient, type CampaignReportItem, type PendingCampaignTaskItem } from './CampaignsClient';
+import {
+  CampaignsClient,
+  type CampaignBoardItem,
+  type CampaignReportItem,
+  type PendingCampaignTaskItem,
+} from './CampaignsClient';
+import { GoogleAdsAccounts } from './GoogleAdsAccounts';
 import { MetaAdAccounts } from './MetaAdAccounts';
 
 const campaignPrefixes = [
@@ -39,6 +50,7 @@ const campaignPrefixes = [
   '[Performance Analyzer]',
   '[Manual Campaign Tracker]',
   '[Meta Campaign Analysis]',
+  '[Google Ads Campaign Analysis]',
 ] as const;
 
 function isCampaignTask(task: Task) {
@@ -132,10 +144,211 @@ const notConnectedGoogleAdsConnection: GoogleAdsConnectionStatusData = {
   tokenExpiresAt: null,
 };
 
-const notConnectedGoogleAdsCustomers: GoogleAdsAccessibleCustomersForWorkspaceData = {
+const notConnectedGoogleAdsCampaignMetrics: GoogleAdsCampaignMetricsForWorkspaceData = {
   state: 'not_connected',
   customers: [],
 };
+
+const campaignButtonClassName =
+  'border-[#F7CBCA] bg-gradient-to-r from-[#F7CBCA] to-[#F7CBCA] text-white shadow-[0_16px_34px_rgba(202,40,81,0.24)] hover:border-[#5D6B6B] hover:from-[#5D6B6B] hover:to-[#F7CBCA] hover:text-white';
+
+const campaignOutlineButtonClassName =
+  'border-[#5D6B6B]/12 bg-[#F1F7F7] text-[#5D6B6B] hover:border-[#F7CBCA]/35 hover:bg-[#D5E5E5]/55 hover:text-[#F7CBCA]';
+
+function getGoogleAdsVisibleCampaignCount(metrics: GoogleAdsCampaignMetricsForWorkspaceData) {
+  if (metrics.state !== 'connected') {
+    return 0;
+  }
+
+  return metrics.customers.reduce((total, customer) => total + customer.campaigns.length, 0);
+}
+
+function getGoogleAdsBoardItems(
+  metrics: GoogleAdsCampaignMetricsForWorkspaceData
+): CampaignBoardItem[] {
+  if (metrics.state !== 'connected') {
+    return [];
+  }
+
+  return metrics.customers.flatMap((customer) =>
+    customer.campaigns.slice(0, 8).map((campaign) => ({
+      id: `google-${customer.customerId}-${campaign.campaignId}`,
+      title: campaign.campaignName?.trim() || 'Google Ads campaign',
+      platform: 'google_ads' as const,
+      status:
+        campaign.status?.toLowerCase() === 'enabled'
+          ? 'ready'
+          : campaign.status?.toLowerCase() === 'paused'
+            ? 'draft'
+            : 'approval_pending',
+      providerReadiness: 'Ready',
+      updatedLabel: campaign.endDate || campaign.startDate || 'Last 30 days',
+      linkedCount: 1,
+      href: '/dashboard/campaigns',
+      actionLabel: 'Review Metrics',
+    }))
+  );
+}
+
+function buildCampaignBoardItems({
+  campaignReports,
+  pendingCampaignTasks,
+  googleAdsCampaignMetrics,
+  metaIsConnected,
+  pinterestReadiness,
+}: {
+  campaignReports: CampaignReportItem[];
+  pendingCampaignTasks: PendingCampaignTaskItem[];
+  googleAdsCampaignMetrics: GoogleAdsCampaignMetricsForWorkspaceData;
+  metaIsConnected: boolean;
+  pinterestReadiness: PinterestConfigReadiness;
+}): CampaignBoardItem[] {
+  const reportItems: CampaignBoardItem[] = campaignReports.map((report) => ({
+    id: `report-${report.taskId}`,
+    title: report.title,
+    platform: 'manual' as const,
+    status: report.status === 'completed' ? 'published' : 'ready',
+    providerReadiness: 'Manual-only',
+    updatedLabel: report.updatedLabel,
+    linkedCount: 1,
+    href: report.href,
+    actionLabel: 'Open Report',
+  }));
+  const draftItems: CampaignBoardItem[] = pendingCampaignTasks.map((task) => ({
+    id: `pending-${task.taskId}`,
+    title: task.title,
+    platform: 'manual' as const,
+    status: 'draft' as const,
+    providerReadiness: 'Manual-only',
+    updatedLabel: task.updatedLabel,
+    linkedCount: 1,
+    href: task.href,
+    actionLabel: 'Open Draft',
+  }));
+  const providerItems: CampaignBoardItem[] = [
+    {
+      id: 'provider-meta',
+      title: 'Meta Ads / Instagram & Facebook',
+      platform: 'instagram',
+      status: metaIsConnected ? 'ready' : 'setup_required',
+      providerReadiness: metaIsConnected ? 'Ready' : 'Meta setup required',
+      updatedLabel: 'Provider readiness',
+      href: '/dashboard/campaigns',
+      actionLabel: metaIsConnected ? 'View Accounts' : 'Connect Meta',
+    },
+    {
+      id: 'provider-pinterest',
+      title: 'Pinterest Ads',
+      platform: 'pinterest',
+      status: pinterestReadiness.isConfigured ? 'approval_pending' : 'setup_required',
+      providerReadiness: pinterestReadiness.isConfigured
+        ? 'Approval pending'
+        : 'Pinterest setup required',
+      updatedLabel: 'Provider readiness',
+      href: '/dashboard/campaigns',
+      actionLabel: pinterestReadiness.isConfigured ? 'Connect Pinterest' : 'Setup Required',
+    },
+  ];
+
+  return [
+    ...getGoogleAdsBoardItems(googleAdsCampaignMetrics),
+    ...reportItems,
+    ...draftItems,
+    ...providerItems,
+  ].slice(0, 16);
+}
+
+function CampaignHero({
+  activeCount,
+  draftCount,
+  scheduledCount,
+  setupRequiredCount,
+}: {
+  activeCount: number;
+  draftCount: number;
+  scheduledCount: number;
+  setupRequiredCount: number;
+}) {
+  const chips = [
+    { label: 'Active', value: activeCount },
+    { label: 'Drafts', value: draftCount },
+    { label: 'Scheduled', value: scheduledCount },
+    { label: 'Setup Required', value: setupRequiredCount },
+  ];
+
+  return (
+    <section className="relative overflow-hidden rounded-lg bg-[#5D6B6B] p-6 text-white shadow-[0_24px_58px_rgba(93,107,107,0.22)] sm:p-8">
+      <div className="absolute inset-0 bg-gradient-to-br from-[#F7CBCA] via-[#F7CBCA] to-[#E7F5DC] opacity-95" />
+      <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.6fr)] lg:items-end">
+        <div className="min-w-0">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/18 bg-white/12 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white/82 backdrop-blur">
+            <Sparkles className="h-3.5 w-3.5" />
+            Ads & Growth
+          </div>
+          <h1 className="mt-5 break-words text-4xl font-black tracking-normal sm:text-5xl">
+            Campaigns
+          </h1>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-white/86">
+            Track ad performance, provider readiness, and campaign status across channels.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {chips.map((chip) => (
+            <div
+              key={chip.label}
+              className="rounded-lg border border-white/16 bg-[#5D6B6B]/28 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur"
+            >
+              <p className="text-2xl font-black">{chip.value}</p>
+              <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-white/72">
+                {chip.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CampaignMetricCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  tone = 'berry',
+}: {
+  title: string;
+  value: string | number;
+  subtitle: string;
+  icon: typeof Megaphone;
+  tone?: 'berry' | 'coral' | 'peach' | 'dark' | 'cream';
+}) {
+  const toneClassNames = {
+    berry: 'from-[#F7CBCA] to-[#F7CBCA] text-white',
+    coral: 'from-[#F7CBCA] to-[#E7F5DC] text-white',
+    peach: 'from-[#E7F5DC] to-[#D5E5E5] text-[#5D6B6B]',
+    dark: 'from-[#5D6B6B] to-[#3A2028] text-white',
+    cream: 'from-[#D5E5E5] to-[#F1F7F7] text-[#5D6B6B]',
+  };
+
+  return (
+    <article className="group relative min-w-0 overflow-hidden rounded-lg border border-[#5D6B6B]/8 bg-[#F1F7F7] p-5 shadow-[0_18px_50px_rgba(93,107,107,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(202,40,81,0.16)]">
+      <div className={cn('absolute inset-x-0 top-0 h-1 bg-gradient-to-r', toneClassNames[tone])} />
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[#5D6B6B]/56">{title}</p>
+          <p className="mt-2 break-words text-3xl font-black tracking-normal text-[#5D6B6B]">
+            {value}
+          </p>
+        </div>
+        <div className={cn('rounded-lg bg-gradient-to-br p-3 shadow-sm', toneClassNames[tone])}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-[#5D6B6B]/58">{subtitle}</p>
+    </article>
+  );
+}
 
 function PinterestAdsConnectionCard({
   readiness,
@@ -145,7 +358,7 @@ function PinterestAdsConnectionCard({
   const isConfigured = readiness.isConfigured;
 
   return (
-    <div className="mt-4 muted-panel flex min-w-0 flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="mt-4 flex min-w-0 flex-col gap-5 rounded-lg border border-[#5D6B6B]/8 bg-[#F1F7F7] p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="break-words text-base font-bold text-black">
@@ -161,11 +374,11 @@ function PinterestAdsConnectionCard({
           Read-only Pinterest Ads provider foundation. Actual connection stays disabled until the server environment is complete.
         </p>
         <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
-          <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
-            Scopes: {readiness.scopes.join(', ')}
-          </span>
+            <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
+              Scopes: {readiness.scopes.join(', ')}
+            </span>
           {!isConfigured && (
-            <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+            <span className="rounded-full border border-[#F7CBCA]/18 bg-[#D5E5E5]/42 px-2.5 py-1 text-[#F7CBCA]">
               Missing environment variables: {formatMissingPinterestEnv(readiness)}
             </span>
           )}
@@ -175,7 +388,7 @@ function PinterestAdsConnectionCard({
       {isConfigured ? (
         <Link
           href="/api/ads/pinterest/connect"
-          className={buttonStyles({ variant: 'primary' })}
+          className={buttonStyles({ variant: 'primary', className: campaignButtonClassName })}
         >
           Connect Pinterest Ads
         </Link>
@@ -183,7 +396,7 @@ function PinterestAdsConnectionCard({
         <button
           type="button"
           disabled
-          className={buttonStyles({ variant: 'outline' })}
+          className={buttonStyles({ variant: 'outline', className: campaignOutlineButtonClassName })}
         >
           Setup in Vercel first
         </button>
@@ -195,19 +408,18 @@ function PinterestAdsConnectionCard({
 function GoogleAdsConnectionCard({
   readiness,
   connection,
-  customers,
+  campaignMetrics,
 }: {
   readiness: GoogleAdsConfigReadiness;
   connection: GoogleAdsConnectionStatusData;
-  customers: GoogleAdsAccessibleCustomersForWorkspaceData;
+  campaignMetrics: GoogleAdsCampaignMetricsForWorkspaceData;
 }) {
   const isConfigured = readiness.isConfigured;
   const needsReconnect =
     connection.status === 'expired' ||
     connection.status === 'revoked' ||
     connection.status === 'error' ||
-    customers.state === 'token_invalid' ||
-    customers.state === 'permission_issue';
+    campaignMetrics.state === 'token_invalid';
   const isConnected =
     isConfigured && connection.status === 'connected' && !needsReconnect;
   const badgeStatus = !isConfigured
@@ -224,7 +436,7 @@ function GoogleAdsConnectionCard({
       : null;
 
   return (
-    <div className="mt-4 muted-panel min-w-0 p-4">
+    <div className="mt-4 min-w-0 rounded-lg border border-[#5D6B6B]/8 bg-[#F1F7F7] p-4 shadow-sm">
       <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -238,19 +450,19 @@ function GoogleAdsConnectionCard({
             />
           </div>
           <p className="mt-2 text-sm leading-6 text-black/58">
-            Read-only Google Ads connection for accessible customer account discovery. Campaigns, metrics, and publishing are not enabled in this phase.
+            Read-only Google Ads connection for accessible customer accounts, campaigns, and last 30 days metrics. Publishing stays disabled.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
-            <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+            <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
               Scope: {readiness.scopes.join(', ')}
             </span>
             {!isConfigured && (
-              <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+              <span className="rounded-full border border-[#F7CBCA]/18 bg-[#D5E5E5]/42 px-2.5 py-1 text-[#F7CBCA]">
                 Missing environment variables: {formatMissingGoogleAdsEnv(readiness)}
               </span>
             )}
             {connection.connectedAt && (
-              <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+              <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
                 Connected {formatDateTime(connection.connectedAt)}
               </span>
             )}
@@ -262,90 +474,29 @@ function GoogleAdsConnectionCard({
             href="/api/ads/google/connect"
             className={buttonStyles({
               variant: actionLabel.startsWith('Reconnect') ? 'outline' : 'primary',
+              className: actionLabel.startsWith('Reconnect')
+                ? campaignOutlineButtonClassName
+                : campaignButtonClassName,
             })}
           >
             {actionLabel}
           </Link>
         ) : !isConfigured ? (
           <button
-            type="button"
-            disabled
-            className={buttonStyles({ variant: 'outline' })}
-          >
+          type="button"
+          disabled
+          className={buttonStyles({ variant: 'outline', className: campaignOutlineButtonClassName })}
+        >
             Setup in Vercel first
           </button>
         ) : null}
       </div>
 
-      {isConnected && customers.state === 'connected' && (
-        <div className="mt-4 min-w-0 space-y-3">
-          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <h4 className="break-words text-sm font-bold text-black">
-                Accessible Google Ads customer accounts
-              </h4>
-              <p className="mt-1 text-sm leading-6 text-black/58">
-                {customers.customers.length} accessible {customers.customers.length === 1 ? 'account' : 'accounts'}
-              </p>
-            </div>
-            <StatusBadge status="Ready" type="system" size="sm" />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3">
-            {customers.customers.map((customer) => (
-              <article
-                key={customer.resourceName}
-                className="rounded-md border border-black/10 bg-white p-4"
-              >
-                <dl className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="min-w-0">
-                    <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
-                      customer_id
-                    </dt>
-                    <dd className="mt-1 break-words text-sm font-semibold text-black">
-                      {customer.customerId}
-                    </dd>
-                  </div>
-                  <div className="min-w-0">
-                    <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
-                      display_name
-                    </dt>
-                    <dd className="mt-1 break-words text-sm font-semibold text-black">
-                      {customer.displayName ?? customer.customerId}
-                    </dd>
-                  </div>
-                  <div className="min-w-0">
-                    <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
-                      resource_name
-                    </dt>
-                    <dd className="mt-1 break-words text-sm font-semibold text-black">
-                      {customer.resourceName}
-                    </dd>
-                  </div>
-                  <div className="min-w-0">
-                    <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
-                      account_hint
-                    </dt>
-                    <dd className="mt-1 break-words text-sm font-semibold text-black">
-                      {customer.accountTypeHint ?? 'Accessible customer'}
-                    </dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {isConnected && customers.state === 'empty' && (
-        <p className="mt-4 text-sm leading-6 text-black/58">
-          Google Ads connected, but no accessible customer accounts were returned.
-        </p>
-      )}
+      {isConnected && <GoogleAdsAccounts data={campaignMetrics} />}
 
       {needsReconnect && (
         <p className="mt-4 text-sm leading-6 text-black/58">
-          Google Ads needs reconnect before accessible customer accounts can be displayed.
+          Reconnect Google Ads before campaign metrics can be displayed.
         </p>
       )}
     </div>
@@ -375,7 +526,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
     tasksResult,
     metaConnectionResult,
     googleAdsConnectionResult,
-    googleAdsCustomersResult,
+    googleAdsCampaignMetricsResult,
   ] = await Promise.all([
     listAgentCatalog(supabase),
     workspaceId
@@ -387,12 +538,13 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
           data: {
             provider: 'meta' as const,
             status: 'not_connected' as const,
-            scopes: [],
+            scopes: [] as string[],
             connectedAt: null,
             updatedAt: null,
             tokenExpiresAt: null,
             adAccountId: null,
             adAccountName: null,
+            metadata: {},
           },
           error: null,
           isConfigured: true,
@@ -405,9 +557,9 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
           isConfigured: true,
         }),
     workspaceId && user?.id && googleAdsReadiness.isConfigured
-      ? getGoogleAdsAccessibleCustomersForWorkspace(workspaceId, user.id)
+      ? getGoogleAdsCampaignMetricsForWorkspace(workspaceId, user.id)
       : Promise.resolve({
-          data: notConnectedGoogleAdsCustomers,
+          data: notConnectedGoogleAdsCampaignMetrics,
           error: null,
           isConfigured: true,
         }),
@@ -418,7 +570,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
   const pendingCampaignTasks = buildPendingCampaignTasks(tasks, catalogResult.data.agents);
   const metaConnection = metaConnectionResult.data;
   const googleAdsConnection = googleAdsConnectionResult.data;
-  const googleAdsCustomers = googleAdsCustomersResult.data;
+  const googleAdsCampaignMetrics = googleAdsCampaignMetricsResult.data;
   const metaIsConnected = metaConnection.status === 'connected';
   const metaActionLabel =
     metaConnection.status === 'not_connected' ? 'Connect Meta Ads' : 'Reconnect Meta Ads';
@@ -426,6 +578,27 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
     catalogResult.data.agents.find((agent) => agent.id === 'social_media_content') ??
     catalogResult.data.agents.find((agent) => agent.department === 'Content & Growth') ??
     null;
+  const googleAdsVisibleCampaigns = getGoogleAdsVisibleCampaignCount(googleAdsCampaignMetrics);
+  const activeCampaigns = googleAdsVisibleCampaigns + (metaIsConnected ? 1 : 0);
+  const scheduledCampaigns = campaignTasks.filter((task) => task.status === 'pending').length;
+  const publishedCampaigns = campaignReports.filter((report) => report.status === 'completed').length;
+  const setupRequiredCount = [
+    !metaIsConnected,
+    !pinterestReadiness.isConfigured,
+    !googleAdsReadiness.isConfigured ||
+      googleAdsConnection.status === 'expired' ||
+      googleAdsConnection.status === 'revoked' ||
+      googleAdsConnection.status === 'error' ||
+      googleAdsCampaignMetrics.state === 'token_invalid',
+  ].filter(Boolean).length;
+  const totalCampaigns = campaignTasks.length + googleAdsVisibleCampaigns;
+  const campaignBoardItems = buildCampaignBoardItems({
+    campaignReports,
+    pendingCampaignTasks,
+    googleAdsCampaignMetrics,
+    metaIsConnected,
+    pinterestReadiness,
+  });
 
   return (
     <div className="space-y-8">
@@ -479,7 +652,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
 
       {googleAdsParam === 'connected' && (
         <Notice tone="success" title="Google Ads connected">
-          Google Ads is connected for read-only accessible customer account discovery.
+          Google Ads is connected for read-only campaigns and last 30 days metrics.
         </Notice>
       )}
 
@@ -489,43 +662,58 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         </Notice>
       )}
 
-      {(googleAdsConnectionResult.error || googleAdsCustomersResult.error) && (
+      {(googleAdsConnectionResult.error || googleAdsCampaignMetricsResult.error) && (
         <Notice tone="warning" title="Google Ads connection notice">
-          {googleAdsConnectionResult.error ?? googleAdsCustomersResult.error}
+          {googleAdsConnectionResult.error ?? googleAdsCampaignMetricsResult.error}
         </Notice>
       )}
 
-      <PageHeader
-        eyebrow="Ads & Growth"
-        title="Campaigns"
-        description="Plan campaigns, track manual ad performance, and turn read-only Meta campaign metrics into normal AgentFlow AI tasks."
+      <CampaignHero
+        activeCount={activeCampaigns}
+        draftCount={pendingCampaignTasks.length}
+        scheduledCount={scheduledCampaigns}
+        setupRequiredCount={setupRequiredCount}
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatCard
-          title="Campaign Tasks"
-          value={campaignTasks.length}
+      <div className="dashboard-stat-grid">
+        <CampaignMetricCard
+          title="Total Campaigns"
+          value={totalCampaigns}
           icon={Megaphone}
-          tone="brand"
-          subtitle="Planner, tracker, and analyzer briefs"
+          tone="berry"
+          subtitle="Tasks plus visible provider campaigns"
         />
-        <StatCard
-          title="Generated Reports"
-          value={campaignReports.length}
-          icon={TrendingUp}
+        <CampaignMetricCard
+          title="Active"
+          value={activeCampaigns}
+          icon={RadioTower}
+          tone="coral"
+          subtitle="Connected or metrics-ready channels"
+        />
+        <CampaignMetricCard
+          title="Scheduled"
+          value={scheduledCampaigns}
+          icon={Clock3}
+          tone="peach"
+          subtitle="Pending campaign task queue"
+        />
+        <CampaignMetricCard
+          title="Published"
+          value={publishedCampaigns}
+          icon={CheckCircle2}
           tone="dark"
-          subtitle="Completed or ready for review"
+          subtitle="Completed campaign reports"
         />
-        <StatCard
-          title="Default Agent"
-          value={preferredAgent?.name ?? 'Content & Growth'}
-          icon={Plus}
-          tone="accent"
-          subtitle="Tasks are created pending"
+        <CampaignMetricCard
+          title="Failed / Setup Required"
+          value={setupRequiredCount}
+          icon={ShieldAlert}
+          tone="cream"
+          subtitle="Provider setup or reconnect items"
         />
       </div>
 
-      <Card>
+      <Card className="rounded-lg border-[#5D6B6B]/8 bg-white shadow-[0_20px_58px_rgba(93,107,107,0.08)]">
         <CardHeader
           title="Ad Platform Connections"
           description="Connect read-only ad platform access before importing campaign performance."
@@ -538,7 +726,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
           }
         />
 
-        <div className="muted-panel flex min-w-0 flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-col gap-5 rounded-lg border border-[#5D6B6B]/8 bg-[#F1F7F7] p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="break-words text-base font-bold text-black">
@@ -554,11 +742,11 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
               Read-only Meta Ads tracking for ad accounts, campaigns, last 30 days insights, and local performance diagnosis.
             </p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
-              <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+              <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
                 Scope: {metaConnection.scopes.includes('ads_read') ? 'ads_read' : 'ads_read required'}
               </span>
               {metaConnection.connectedAt && (
-                <span className="rounded-full border border-black/10 bg-white px-2.5 py-1">
+                <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
                   Connected {formatDateTime(metaConnection.connectedAt)}
                 </span>
               )}
@@ -567,7 +755,10 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
 
           <Link
             href="/api/ads/meta/connect"
-            className={buttonStyles({ variant: metaIsConnected ? 'outline' : 'primary' })}
+            className={buttonStyles({
+              variant: metaIsConnected ? 'outline' : 'primary',
+              className: metaIsConnected ? campaignOutlineButtonClassName : campaignButtonClassName,
+            })}
           >
             {metaActionLabel}
           </Link>
@@ -580,11 +771,12 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         <GoogleAdsConnectionCard
           readiness={googleAdsReadiness}
           connection={googleAdsConnection}
-          customers={googleAdsCustomers}
+          campaignMetrics={googleAdsCampaignMetrics}
         />
       </Card>
 
       <CampaignsClient
+        campaignBoardItems={campaignBoardItems}
         campaignReports={campaignReports}
         pendingCampaignTasks={pendingCampaignTasks}
         preferredAgentName={preferredAgent?.name ?? 'Social Media Content Agent'}

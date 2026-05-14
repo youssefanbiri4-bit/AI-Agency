@@ -4,7 +4,9 @@ import {
   createSupabaseServerClient,
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
-import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
+import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
+import { canManageProviders, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
+import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import {
   buildGoogleAdsOAuthUrl,
   getGoogleAdsConfigReadiness,
@@ -47,6 +49,24 @@ export async function GET(request: NextRequest) {
 
   if (!workspaceResult.data) {
     return NextResponse.redirect(new URL('/onboarding', request.url));
+  }
+
+  const membership = await getCurrentWorkspaceMembership(supabase, workspaceResult.data.id, user.id);
+  const currentRole = normalizeWorkspaceRole(membership.data?.role, workspaceResult.data, user.id);
+
+  if (!canManageProviders(currentRole)) {
+    await logSecurityAuditEvent({
+      supabase,
+      workspaceId: workspaceResult.data.id,
+      userId: user.id,
+      eventType: 'permission_denied',
+      severity: 'warning',
+      entityType: 'provider_settings',
+      message: 'Blocked Google Ads OAuth connect.',
+      metadata: { role: currentRole, provider: 'google_ads' },
+    });
+
+    return redirectToCampaigns(request, 'setup_required', 'access_denied');
   }
 
   const readiness = getGoogleAdsConfigReadiness();

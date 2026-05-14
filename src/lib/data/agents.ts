@@ -19,6 +19,7 @@ const departmentIdsByName: Record<Department['name'], DepartmentId> = {
   'Research & Strategy': 'research_strategy',
   'Content & Growth': 'content_growth',
   'Sales & Operations': 'sales_operations',
+  'Development & Engineering': 'development_engineering',
 };
 
 export function mapDepartmentRecordToDepartment(record: DepartmentRecord): Department {

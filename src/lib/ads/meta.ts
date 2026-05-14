@@ -1,5 +1,13 @@
 const DEFAULT_META_GRAPH_API_VERSION = 'v25.0';
 const META_READ_ONLY_SCOPE = 'ads_read';
+const META_PAID_ADS_WRITE_SCOPE = 'ads_management';
+const META_PUBLISHING_SCOPES = [
+  'pages_show_list',
+  'pages_read_engagement',
+  'pages_manage_posts',
+  'instagram_basic',
+  'instagram_content_publish',
+] as const;
 const META_AD_ACCOUNT_FIELDS = [
   'id',
   'account_id',
@@ -463,7 +471,7 @@ export function buildMetaOAuthUrl({ state }: { state: string }) {
   url.searchParams.set('client_id', env.appId);
   url.searchParams.set('redirect_uri', env.redirectUri);
   url.searchParams.set('response_type', 'code');
-  url.searchParams.set('scope', META_READ_ONLY_SCOPE);
+  url.searchParams.set('scope', [META_READ_ONLY_SCOPE, ...META_PUBLISHING_SCOPES].join(','));
   url.searchParams.set('state', state);
 
   return url;
@@ -700,4 +708,12 @@ export async function fetchMetaCampaignInsights(
 
 export function getMetaReadOnlyScopes() {
   return [META_READ_ONLY_SCOPE];
+}
+
+export function getMetaPaidAdsWriteScopes() {
+  return [META_PAID_ADS_WRITE_SCOPE];
+}
+
+export function getMetaConnectionScopes() {
+  return [META_READ_ONLY_SCOPE, META_PAID_ADS_WRITE_SCOPE, ...META_PUBLISHING_SCOPES];
 }

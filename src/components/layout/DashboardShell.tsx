@@ -10,6 +10,7 @@ import {
   type DashboardWorkspaceProfile,
 } from './DashboardContext';
 import type { NotificationRecord } from '@/types/database';
+import type { WorkspaceTheme } from '@/lib/theme';
 
 interface DashboardShellProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ interface DashboardShellProps {
   workspace: DashboardWorkspaceProfile;
   initialNotifications?: NotificationRecord[];
   initialUnreadCount?: number;
+  theme?: WorkspaceTheme;
 }
 
 export function DashboardShell({
@@ -30,7 +32,7 @@ export function DashboardShell({
 
   return (
     <DashboardContextProvider user={user} workspace={workspace}>
-      <div className="premium-page min-h-screen text-black">
+      <div className="dashboard-background premium-page min-h-screen text-black">
         <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
         {isMobileMenuOpen && (
           <button
@@ -41,14 +43,14 @@ export function DashboardShell({
           />
         )}
 
-        <div className="min-h-screen min-w-0 lg:pl-72">
+        <div className="min-h-screen min-w-0 lg:ps-72">
           <Topbar
             onMenuClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
             isMobileMenuOpen={isMobileMenuOpen}
             initialNotifications={initialNotifications}
             initialUnreadCount={initialUnreadCount}
           />
-          <main className="mx-auto w-full max-w-[1500px] px-3 pb-10 pt-24 sm:px-6 lg:px-8">
+          <main className="mx-auto w-full max-w-[1480px] px-4 pb-12 pt-24 sm:px-6 lg:px-8 xl:px-10">
             {children}
           </main>
         </div>

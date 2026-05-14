@@ -21,9 +21,9 @@ function getTaskPriority(task: Task) {
 }
 
 function priorityClasses(priority: string) {
-  if (priority === 'High') return 'border-[#F55477]/22 bg-[#F0DBEF]/70 text-[#F55477]';
+  if (priority === 'High') return 'border-[#F7CBCA]/22 bg-[#D5E5E5]/70 text-[#F7CBCA]';
   if (priority === 'Low') return 'border-black/10 bg-white text-black/58';
-  return 'border-[#8B3CDE]/18 bg-[#F0DBEF]/65 text-[#8B3CDE]';
+  return 'border-[#F7CBCA]/18 bg-[#D5E5E5]/65 text-[#F7CBCA]';
 }
 
 export function TaskTable({ tasks, agents, emptyAction, className }: TaskTableProps) {
@@ -40,7 +40,7 @@ export function TaskTable({ tasks, agents, emptyAction, className }: TaskTablePr
   }
 
   return (
-    <div className={cn('overflow-hidden rounded-lg border border-black/8 bg-white shadow-[0_18px_48px_rgba(0,0,0,0.06)]', className)}>
+    <div className={cn('overflow-hidden rounded-lg border border-[#F7CBCA]/10 bg-white/82 shadow-[0_18px_42px_rgba(93,107,107,0.07)] backdrop-blur-[18px] [-webkit-backdrop-filter:blur(18px)]', className)}>
       <div className="divide-y divide-black/5 md:hidden">
         {tasks.map((task) => {
           const agent = agents.find((item) => item.id === task.agent_type);
@@ -90,30 +90,16 @@ export function TaskTable({ tasks, agents, emptyAction, className }: TaskTablePr
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[880px] border-separate border-spacing-0">
+        <table className="data-table">
           <thead>
-            <tr className="bg-[#F0DBEF]/36 text-left">
-              <th className="border-b border-black/8 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-black/54">
-                Task
-              </th>
-              <th className="border-b border-black/8 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-black/54">
-                Agent
-              </th>
-              <th className="border-b border-black/8 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-black/54">
-                Department
-              </th>
-              <th className="border-b border-black/8 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-black/54">
-                Status
-              </th>
-              <th className="border-b border-black/8 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-black/54">
-                Priority
-              </th>
-              <th className="border-b border-black/8 px-5 py-3 text-xs font-black uppercase tracking-[0.12em] text-black/54">
-                Created
-              </th>
-              <th className="border-b border-black/8 px-5 py-3 text-right text-xs font-black uppercase tracking-[0.12em] text-black/54">
-                Action
-              </th>
+            <tr>
+              <th>Task</th>
+              <th>Agent</th>
+              <th>Department</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Created</th>
+              <th className="text-right">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -122,10 +108,10 @@ export function TaskTable({ tasks, agents, emptyAction, className }: TaskTablePr
               const priority = getTaskPriority(task);
 
               return (
-                <tr key={task.id} className="group transition-colors hover:bg-[#F0DBEF]/20">
-                  <td className="border-b border-black/5 px-5 py-4 align-top">
+                <tr key={task.id} className="group">
+                  <td>
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-[#F0DBEF]/70 text-[#8B3CDE]">
+                      <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg bg-[#D5E5E5]/70 text-[#F7CBCA]">
                         <FileText className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
@@ -134,24 +120,24 @@ export function TaskTable({ tasks, agents, emptyAction, className }: TaskTablePr
                       </div>
                     </div>
                   </td>
-                  <td className="border-b border-black/5 px-5 py-4 align-top text-sm font-semibold text-black/72">
+                  <td className="text-sm font-semibold text-black/72">
                     {agent?.name || task.agent_type}
                   </td>
-                  <td className="border-b border-black/5 px-5 py-4 align-top text-sm text-black/60">
+                  <td className="text-sm text-black/60">
                     {agent?.department || 'Unassigned'}
                   </td>
-                  <td className="border-b border-black/5 px-5 py-4 align-top">
+                  <td>
                     <StatusBadge status={task.status} type="task" size="sm" />
                   </td>
-                  <td className="border-b border-black/5 px-5 py-4 align-top">
+                  <td>
                     <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold', priorityClasses(priority))}>
                       {priority}
                     </span>
                   </td>
-                  <td className="border-b border-black/5 px-5 py-4 align-top text-sm text-black/60">
+                  <td className="text-sm text-black/60">
                     {formatDate(task.created_at)}
                   </td>
-                  <td className="border-b border-black/5 px-5 py-4 align-top text-right">
+                  <td className="text-right">
                     <Link
                       href={`/dashboard/tasks/${task.id}`}
                       aria-label={`View ${task.title}`}

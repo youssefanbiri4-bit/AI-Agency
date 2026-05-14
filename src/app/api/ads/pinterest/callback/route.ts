@@ -4,18 +4,20 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { getPinterestConfigReadiness } from '@/lib/ads/pinterest';
+import { completePinterestOAuthConnection } from '@/lib/ads/pinterest-publishing';
 
 export const runtime = 'nodejs';
 
 const PINTEREST_OAUTH_STATE_COOKIE = 'agentflow-pinterest-oauth-state';
+const PINTEREST_OAUTH_RETURN_COOKIE = 'agentflow-pinterest-oauth-return';
 
 function buildCampaignsRedirect(
   request: NextRequest,
   pinterest: string,
   reason?: string
 ) {
-  const url = new URL('/dashboard/campaigns', request.url);
+  const returnTo = request.cookies.get(PINTEREST_OAUTH_RETURN_COOKIE)?.value;
+  const url = new URL(returnTo === 'settings' ? '/dashboard/settings' : '/dashboard/campaigns', request.url);
   url.searchParams.set('pinterest', pinterest);
 
   if (reason) {
@@ -41,17 +43,18 @@ function redirectToCampaigns(
     path: '/',
     maxAge: 0,
   });
+  response.cookies.set(PINTEREST_OAUTH_RETURN_COOKIE, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
 
   return response;
 }
 
 export async function GET(request: NextRequest) {
-  const readiness = getPinterestConfigReadiness();
-
-  if (!readiness.isConfigured) {
-    return redirectToCampaigns(request, 'setup_required', readiness.status);
-  }
-
   const queryState = request.nextUrl.searchParams.get('state');
   const cookieState = request.cookies.get(PINTEREST_OAUTH_STATE_COOKIE)?.value;
 
@@ -63,7 +66,9 @@ export async function GET(request: NextRequest) {
     return redirectToCampaigns(request, 'error', 'oauth_denied');
   }
 
-  if (!request.nextUrl.searchParams.get('code')) {
+  const code = request.nextUrl.searchParams.get('code');
+
+  if (!code) {
     return redirectToCampaigns(request, 'error', 'missing_code');
   }
 
@@ -85,9 +90,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 
-  return redirectToCampaigns(
-    request,
-    'storage_not_ready',
-    'provider_migration_required'
-  );
+  try {
+    await completePinterestOAuthConnection({
+      workspaceId: workspaceResult.data.id,
+      userId: user.id,
+      code,
+    });
+
+    return redirectToCampaigns(request, 'connected');
+  } catch (error) {
+    return redirectToCampaigns(
+      request,
+      'error',
+      error instanceof Error && error.message.toLowerCase().includes('missing')
+        ? 'pinterest_env_missing'
+        : 'token_exchange_failed'
+    );
+  }
 }

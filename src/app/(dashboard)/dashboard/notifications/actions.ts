@@ -60,6 +60,7 @@ export async function markNotificationReadAction(formData: FormData) {
   );
 
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard', 'layout');
   revalidatePath('/dashboard/notifications');
 }
 
@@ -75,5 +76,6 @@ export async function markAllNotificationsReadAction() {
   );
 
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard', 'layout');
   revalidatePath('/dashboard/notifications');
 }

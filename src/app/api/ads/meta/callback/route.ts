@@ -7,7 +7,7 @@ import { encryptToken } from '@/lib/ads/encryption';
 import {
   exchangeForLongLivedToken,
   exchangeMetaCodeForShortLivedToken,
-  getMetaReadOnlyScopes,
+  getMetaConnectionScopes,
   getMetaTokenDebugInfo,
 } from '@/lib/ads/meta';
 import { upsertMetaConnection } from '@/lib/data/ad-connections';
@@ -100,9 +100,12 @@ export async function GET(request: NextRequest) {
     }
 
     let debugMetadata: JsonObject = {};
+    let grantedScopes: string[] = [];
+    let scopeVerificationWarning: string | null = null;
 
     try {
       const debugInfo = await getMetaTokenDebugInfo(selectedToken.accessToken);
+      grantedScopes = debugInfo.scopes;
 
       debugMetadata = {
         meta_app_id: debugInfo.appId,
@@ -115,7 +118,11 @@ export async function GET(request: NextRequest) {
         granted_scopes: debugInfo.scopes,
       };
     } catch {
-      debugMetadata = {};
+      scopeVerificationWarning =
+        'Meta granted scopes could not be verified during OAuth callback.';
+      debugMetadata = {
+        scope_verification_warning: scopeVerificationWarning,
+      };
     }
 
     const encryptedAccessToken = encryptToken(selectedToken.accessToken);
@@ -124,12 +131,15 @@ export async function GET(request: NextRequest) {
       userId: user.id,
       encryptedAccessToken,
       tokenExpiresAt: buildTokenExpiresAt(selectedToken.expiresIn),
-      scopes: getMetaReadOnlyScopes(),
+      scopes: grantedScopes,
       metadata: {
         ...debugMetadata,
         token_kind: tokenKind,
         token_type: selectedToken.tokenType,
         connected_via: 'meta_oauth',
+        requested_scopes: getMetaConnectionScopes(),
+        scopes_verified: grantedScopes.length > 0,
+        ...(scopeVerificationWarning ? { scope_warning: scopeVerificationWarning } : {}),
       },
     });
 

@@ -10,7 +10,10 @@ import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { createTask } from '@/lib/data/tasks';
 import { createNotification } from '@/lib/data/notifications';
 import {
+  getGoogleAdsCampaignMetricsForWorkspace,
   getMetaAdAccountsForWorkspace,
+  type GoogleAdsCustomerCampaignsData,
+  type GoogleAdsCampaignMetricsRow,
   type MetaAdAccountCampaignsData,
   type MetaCampaignWithInsights,
 } from '@/lib/data/ad-connections';
@@ -58,6 +61,17 @@ function formatMoneyMetric(value: number | null | undefined, currency: string | 
   }
 
   return currency ? `${formatted} ${currency}` : formatted;
+}
+
+function formatPercentMetric(value: number | null | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 'Not available';
+  }
+
+  return `${new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value * 100)}%`;
 }
 
 function normalizeAccountMatchValue(value: string | null | undefined) {
@@ -170,6 +184,84 @@ Please analyze:
 - What to change next
 - Recommendations
 - Next actions`;
+}
+
+function findGoogleAdsCampaignForAnalysis({
+  customers,
+  customerId,
+  campaignId,
+}: {
+  customers: GoogleAdsCustomerCampaignsData[];
+  customerId: string;
+  campaignId: string;
+}) {
+  const customer = customers.find((item) => item.customerId === customerId);
+
+  if (!customer) {
+    return {
+      customer: null,
+      campaign: null,
+    };
+  }
+
+  return {
+    customer,
+    campaign: customer.campaigns.find((item) => item.campaignId === campaignId) ?? null,
+  };
+}
+
+function buildGoogleAdsCampaignAnalysisDescription({
+  customer,
+  campaign,
+}: {
+  customer: GoogleAdsCustomerCampaignsData;
+  campaign: GoogleAdsCampaignMetricsRow;
+}) {
+  return `GOOGLE ADS CAMPAIGN PERFORMANCE BRIEF
+
+Platform:
+Google Ads
+
+Customer ID:
+${valueOrFallback(customer.customerId)}
+
+Campaign ID:
+${valueOrFallback(campaign.campaignId)}
+
+Campaign name:
+${valueOrFallback(campaign.campaignName)}
+
+Date range:
+last 30 days
+
+Status:
+${valueOrFallback(campaign.status ?? '')}
+
+Channel type:
+${valueOrFallback(campaign.channelType ?? '')}
+
+Impressions:
+${formatMetricValue(campaign.impressions)}
+
+Clicks:
+${formatMetricValue(campaign.clicks)}
+
+CTR:
+${formatPercentMetric(campaign.ctr)}
+
+Average CPC:
+${formatMetricValue(campaign.averageCpc)}
+
+Cost:
+${formatMetricValue(campaign.cost)}
+
+Conversions:
+${formatMetricValue(campaign.conversions)}
+
+Conversion value:
+${formatMetricValue(campaign.conversionsValue)}
+
+Please analyze weak performance causes, budget efficiency, targeting/channel fit, creative/offer/landing-page assumptions, and next actions.`;
 }
 
 async function getCampaignAgent(
@@ -649,6 +741,112 @@ export async function createMetaCampaignAnalysisTask(
 
   const title = `[Meta Campaign Analysis] ${campaign.name ?? campaign.id ?? 'Meta campaign'}`;
   const description = buildMetaCampaignAnalysisDescription({ account, campaign });
+
+  return createCampaignTask({ title, description });
+}
+
+export async function createGoogleAdsCampaignAnalysisTask(
+  _state: CampaignTaskState,
+  formData: FormData
+): Promise<CampaignTaskState> {
+  const customerId = readField(formData, 'customerId');
+  const campaignId = readField(formData, 'campaignId');
+
+  if (!customerId) {
+    return { error: 'Google Ads customer is missing.' };
+  }
+
+  if (!campaignId) {
+    return { error: 'Google Ads campaign is missing.' };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/auth/login?redirectTo=/dashboard/campaigns');
+  }
+
+  const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
+  const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
+
+  if (!workspaceResult.data) {
+    redirect('/onboarding');
+  }
+
+  const googleAdsResult = await getGoogleAdsCampaignMetricsForWorkspace(
+    workspaceResult.data.id,
+    user.id
+  );
+
+  if (googleAdsResult.error) {
+    return { error: 'Google Ads campaign metrics could not be loaded.' };
+  }
+
+  if (googleAdsResult.data.state === 'not_connected') {
+    return { error: 'Connect Google Ads before creating a campaign analysis task.' };
+  }
+
+  if (googleAdsResult.data.state === 'token_invalid') {
+    return { error: 'Google Ads token expired or invalid. Reconnect Google Ads first.' };
+  }
+
+  if (googleAdsResult.data.state === 'permission_issue') {
+    return { error: 'Google Ads permission issue. Check account access first.' };
+  }
+
+  if (googleAdsResult.data.state === 'api_issue') {
+    return { error: 'Google Ads developer token / API issue. Check API access first.' };
+  }
+
+  if (googleAdsResult.data.state !== 'connected') {
+    return { error: 'Google Ads campaign metrics could not be loaded.' };
+  }
+
+  const { customer, campaign } = findGoogleAdsCampaignForAnalysis({
+    customers: googleAdsResult.data.customers,
+    customerId,
+    campaignId,
+  });
+
+  if (!customer) {
+    return { error: 'Google Ads customer could not be found.' };
+  }
+
+  if (customer.campaignsState === 'token_invalid') {
+    return { error: 'Google Ads token expired or invalid. Reconnect Google Ads first.' };
+  }
+
+  if (customer.campaignsState === 'permission_issue') {
+    return { error: 'Google Ads permission issue. Check account access first.' };
+  }
+
+  if (customer.campaignsState === 'api_issue') {
+    return { error: 'Google Ads developer token / API issue. Check API access first.' };
+  }
+
+  if (customer.campaignsState === 'not_requested') {
+    return {
+      error:
+        'Google Ads metrics were not loaded for this customer because this page uses safe campaign limits.',
+    };
+  }
+
+  if (customer.campaignsState !== 'connected') {
+    return { error: 'Google Ads campaigns could not be loaded for this customer.' };
+  }
+
+  if (!campaign) {
+    return { error: 'Google Ads campaign could not be found.' };
+  }
+
+  const title = `[Google Ads Campaign Analysis] ${campaign.campaignName}`;
+  const description = buildGoogleAdsCampaignAnalysisDescription({
+    customer,
+    campaign,
+  });
 
   return createCampaignTask({ title, description });
 }

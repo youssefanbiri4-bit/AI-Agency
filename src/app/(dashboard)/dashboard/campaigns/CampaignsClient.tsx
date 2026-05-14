@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
@@ -9,7 +9,10 @@ import {
   ClipboardList,
   Clock,
   FileText,
+  Filter,
+  Plus,
   Send,
+  Sparkles,
   TrendingUp,
 } from 'lucide-react';
 import {
@@ -24,6 +27,29 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input, Label, Select, Textarea } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { cn } from '@/lib/utils';
+
+type CampaignPlatform = 'instagram' | 'facebook' | 'google_ads' | 'pinterest' | 'manual';
+type CampaignBoardStatus =
+  | 'draft'
+  | 'ready'
+  | 'scheduled'
+  | 'published'
+  | 'failed'
+  | 'setup_required'
+  | 'approval_pending';
+
+export interface CampaignBoardItem {
+  id: string;
+  title: string;
+  platform: CampaignPlatform;
+  status: CampaignBoardStatus;
+  providerReadiness: string;
+  updatedLabel: string;
+  linkedCount?: number;
+  href: string;
+  actionLabel: string;
+}
 
 export interface CampaignReportItem {
   taskId: string;
@@ -46,6 +72,7 @@ export interface PendingCampaignTaskItem {
 }
 
 interface CampaignsClientProps {
+  campaignBoardItems: CampaignBoardItem[];
   campaignReports: CampaignReportItem[];
   pendingCampaignTasks: PendingCampaignTaskItem[];
   preferredAgentName: string;
@@ -54,6 +81,114 @@ interface CampaignsClientProps {
 const initialState: CampaignTaskState = {
   error: null,
 };
+const gradientButtonClassName =
+  'border-[#F7CBCA] bg-gradient-to-r from-[#F7CBCA] to-[#F7CBCA] text-white shadow-[0_16px_34px_rgba(202,40,81,0.24)] hover:border-[#5D6B6B] hover:from-[#5D6B6B] hover:to-[#F7CBCA] hover:text-white';
+const warmOutlineButtonClassName =
+  'border-[#5D6B6B]/12 bg-[#F1F7F7] text-[#5D6B6B] hover:border-[#F7CBCA]/35 hover:bg-[#D5E5E5]/55 hover:text-[#F7CBCA]';
+const premiumCardClassName =
+  'rounded-2xl border-[#5D6B6B]/8 bg-white shadow-[0_20px_58px_rgba(93,107,107,0.08)]';
+const softPanelClassName =
+  'rounded-2xl border border-[#5D6B6B]/8 bg-[#F1F7F7] shadow-sm';
+
+type CampaignFilter =
+  | 'all'
+  | 'instagram'
+  | 'facebook'
+  | 'google_ads'
+  | 'pinterest'
+  | 'draft'
+  | 'scheduled'
+  | 'published'
+  | 'setup_required';
+
+const filters: Array<{ label: string; value: CampaignFilter }> = [
+  { label: 'All', value: 'all' },
+  { label: 'Instagram', value: 'instagram' },
+  { label: 'Facebook', value: 'facebook' },
+  { label: 'Google Ads', value: 'google_ads' },
+  { label: 'Pinterest', value: 'pinterest' },
+  { label: 'Draft', value: 'draft' },
+  { label: 'Scheduled', value: 'scheduled' },
+  { label: 'Published', value: 'published' },
+  { label: 'Setup Required', value: 'setup_required' },
+];
+
+const statusStyles: Record<
+  CampaignBoardStatus,
+  {
+    label: string;
+    className: string;
+  }
+> = {
+  draft: {
+    label: 'Draft',
+    className: 'border-[#5D6B6B]/10 bg-[#5D6B6B]/6 text-[#5D6B6B]/68',
+  },
+  ready: {
+    label: 'Ready',
+    className: 'border-[#E7F5DC]/36 bg-[#D5E5E5]/68 text-[#7A3A00]',
+  },
+  scheduled: {
+    label: 'Scheduled',
+    className: 'border-[#E7F5DC]/42 bg-[#E7F5DC]/24 text-[#A14C00]',
+  },
+  published: {
+    label: 'Published',
+    className: 'border-[#D5E5E5]/60 bg-[#5D6B6B] text-[#D5E5E5]',
+  },
+  failed: {
+    label: 'Failed',
+    className: 'border-[#F7CBCA]/28 bg-[#F7CBCA]/12 text-[#F7CBCA]',
+  },
+  setup_required: {
+    label: 'Setup Required',
+    className: 'border-[#F7CBCA]/30 bg-[#F7CBCA]/10 text-[#F7CBCA]',
+  },
+  approval_pending: {
+    label: 'Approval Pending',
+    className: 'border-[#D5E5E5] bg-[#F1F7F7] text-[#9A5A00]',
+  },
+};
+
+function CampaignStatusBadge({ status }: { status: CampaignBoardStatus }) {
+  const config = statusStyles[status];
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-black',
+        config.className
+      )}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {config.label}
+    </span>
+  );
+}
+
+function formatPlatform(platform: CampaignPlatform) {
+  const labels: Record<CampaignPlatform, string> = {
+    instagram: 'Instagram',
+    facebook: 'Facebook',
+    google_ads: 'Google Ads',
+    pinterest: 'Pinterest',
+    manual: 'Manual',
+  };
+
+  return labels[platform];
+}
+
+function matchesFilter(item: CampaignBoardItem, filter: CampaignFilter) {
+  if (filter === 'all') {
+    return true;
+  }
+
+  if (filter === 'instagram' && item.platform === 'facebook') {
+    return true;
+  }
+
+  return item.platform === filter || item.status === filter;
+}
 
 function Field({
   id,
@@ -70,14 +205,143 @@ function Field({
     <div>
       <Label htmlFor={id}>
         {label}
-        {required && <span className="text-[#F55477]"> *</span>}
+        {required && <span className="text-[#F7CBCA]"> *</span>}
       </Label>
       {children}
     </div>
   );
 }
 
+function CampaignTrackingBoard({ items }: { items: CampaignBoardItem[] }) {
+  const [activeFilter, setActiveFilter] = useState<CampaignFilter>('all');
+  const filteredItems = useMemo(
+    () => items.filter((item) => matchesFilter(item, activeFilter)),
+    [activeFilter, items]
+  );
+
+  return (
+    <Card className={premiumCardClassName}>
+      <CardHeader
+        title="Campaign Tracking Board"
+        description="A focused view of campaign drafts, reports, provider readiness, and imported campaign signals."
+        action={
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#F7CBCA]/18 bg-[#F1F7F7] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#F7CBCA]">
+            <Filter className="h-3.5 w-3.5" />
+            Live View
+          </div>
+        }
+      />
+
+      <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+        {filters.map((filter) => {
+          const isActive = activeFilter === filter.value;
+
+          return (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => setActiveFilter(filter.value)}
+              className={cn(
+                'shrink-0 rounded-full border px-3.5 py-2 text-sm font-black transition-all',
+                isActive
+                  ? 'border-[#F7CBCA] bg-gradient-to-r from-[#F7CBCA] to-[#F7CBCA] text-white shadow-[0_12px_24px_rgba(202,40,81,0.20)]'
+                  : 'border-[#5D6B6B]/10 bg-[#F1F7F7] text-[#5D6B6B]/60 hover:border-[#F7CBCA]/32 hover:text-[#F7CBCA]'
+              )}
+            >
+              {filter.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-[#F7CBCA]/22 bg-[#F1F7F7] p-8 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#F7CBCA] via-[#F7CBCA] to-[#E7F5DC] text-white shadow-[0_18px_38px_rgba(202,40,81,0.24)]">
+            <Sparkles className="h-7 w-7" />
+          </div>
+          <h3 className="mt-5 text-lg font-black text-[#5D6B6B]">No campaigns yet</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#5D6B6B]/58">
+            Create your first campaign draft from Content & Ads Studio.
+          </p>
+          <div className="mt-6">
+            <Link
+              href="/dashboard/content-studio"
+              className={buttonStyles({ variant: 'primary', className: gradientButtonClassName })}
+            >
+              <Plus className="h-4 w-4" />
+              Create Campaign Draft
+            </Link>
+          </div>
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="rounded-2xl border border-[#5D6B6B]/8 bg-[#F1F7F7] p-6 text-center">
+          <p className="text-sm font-bold text-[#5D6B6B]/62">No campaigns match this filter.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {filteredItems.map((item) => (
+            <article
+              key={item.id}
+              className="group min-w-0 rounded-2xl border border-[#5D6B6B]/8 bg-[#F1F7F7] p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-[#F7CBCA]/22 hover:shadow-[0_20px_44px_rgba(202,40,81,0.13)]"
+            >
+              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#5D6B6B]/54">
+                      {formatPlatform(item.platform)}
+                    </span>
+                    <CampaignStatusBadge status={item.status} />
+                  </div>
+                  <h3 className="mt-3 break-words text-base font-black text-[#5D6B6B]">
+                    {item.title}
+                  </h3>
+                </div>
+                <Link
+                  href={item.href}
+                  className={buttonStyles({
+                    variant: 'outline',
+                    size: 'sm',
+                    className: warmOutlineButtonClassName,
+                  })}
+                >
+                  {item.actionLabel}
+                </Link>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-2">
+                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#5D6B6B]/38">
+                    Readiness
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[#5D6B6B]/72">
+                    {item.providerReadiness}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-2">
+                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#5D6B6B]/38">
+                    Updated
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[#5D6B6B]/72">{item.updatedLabel}</p>
+                </div>
+                <div className="rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-2">
+                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#5D6B6B]/38">
+                    Linked
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[#5D6B6B]/72">
+                    {typeof item.linkedCount === 'number' ? item.linkedCount : 'Available'}
+                  </p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export function CampaignsClient({
+  campaignBoardItems,
   campaignReports,
   pendingCampaignTasks,
   preferredAgentName,
@@ -97,8 +361,10 @@ export function CampaignsClient({
 
   return (
     <div className="space-y-8">
+      <CampaignTrackingBoard items={campaignBoardItems} />
+
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-        <Card>
+        <Card className={premiumCardClassName}>
           <CardHeader
             title="Campaign Planner"
             description={`Create a pending task for ${preferredAgentName} with a complete campaign brief.`}
@@ -135,7 +401,7 @@ export function CampaignsClient({
 
               <Field id="campaignGoal" label="Campaign goal" required>
                 <div className="relative">
-                  <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
+                  <ChevronDown className="pointer-events-none absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
                   <Select id="campaignGoal" name="campaignGoal" required disabled={isPlannerPending} defaultValue="">
                     <option value="" disabled>Select goal</option>
                     <option value="Lead generation">Lead generation</option>
@@ -193,7 +459,12 @@ export function CampaignsClient({
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" size="lg" disabled={isPlannerPending}>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isPlannerPending}
+                className={gradientButtonClassName}
+              >
                 {isPlannerPending ? (
                   <>
                     <Clock className="h-5 w-5 animate-spin" />
@@ -210,7 +481,7 @@ export function CampaignsClient({
           </form>
         </Card>
 
-        <Card>
+        <Card className={premiumCardClassName}>
           <CardHeader
             title="Performance Analyzer"
             description="Turn ad metrics and observed problems into a pending analysis task."
@@ -310,7 +581,12 @@ export function CampaignsClient({
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" size="lg" disabled={isAnalyzerPending}>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isAnalyzerPending}
+                className={gradientButtonClassName}
+              >
                 {isAnalyzerPending ? (
                   <>
                     <Clock className="h-5 w-5 animate-spin" />
@@ -328,7 +604,7 @@ export function CampaignsClient({
         </Card>
       </div>
 
-      <Card>
+      <Card className={premiumCardClassName}>
         <CardHeader
           title="Manual Campaign Tracker"
           description="Log live ad performance and create a pending campaign analysis task."
@@ -498,7 +774,12 @@ export function CampaignsClient({
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" size="lg" disabled={isTrackerPending}>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isTrackerPending}
+              className={gradientButtonClassName}
+            >
               {isTrackerPending ? (
                 <>
                   <Clock className="h-5 w-5 animate-spin" />
@@ -515,12 +796,19 @@ export function CampaignsClient({
         </form>
       </Card>
 
-      <Card>
+      <Card className={premiumCardClassName}>
         <CardHeader
           title="Recent Campaign Reports"
           description="Completed and review-ready campaign tasks with generated report output."
           action={
-            <Link href="/dashboard/reports" className={buttonStyles({ variant: 'outline', size: 'sm' })}>
+            <Link
+              href="/dashboard/reports"
+              className={buttonStyles({
+                variant: 'outline',
+                size: 'sm',
+                className: warmOutlineButtonClassName,
+              })}
+            >
               <FileText className="h-4 w-4" />
               All Reports
             </Link>
@@ -536,7 +824,7 @@ export function CampaignsClient({
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {campaignReports.map((report) => (
-              <article key={report.taskId} className="muted-panel min-w-0 p-4">
+              <article key={report.taskId} className={cn(softPanelClassName, 'min-w-0 p-4 transition-all hover:-translate-y-1 hover:border-[#F7CBCA]/22 hover:shadow-[0_18px_38px_rgba(202,40,81,0.12)]')}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <h3 className="break-words font-bold text-black">{report.title}</h3>
@@ -548,7 +836,14 @@ export function CampaignsClient({
                 </div>
                 <p className="mt-4 text-sm leading-6 text-black/62">{report.summaryPreview}</p>
                 <div className="mt-4">
-                  <Link href={report.href} className={buttonStyles({ variant: 'soft', size: 'sm' })}>
+                  <Link
+                    href={report.href}
+                    className={buttonStyles({
+                      variant: 'soft',
+                      size: 'sm',
+                      className: 'border-[#F7CBCA]/15 bg-[#D5E5E5]/55 text-[#F7CBCA] hover:border-[#F7CBCA]/32 hover:bg-[#D5E5E5]',
+                    })}
+                  >
                     Open Report
                   </Link>
                 </div>
@@ -559,7 +854,7 @@ export function CampaignsClient({
       </Card>
 
       {pendingCampaignTasks.length > 0 && (
-        <Card>
+        <Card className={premiumCardClassName}>
           <CardHeader
             title="Draft/Pending Campaign Tasks"
             description="Campaign briefs and tracking analyses created as normal pending tasks."
@@ -567,7 +862,7 @@ export function CampaignsClient({
 
           <div className="grid gap-3 md:grid-cols-2">
             {pendingCampaignTasks.map((task) => (
-              <div key={task.taskId} className="muted-panel flex min-w-0 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div key={task.taskId} className={cn(softPanelClassName, 'flex min-w-0 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between')}>
                 <div className="min-w-0">
                   <h3 className="break-words text-sm font-bold text-black">{task.title}</h3>
                   <p className="mt-1 text-xs text-black/52">
@@ -576,7 +871,14 @@ export function CampaignsClient({
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <StatusBadge status={task.status} type="task" size="sm" />
-                  <Link href={task.href} className={buttonStyles({ variant: 'outline', size: 'sm' })}>
+                  <Link
+                    href={task.href}
+                    className={buttonStyles({
+                      variant: 'outline',
+                      size: 'sm',
+                      className: warmOutlineButtonClassName,
+                    })}
+                  >
                     Open
                   </Link>
                 </div>

@@ -13,9 +13,9 @@ export function DashboardPreview({ agents }: DashboardPreviewProps) {
 
   return (
     <div className="relative w-full min-w-0 max-w-full">
-      <div className="w-full max-w-full rounded-[1.35rem] border border-black/8 bg-white p-3 shadow-[0_30px_80px_rgba(0,0,0,0.14)]">
-        <div className="w-full max-w-full overflow-hidden rounded-lg border border-black/8 bg-[#F0DBEF]/28">
-          <div className="flex items-start justify-between gap-3 border-b border-black/8 bg-white px-4 py-3">
+      <div className="w-full max-w-full rounded-[1.35rem] border border-[#F7CBCA]/10 bg-white/58 p-3 shadow-[0_30px_80px_rgba(93,107,107,0.12)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
+        <div className="w-full max-w-full overflow-hidden rounded-lg border border-[#F7CBCA]/10 bg-[#D5E5E5]/24 backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
+          <div className="flex items-start justify-between gap-3 border-b border-[#F7CBCA]/10 bg-white/52 px-4 py-3 backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
             <div className="min-w-0">
               <p className="truncate text-sm font-black text-black">Agency Command Center</p>
               <p className="text-xs leading-5 text-black/52">Configured catalog with workspace-scoped data</p>
@@ -29,28 +29,28 @@ export function DashboardPreview({ agents }: DashboardPreviewProps) {
                 label: 'Agent catalog',
                 value: agents.length,
                 icon: Users,
-                color: 'text-[#8B3CDE]',
-                bg: 'bg-[#F0DBEF]',
+                color: 'text-[#F7CBCA]',
+                bg: 'bg-[#D5E5E5]',
               },
               {
                 label: 'Departments',
                 value: DEPARTMENTS.length,
                 icon: Database,
-                color: 'text-[#8B3CDE]',
-                bg: 'bg-[#F0DBEF]',
+                color: 'text-[#F7CBCA]',
+                bg: 'bg-[#D5E5E5]',
               },
               {
                 label: 'Workspace data',
                 value: 'Task-ready',
                 icon: FileText,
-                color: 'text-[#F55477]',
-                bg: 'bg-[#F0DBEF]',
+                color: 'text-[#F7CBCA]',
+                bg: 'bg-[#D5E5E5]',
               },
             ].map((stat) => {
               const Icon = stat.icon;
 
               return (
-                <div key={stat.label} className="rounded-lg border border-black/8 bg-white p-3 shadow-sm">
+                <div key={stat.label} className="rounded-lg border border-[#F7CBCA]/10 bg-white/70 p-3 shadow-sm backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
                   <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-lg ${stat.bg} ${stat.color}`}>
                     <Icon className="h-4 w-4" />
                   </div>
@@ -62,7 +62,7 @@ export function DashboardPreview({ agents }: DashboardPreviewProps) {
           </div>
 
           <div className="grid grid-cols-1 gap-4 px-4 pb-4 lg:grid-cols-[0.85fr_1fr]">
-            <div className="min-w-0 rounded-lg border border-black/8 bg-white p-4 shadow-sm">
+            <div className="min-w-0 rounded-lg border border-[#F7CBCA]/10 bg-white/70 p-4 shadow-sm backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm font-bold text-black">Agent Readiness</p>
                 <Clock className="h-4 w-4 text-black/34" />
@@ -90,20 +90,20 @@ export function DashboardPreview({ agents }: DashboardPreviewProps) {
                         <p className="truncate text-sm font-bold text-black">{agent.name}</p>
                         <p className="text-xs text-black/52">Workflow execution guarded</p>
                       </div>
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-[#F55477]" />
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-[#F7CBCA]" />
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            <div className="min-w-0 rounded-lg border border-black/8 bg-white p-4 shadow-sm">
+            <div className="min-w-0 rounded-lg border border-[#F7CBCA]/10 bg-white/70 p-4 shadow-sm backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm font-bold text-black">Task Records</p>
                 <FileText className="h-4 w-4 text-black/34" />
               </div>
-              <div className="rounded-lg border border-dashed border-[#8B3CDE]/22 bg-[#F0DBEF]/35 p-4 text-center">
-                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#8B3CDE] shadow-sm">
+              <div className="rounded-lg border border-dashed border-[#F7CBCA]/22 bg-[#D5E5E5]/35 p-4 text-center">
+                <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#F7CBCA] shadow-sm">
                   <Database className="h-5 w-5" />
                 </div>
                 <p className="text-sm font-bold text-black">Ready for first task</p>
@@ -114,11 +114,11 @@ export function DashboardPreview({ agents }: DashboardPreviewProps) {
             </div>
           </div>
 
-          <div className="border-t border-black/8 bg-white px-4 py-3">
+          <div className="border-t border-[#F7CBCA]/10 bg-white/52 px-4 py-3 backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold leading-5 text-black/52">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#8B3CDE]" />
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#F7CBCA]" />
               Supabase-ready workspace with guarded n8n execution
-              <Workflow className="h-4 w-4 shrink-0 text-[#F55477]" />
+              <Workflow className="h-4 w-4 shrink-0 text-[#F7CBCA]" />
             </div>
           </div>
         </div>

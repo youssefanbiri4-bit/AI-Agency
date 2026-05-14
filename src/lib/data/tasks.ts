@@ -17,6 +17,7 @@ export interface CreateTaskDraftInput {
   title: string;
   description: string;
   priority?: TaskPriority;
+  inputData?: JsonObject;
 }
 
 export interface UpdateTaskReviewStatusInput {
@@ -143,7 +144,7 @@ export async function createTask(
       agent_type: input.agentType,
       title: input.title,
       description: input.description,
-      input_data: {},
+      input_data: input.inputData ?? {},
       priority: input.priority ?? 'Normal',
       status: 'pending',
     })

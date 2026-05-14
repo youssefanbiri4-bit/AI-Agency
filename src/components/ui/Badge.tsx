@@ -21,24 +21,25 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
 const toneStyles: Record<BadgeTone, string> = {
   neutral: 'border-black/10 bg-white text-black/70',
-  brand: 'border-[#8B3CDE]/18 bg-[#F0DBEF]/70 text-[#8B3CDE]',
-  accent: 'border-[#F55477]/18 bg-[#F0DBEF]/70 text-[#F55477]',
+  brand: 'border-[#F7CBCA]/18 bg-[#D5E5E5]/70 text-[#F7CBCA]',
+  accent: 'border-[#F7CBCA]/18 bg-[#D5E5E5]/70 text-[#F7CBCA]',
   success: 'border-black/12 bg-black text-white',
-  warning: 'border-[#F55477]/18 bg-[#F0DBEF]/70 text-[#F55477]',
+  warning: 'border-[#F7CBCA]/18 bg-[#D5E5E5]/70 text-[#F7CBCA]',
   dark: 'border-black bg-black text-white',
   slate: 'border-black/10 bg-white text-black/70',
-  blue: 'border-[#8B3CDE]/18 bg-[#F0DBEF]/70 text-[#8B3CDE]',
-  violet: 'border-[#8B3CDE]/18 bg-[#F0DBEF]/70 text-[#8B3CDE]',
-  cyan: 'border-[#F55477]/18 bg-[#F0DBEF]/70 text-[#F55477]',
-  emerald: 'border-black/10 bg-[#F0DBEF]/55 text-black',
-  amber: 'border-[#F55477]/18 bg-[#F0DBEF]/70 text-[#F55477]',
+  blue: 'border-[#F7CBCA]/18 bg-[#D5E5E5]/70 text-[#F7CBCA]',
+  violet: 'border-[#F7CBCA]/18 bg-[#D5E5E5]/70 text-[#F7CBCA]',
+  cyan: 'border-[#F7CBCA]/18 bg-[#D5E5E5]/70 text-[#F7CBCA]',
+  emerald: 'border-black/10 bg-[#D5E5E5]/55 text-black',
+  amber: 'border-[#F7CBCA]/18 bg-[#D5E5E5]/70 text-[#F7CBCA]',
 };
 
 export function Badge({ tone = 'neutral', className, ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-black',
+        'inline-flex w-fit max-w-full min-w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-black leading-5',
+        'whitespace-normal break-words text-start',
         toneStyles[tone],
         className
       )}

@@ -159,6 +159,27 @@ Production URL: https://agentflow-ai-sigma.vercel.app
 - Confirm desktop and mobile layouts do not have page-level horizontal scroll.
 - Confirm no deployment or environment changes are required for this checklist.
 
+## 15A. Reels Studio
+
+- Open `/dashboard/reels`.
+- Confirm the Reels Studio sidebar item is visible and active on Reels routes.
+- Confirm overview cards show Drafts, Ready, Scheduled, Published, and Failed.
+- Click New Reel and confirm `/dashboard/reels/new` opens.
+- Fill campaign basics, creative planning, hashtags, media references, subtitles, music note, and optional scheduled date.
+- Click Save Draft and confirm the detail page opens.
+- Confirm the Reel appears in the list with title, Instagram platform, status, goal, scheduled date, published date, created date, and updated date.
+- Open the Reel detail page and confirm preview, script, caption, hashtags, media, status timeline, publishing readiness, and edit form appear.
+- Click Mark Ready and confirm the Reel moves to `ready`.
+- Click Create AI Script Task and confirm a normal `pending` task is created with a title starting `[Instagram Reel Script]`.
+- Click Create AI Caption Task and confirm a normal `pending` task is created with a title starting `[Instagram Reel Caption]`.
+- Confirm AI task creation does not auto-run n8n.
+- Confirm Reels notifications are created when supported by the database.
+- With missing Instagram publishing setup, confirm the UI shows: “Instagram publishing setup required. Connect an Instagram Business or Creator account with content publishing permissions.”
+- Confirm the Publish button is hidden unless readiness checks pass.
+- Confirm no Meta token, encrypted token, app secret, OAuth code, credentialed API URL, or raw Meta error is shown.
+- Confirm Reels Studio does not create ads, campaigns, ad sets, creatives, or request `ads_management`.
+- Confirm no automatic publishing occurs.
+
 ## 16. Pinterest Ads Provider Foundation
 
 - Open `/dashboard/campaigns`.
@@ -188,11 +209,25 @@ Production URL: https://agentflow-ai-sigma.vercel.app
 - Confirm Google Ads access and refresh tokens are stored encrypted server-side only.
 - Confirm the Campaigns page shows connected Google Ads state.
 - Confirm accessible Google Ads customer accounts are listed by safe customer ID/resource name only.
+- Confirm Google Ads campaigns are displayed under each inspected customer account.
+- Confirm last 30 days metrics are displayed when available.
+- Confirm metrics show impressions, clicks, CTR, average CPC, cost, conversions, and conversion value.
+- Confirm average CPC and cost are displayed in normal currency units, not micros.
+- Confirm no campaigns state shows “No campaigns found.”
+- Confirm no metrics state shows “No metrics available.”
+- Confirm token invalid state prompts reconnect.
+- Confirm permission issue, developer token/API issue, and generic error states are safe and do not expose raw Google API JSON.
+- Click Create AI Analysis Task under a Google Ads campaign.
+- Confirm the task is created as a normal `pending` AgentFlow task.
+- Confirm the app redirects to Task Details after creation.
+- Confirm the task title starts with `[Google Ads Campaign Analysis]`.
+- Confirm the task brief includes Google Ads platform, customer ID, campaign ID, campaign name, last 30 days date range, status, channel type, impressions, clicks, CTR, average CPC, cost, conversions, conversion value, and requested analysis instruction.
+- Confirm the task does not run automatically.
 - Confirm no Google Ads token, refresh token, client secret, developer token, auth code, or credentialed API URL appears in UI, logs, reports, notifications, or exports.
 - Confirm expired access tokens refresh server-side from the encrypted refresh token.
 - Confirm no Google Ads publishing action exists.
-- Confirm no Google Ads campaigns are fetched yet.
-- Confirm no Google Ads metrics are fetched yet.
+- Confirm no ad groups, ads, creatives, keywords, search terms, or conversion records are fetched or displayed.
+- Confirm no Google Ads campaign storage or background sync exists.
 - Confirm no write or publish route exists.
 - Confirm the provider constraint allows `meta`, `google_ads`, and `pinterest`, and does not allow LinkedIn.
 
@@ -225,6 +260,28 @@ Production URL: https://agentflow-ai-sigma.vercel.app
 - Confirm no browser push notification is sent.
 - Confirm no secrets or tokens are shown in notification title, message, metadata UI, or links.
 
+## 19A. Creative Assets And OpenAI Image Foundation
+
+- Open `/dashboard/creative-assets`.
+- Confirm the Creative Assets sidebar item is visible and active on Creative Assets routes.
+- Confirm overview cards show Total Assets, Draft Prompts, Generated Images, and Failed Generations.
+- Click New Creative Asset and confirm `/dashboard/creative-assets/new` opens.
+- Fill Creative Brief fields: title, type, platform, goal, offer, target audience, market, tone, style, visual direction, text overlay, brand colors, and notes.
+- Fill Prompt Builder fields: prompt, negative prompt, aspect ratio, output style, and generation mode.
+- With `OPENAI_API_KEY` missing, confirm the setup-required notice appears.
+- With `OPENAI_API_KEY` missing, confirm Save Draft, Generate Image Prompt, Copy Prompt, and Save to Assets work where applicable.
+- With `OPENAI_API_KEY` missing, confirm Generate Image and Regenerate are disabled.
+- Click Generate Image Prompt and confirm a deterministic prompt and negative prompt are saved.
+- Open the asset detail page and confirm Creative brief, Generated prompt, Negative prompt, Image preview, Status timeline, Source, and Linked placement sections appear.
+- Confirm Copy Prompt copies only prompt text and no secrets.
+- Confirm the detail page says the asset can be used later as Reel Cover or Ad Creative.
+- Confirm no `OPENAI_API_KEY`, `NEXT_PUBLIC_OPENAI_API_KEY`, raw provider response, or base64 image payload appears in the browser.
+- Confirm no automatic ad publishing occurs.
+- After adding `OPENAI_API_KEY` in Vercel in a future phase, confirm Generate Image runs server-side and stores image output in Supabase Storage bucket `creative-assets`.
+- Confirm generated images are stored as files or URLs, not large base64 database values.
+- Confirm Creative Assets notifications are created when supported by the database.
+- Confirm `/dashboard/settings` shows AI Image Generation Readiness without showing the actual key.
+
 ## 20. Regression Guardrails
 
 Before changing task execution, callback handling, reports, or review behavior, verify:
@@ -236,8 +293,12 @@ Before changing task execution, callback handling, reports, or review behavior, 
 - No task execution logic changes are needed.
 - No environment variable changes are needed.
 - No Meta OAuth scope changes are needed.
-- No Meta publishing behavior is added without a future approval flow.
+- No Meta Ads publishing behavior is added without a future approval flow.
+- No Instagram Reels automatic publishing is added.
+- No Instagram Reels ad publishing or campaign creation is added.
 - No Pinterest OAuth scope changes are needed.
 - No Pinterest publishing behavior is added without a future approval flow.
 - No Google Ads OAuth scope changes are needed.
 - No Google Ads publishing behavior is added without a future approval flow.
+- No OpenAI key is exposed to client components.
+- No generated image base64 is stored in the database.

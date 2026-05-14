@@ -9,7 +9,7 @@ export type PinterestConfigStatus =
   | 'missing_redirect_uri';
 
 export type PinterestRequiredEnvVar =
-  | 'PINTEREST_APP_ID'
+  | 'PINTEREST_APP_ID/PINTEREST_CLIENT_ID'
   | 'PINTEREST_APP_SECRET'
   | 'PINTEREST_REDIRECT_URI';
 
@@ -52,7 +52,9 @@ function getMissingPinterestEnvVars(): PinterestRequiredEnvVar[] {
   const missing: PinterestRequiredEnvVar[] = [];
 
   if (!process.env.PINTEREST_APP_ID?.trim()) {
-    missing.push('PINTEREST_APP_ID');
+    if (!process.env.PINTEREST_CLIENT_ID?.trim()) {
+      missing.push('PINTEREST_APP_ID/PINTEREST_CLIENT_ID');
+    }
   }
 
   if (!process.env.PINTEREST_APP_SECRET?.trim()) {
@@ -69,7 +71,7 @@ function getMissingPinterestEnvVars(): PinterestRequiredEnvVar[] {
 function getStatusFromMissingEnv(
   missingEnvironmentVariables: PinterestRequiredEnvVar[]
 ): PinterestConfigStatus {
-  if (missingEnvironmentVariables.includes('PINTEREST_APP_ID')) {
+  if (missingEnvironmentVariables.includes('PINTEREST_APP_ID/PINTEREST_CLIENT_ID')) {
     return 'missing_app_id';
   }
 
@@ -95,7 +97,7 @@ function getPinterestEnv(): PinterestEnv {
   }
 
   return {
-    appId: process.env.PINTEREST_APP_ID?.trim() ?? '',
+    appId: process.env.PINTEREST_APP_ID?.trim() || process.env.PINTEREST_CLIENT_ID?.trim() || '',
     appSecret: process.env.PINTEREST_APP_SECRET?.trim() ?? '',
     redirectUri: process.env.PINTEREST_REDIRECT_URI?.trim() ?? '',
     apiVersion:

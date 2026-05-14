@@ -22,6 +22,7 @@ import { FeatureCard } from '@/components/marketing/FeatureCard';
 import { MarketingAgentCard } from '@/components/marketing/MarketingAgentCard';
 import { MarketingDepartmentCard } from '@/components/marketing/MarketingDepartmentCard';
 import { MarketingNavbar } from '@/components/marketing/MarketingNavbar';
+import { AgentFlowScrollShowcase } from '@/components/marketing/AgentFlowScrollShowcase';
 import { SectionHeader } from '@/components/marketing/SectionHeader';
 import { WorkflowSection } from '@/components/marketing/WorkflowSection';
 import { agentCatalog } from '@/data/agents';
@@ -83,27 +84,12 @@ const trustItems = [
   },
 ];
 
-const pricingTiers = [
-  {
-    name: 'Foundation',
-    description: 'For teams preparing an AI agency workspace and task review process.',
-    points: ['18-agent catalog', 'Task and review workspace', 'Dashboard and reports'],
-  },
-  {
-    name: 'Agency',
-    description: 'For client-facing teams that need department visibility and repeatable delivery.',
-    points: ['Department dashboards', 'Honest no-data states', 'Client-ready review flow'],
-  },
-  {
-    name: 'Scale',
-    description: 'For teams ready to expand workspace persistence, workflow automation, and reporting pipelines.',
-    points: ['Supabase workspace model', 'n8n-ready workflow boundary', 'Server-side secret handling'],
-  },
-];
+// Pricing section reserved for future Stripe integration.
+// const pricingTiers = [...];
 
 export default function Home() {
   return (
-    <div className="premium-page min-h-screen w-full text-black">
+    <div className="dashboard-background premium-page min-h-screen w-full text-black">
       <MarketingNavbar />
 
       <main className="w-full">
@@ -136,11 +122,11 @@ export default function Home() {
 
               <div className="mt-10 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
                 {[
-                  { label: 'Agents', value: '18' },
-                  { label: 'Departments', value: '3' },
+                  { label: 'Agents', value: '27' },
+                  { label: 'Departments', value: '4' },
                   { label: 'Metrics', value: 'Awaiting tasks' },
                 ].map((item) => (
-                  <div key={item.label} className="min-w-0 rounded-lg border border-black/8 bg-white/80 p-4 shadow-sm backdrop-blur">
+                  <div key={item.label} className="min-w-0 rounded-lg border border-[#F7CBCA]/10 bg-white/58 p-4 shadow-sm backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
                     <p className="text-2xl font-black text-black">{item.value}</p>
                     <p className="mt-1 text-xs font-black uppercase leading-5 tracking-[0.12em] text-black/46">{item.label}</p>
                   </div>
@@ -170,11 +156,13 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="agents" className="border-y border-black/8 bg-white py-24 sm:py-28">
+        <AgentFlowScrollShowcase />
+
+        <section id="agents" className="border-y border-[#F7CBCA]/8 bg-white/30 py-24 backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] sm:py-28">
           <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
             <SectionHeader
               eyebrow="Agent catalog"
-              title="18 specialized agents across your agency workflow"
+              title="27 specialized agents across agency and engineering workflows"
               description="A focused preview of the configured catalog. The dashboard keeps the full roster available for real workspace tasks."
             />
 
@@ -229,8 +217,8 @@ export default function Home() {
                   const Icon = item.icon;
 
                   return (
-                    <article key={item.title} className="card-lift min-w-0 rounded-lg border border-black/8 bg-white p-5 shadow-[0_18px_48px_rgba(0,0,0,0.06)] hover:border-[#8B3CDE]/24">
-                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-[#F0DBEF]/62 text-[#8B3CDE]">
+                    <article key={item.title} className="card-lift min-w-0 rounded-lg border border-[#F7CBCA]/10 bg-white/70 p-5 shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] hover:border-[#F7CBCA]/24">
+                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-[#D5E5E5]/62 text-[#F7CBCA]">
                         <Icon className="h-5 w-5" />
                       </div>
                       <h3 className="font-bold text-black">{item.title}</h3>
@@ -243,7 +231,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="border-y border-black/8 bg-white py-24 sm:py-28">
+        <section className="border-y border-[#F7CBCA]/8 bg-white/30 py-24 backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] sm:py-28">
           <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
               <div>
@@ -267,8 +255,8 @@ export default function Home() {
                     const Icon = item.icon;
 
                     return (
-                      <div key={item.label} className="flex min-w-0 items-center gap-3 rounded-lg border border-black/8 bg-[#F0DBEF]/35 p-3 text-sm font-bold text-black/68">
-                        <Icon className="h-4 w-4 text-[#8B3CDE]" />
+                      <div key={item.label} className="flex min-w-0 items-center gap-3 rounded-lg border border-black/8 bg-[#D5E5E5]/35 p-3 text-sm font-bold text-black/68">
+                        <Icon className="h-4 w-4 text-[#F7CBCA]" />
                         <span className="min-w-0">{item.label}</span>
                       </div>
                     );
@@ -281,52 +269,11 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="pricing" className="py-24 sm:py-28">
-          <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-            <SectionHeader
-              eyebrow="Pricing"
-              title="A clear path from workspace foundation to connected operations"
-              description="The current product is structured so your team can start with a polished interface, then connect persistence and automation when ready."
-            />
-
-            <div className="mt-14 grid grid-cols-1 gap-5 lg:grid-cols-3">
-              {pricingTiers.map((tier, index) => (
-                <article
-                  key={tier.name}
-                  className={`rounded-lg border p-6 shadow-[0_18px_48px_rgba(0,0,0,0.06)] ${
-                    index === 1
-                      ? 'border-[#8B3CDE]/18 bg-[#F0DBEF]/62'
-                      : 'border-black/8 bg-white'
-                  }`}
-                >
-                  <Badge tone={index === 1 ? 'brand' : 'neutral'}>{tier.name}</Badge>
-                  <p className="mt-5 text-sm leading-6 text-black/62">{tier.description}</p>
-                  <div className="mt-6 space-y-3">
-                    {tier.points.map((point) => (
-                      <div key={point} className="flex gap-2 text-sm font-semibold text-black/68">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#8B3CDE]" />
-                        {point}
-                      </div>
-                    ))}
-                  </div>
-                  <Link
-                    href="/auth/signup"
-                    className={buttonStyles({
-                      variant: index === 1 ? 'primary' : 'outline',
-                      size: 'md',
-                      className: 'mt-7 w-full',
-                    })}
-                  >
-                    Get Started
-                  </Link>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Pricing section reserved for future Stripe integration */}
+        {/* <section id="pricing" className="py-24 sm:py-28"> ... */}
 
         <section className="px-5 pb-24 sm:px-6 sm:pb-28 lg:px-8">
-          <div className="mx-auto max-w-7xl overflow-hidden rounded-lg border border-black bg-black p-8 text-white shadow-[0_30px_80px_rgba(0,0,0,0.24)] sm:p-10 lg:p-12">
+          <div className="mx-auto max-w-7xl overflow-hidden rounded-lg border border-[#F7CBCA]/12 bg-[#5D6B6B]/72 p-8 text-white shadow-[0_30px_80px_rgba(93,107,107,0.18)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] sm:p-10 lg:p-12">
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
                 <h2 className="break-words text-3xl font-black tracking-normal sm:text-4xl">

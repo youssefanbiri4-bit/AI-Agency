@@ -2,10 +2,10 @@ export const BRAND_NAME = 'AgentFlow AI';
 
 export const BRAND_COLORS = {
   white: '#FFFFFF',
-  surface: '#F0DBEF',
-  primary: '#8B3CDE',
-  accent: '#F55477',
-  ink: '#000000',
+  surface: '#FFE3B3',
+  primary: '#CA2851',
+  accent: '#FF6766',
+  ink: '#171717',
 } as const;
 
 const legacyColorMap: Record<string, string> = {

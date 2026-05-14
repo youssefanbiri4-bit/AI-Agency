@@ -41,6 +41,15 @@ export type AgentType =
   | 'crm_update'
   | 'customer_support'
   | 'analytics_report'
+  | 'code-review-agent'
+  | 'bug-fix-agent'
+  | 'architecture-agent'
+  | 'testing-agent'
+  | 'documentation-agent'
+  | 'deployment-agent'
+  | 'security-review-agent'
+  | 'database-agent'
+  | 'ui-ux-review-agent'
   | 'offer_builder'
   | 'content_creator'
   | 'outreach'
@@ -55,7 +64,11 @@ export type TaskStatus =
   | 'failed'
   | 'cancelled';
 export type AgentStatus = 'Not Connected';
-export type DepartmentName = 'Research & Strategy' | 'Content & Growth' | 'Sales & Operations';
+export type DepartmentName =
+  | 'Research & Strategy'
+  | 'Content & Growth'
+  | 'Sales & Operations'
+  | 'Development & Engineering';
 
 export interface TaskReview {
   id: string;
@@ -70,7 +83,7 @@ export interface TaskReview {
 
 // Department configuration
 export interface Department {
-  id: 'research_strategy' | 'content_growth' | 'sales_operations';
+  id: 'research_strategy' | 'content_growth' | 'sales_operations' | 'development_engineering';
   name: DepartmentName;
   description: string;
   color: string;

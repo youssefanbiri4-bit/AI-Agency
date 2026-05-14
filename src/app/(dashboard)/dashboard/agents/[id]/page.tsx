@@ -29,6 +29,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { TaskTable } from '@/components/ui/TaskTable';
 import { getN8nReadiness } from '@/lib/n8n';
+import { getAgentDisplayMetadata } from '@/lib/agents/agent-display';
 
 export default async function AgentDetailPage({
   params,
@@ -67,12 +68,14 @@ export default async function AgentDetailPage({
     );
   }
 
+  const display = getAgentDisplayMetadata(agent);
+
   return (
     <div className="space-y-8">
       <PageHeader
         eyebrow={agent.department}
         title={agent.name}
-        description={agent.description}
+        description={display.whenToUse}
         actions={
           <Link href="/dashboard/agents" className={buttonStyles({ variant: 'outline' })}>
             <ArrowLeft className="h-4 w-4" />
@@ -100,7 +103,9 @@ export default async function AgentDetailPage({
                   </span>
                 </div>
                 <h2 className="mt-4 break-words text-2xl font-black text-black sm:text-3xl">{agent.name}</h2>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-black/62">{agent.description}</p>
+                <p className="mt-1 text-sm font-black text-[#F7CBCA]">{display.alias}</p>
+                <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-black/72">{display.role}</p>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-black/62">{display.whenToUse}</p>
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -144,6 +149,21 @@ export default async function AgentDetailPage({
         </div>
       </Card>
 
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card>
+          <CardHeader title="When to Use" description="The moment this agent is most helpful." />
+          <p className="text-sm leading-6 text-black/64">{display.whenToUse}</p>
+        </Card>
+        <Card>
+          <CardHeader title="Expected Output" description="What the manager should expect back." />
+          <p className="text-sm leading-6 text-black/64">{display.expectedOutput}</p>
+        </Card>
+        <Card>
+          <CardHeader title="Task Writing Tip" description="What to include in the brief." />
+          <p className="text-sm leading-6 text-black/64">{display.taskTip}</p>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <Card>
           <CardHeader
@@ -153,8 +173,23 @@ export default async function AgentDetailPage({
           <ul className="space-y-3">
             {agent.capabilities.map((capability) => (
               <li key={capability} className="muted-panel flex items-start gap-3 p-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#8B3CDE]" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#F7CBCA]" />
                 <span className="text-sm leading-6 text-black/68">{capability}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Best Use Cases"
+            description="Practical ways this agent can help the agency."
+          />
+          <ul className="space-y-3">
+            {display.bestUseCases.map((useCase) => (
+              <li key={useCase} className="muted-panel flex items-start gap-3 p-3">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#F7CBCA]" />
+                <span className="text-sm leading-6 text-black/68">{useCase}</span>
               </li>
             ))}
           </ul>
@@ -170,10 +205,10 @@ export default async function AgentDetailPage({
               <Link
                 key={task}
                 href={`/dashboard/create-task?agent=${agent.id}&example=${encodeURIComponent(task)}`}
-                className="group flex items-center justify-between gap-3 rounded-lg border border-black/8 bg-white p-4 shadow-sm hover:border-[#8B3CDE]/24 hover:bg-[#F0DBEF]/45"
+                className="group flex items-center justify-between gap-3 rounded-lg border border-black/8 bg-white p-4 shadow-sm hover:border-[#F7CBCA]/24 hover:bg-[#D5E5E5]/45"
               >
-                <span className="min-w-0 break-words text-sm font-bold text-black/68 group-hover:text-[#8B3CDE]">{task}</span>
-                <Play className="h-4 w-4 shrink-0 text-black/34 group-hover:text-[#8B3CDE]" />
+                <span className="min-w-0 break-words text-sm font-bold text-black/68 group-hover:text-[#F7CBCA]">{task}</span>
+                <Play className="h-4 w-4 shrink-0 text-black/34 group-hover:text-[#F7CBCA]" />
               </Link>
             ))}
           </div>

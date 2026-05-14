@@ -8,8 +8,8 @@ interface FeatureCardProps {
 
 export function FeatureCard({ icon: Icon, title, description }: FeatureCardProps) {
   return (
-    <article className="group card-lift flex h-full flex-col rounded-lg border border-black/8 bg-white p-6 shadow-[0_18px_48px_rgba(0,0,0,0.06)] hover:border-[#8B3CDE]/24 hover:shadow-[0_24px_64px_rgba(139,60,222,0.12)]">
-      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg border border-[#8B3CDE]/14 bg-[#F0DBEF]/62 text-[#8B3CDE] group-hover:bg-[#8B3CDE] group-hover:text-white">
+    <article className="group card-lift flex h-full flex-col rounded-lg border border-[#F7CBCA]/10 bg-white/70 p-6 shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] hover:border-[#F7CBCA]/24 hover:shadow-[0_24px_64px_rgba(202,40,81,0.12)]">
+      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg border border-[#F7CBCA]/14 bg-[#D5E5E5]/62 text-[#F7CBCA] group-hover:bg-[#F7CBCA] group-hover:text-white">
         <Icon className="h-5 w-5" />
       </div>
       <h3 className="text-lg font-bold text-black">{title}</h3>

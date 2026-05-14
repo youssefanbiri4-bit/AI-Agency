@@ -8,9 +8,13 @@ import {
   countUnreadNotifications,
   listLatestNotifications,
 } from '@/lib/data/notifications';
+import { getBrandingForWorkspace } from '@/lib/data/branding';
+import { getWorkspaceTheme } from '@/lib/data/theme';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
+
+export const maxDuration = 120;
 
 export default async function DashboardLayout({
   children,
@@ -37,12 +41,13 @@ export default async function DashboardLayout({
     redirect('/onboarding');
   }
 
-  const [notificationsResult, unreadCountResult] = await Promise.all([
+  const [notificationsResult, unreadCountResult, brandingResult, themeResult] = await Promise.all([
     listLatestNotifications(
       {
         workspaceId: workspaceResult.data.id,
         userId: user.id,
-        limit: 6,
+        limit: 5,
+        status: 'unread',
       },
       supabase
     ),
@@ -53,6 +58,8 @@ export default async function DashboardLayout({
       },
       supabase
     ),
+    getBrandingForWorkspace(supabase, workspaceResult.data.id),
+    getWorkspaceTheme(supabase, workspaceResult.data.id),
   ]);
 
   return (
@@ -69,9 +76,16 @@ export default async function DashboardLayout({
         id: workspaceResult.data.id,
         name: workspaceResult.data.name,
         slug: workspaceResult.data.slug,
+        branding: {
+          logoUrl: brandingResult.error ? null : brandingResult.data.branding.logo_url,
+          logoAltText: brandingResult.error
+            ? null
+            : brandingResult.data.branding.logo_alt_text,
+        },
       }}
       initialNotifications={notificationsResult.error ? [] : notificationsResult.data}
       initialUnreadCount={unreadCountResult.error ? 0 : unreadCountResult.data}
+      theme={themeResult.data}
     >
       {children}
     </DashboardShell>

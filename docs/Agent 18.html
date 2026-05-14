@@ -1,0 +1,661 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>دليل استخدام وكلاء AgentFlow AI الثمانية عشر</title>
+  <style>
+    @page { size: A4; margin: 16mm; }
+    * { box-sizing: border-box; }
+    body {
+      direction: rtl;
+      text-align: right;
+      font-family: "Cairo", "Tajawal", "Noto Sans Arabic", Arial, sans-serif;
+      line-height: 1.8;
+      margin: 0;
+      color: #171717;
+      background: #FFF8F2;
+    }
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+    .cover {
+      min-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 48px;
+      border: 1px solid rgba(23,23,23,0.08);
+      border-radius: 24px;
+      background: linear-gradient(135deg, #FFF8F2 0%, #FFE3B3 100%);
+      box-shadow: 0 24px 70px rgba(23,23,23,0.08);
+    }
+    h1, h2, h3 {
+      font-weight: 700;
+      color: #171717;
+      margin: 0 0 14px;
+    }
+    h1 { font-size: 40px; line-height: 1.35; }
+    h2 {
+      font-size: 26px;
+      margin-top: 34px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #FFE3B3;
+    }
+    h3 { font-size: 20px; margin-top: 24px; color: #CA2851; }
+    p { margin: 0 0 12px; }
+    .subtitle {
+      font-size: 20px;
+      color: rgba(23,23,23,0.72);
+      max-width: 860px;
+    }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 22px 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #CA2851;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .badge.light {
+      background: #FFE3B3;
+      color: #171717;
+      border: 1px solid rgba(23,23,23,0.08);
+    }
+    .card {
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(23,23,23,0.08);
+      border-radius: 16px;
+      padding: 18px;
+      margin: 14px 0;
+      box-shadow: 0 14px 34px rgba(23,23,23,0.06);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(23,23,23,0.05);
+    }
+    th, td {
+      text-align: right;
+      padding: 10px;
+      border: 1px solid #ddd;
+      vertical-align: top;
+    }
+    th {
+      background: #CA2851;
+      color: #fff;
+      font-weight: 700;
+    }
+    tr:nth-child(even) td { background: #FFF8F2; }
+    ul, ol { margin: 8px 0 14px; padding-right: 22px; }
+    li { margin-bottom: 6px; }
+    .agent-section {
+      page-break-inside: avoid;
+      background: #fff;
+      border: 1px solid rgba(23,23,23,0.08);
+      border-right: 5px solid #CA2851;
+      border-radius: 16px;
+      padding: 18px;
+      margin: 18px 0;
+    }
+    .example {
+      background: #FFF8F2;
+      border: 1px solid #FFE3B3;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 10px;
+    }
+    .workflow {
+      background: #171717;
+      color: #FFF8F2;
+      border-radius: 16px;
+      padding: 18px;
+      font-weight: 700;
+      margin: 16px 0;
+    }
+    .muted { color: rgba(23,23,23,0.62); }
+    .highlight {
+      color: #CA2851;
+      font-weight: 700;
+    }
+    .print-note {
+      margin-top: 24px;
+      font-size: 13px;
+      color: rgba(23,23,23,0.55);
+    }
+    @media print {
+      body { background: #fff; }
+      .page { padding: 0; }
+      .card, table, .agent-section { box-shadow: none; }
+      h2 { page-break-after: avoid; }
+      .agent-section, table { page-break-inside: avoid; }
+    }
+    @media (max-width: 820px) {
+      .page { padding: 18px; }
+      .cover { padding: 28px; }
+      h1 { font-size: 30px; }
+      .grid { grid-template-columns: 1fr; }
+      table { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="cover">
+      <div class="badge-row">
+        <span class="badge">AgentFlow AI</span>
+        <span class="badge light">دليل تشغيلي داخلي</span>
+      </div>
+      <h1>دليل استخدام وكلاء AgentFlow AI الثمانية عشر</h1>
+      <p class="subtitle">شرح عملي لكيفية تشغيل الوكلاء، اختيار الوكيل المناسب، وإنشاء المهام داخل منصة AgentFlow AI.</p>
+      <div class="card">
+        <p><strong>اسم المشروع:</strong> AgentFlow AI</p>
+        <p><strong>عنوان الملف:</strong> دليل استخدام وكلاء AgentFlow AI الثمانية عشر</p>
+        <p><strong>وصف قصير:</strong> مرجع عملي لمدير وكالة AI لفهم وتشغيل الوكلاء داخل المنصة.</p>
+        <p><strong>التاريخ:</strong> 10 مايو 2026</p>
+        <p><strong>حالة الملف:</strong> دليل تشغيلي داخلي</p>
+      </div>
+      <p class="print-note">هذا المستند مصمم كملف HTML عربي RTL جاهز للطباعة أو التحويل إلى PDF.</p>
+    </section>
+
+    <h2>1. مقدمة عامة</h2>
+    <p>نظام الوكلاء داخل AgentFlow AI هو طريقة منظمة لتقسيم عمل وكالة الذكاء الاصطناعي إلى مهام متخصصة. بدلاً من أن تطلب من مساعد واحد تنفيذ كل شيء، تختار الوكيل المناسب حسب نوع المهمة: بحث، استراتيجية، محتوى، مبيعات، عمليات، أو تقارير.</p>
+    <p>تم تقسيم الوكلاء إلى 3 أقسام حتى يعمل المدير بطريقة تشغيلية واضحة: يبدأ بالبحث والاستراتيجية، ثم ينتقل إلى المحتوى والنمو، ثم يتابع المبيعات والعمليات والتقارير.</p>
+    <p>الفرق بين إنشاء <span class="highlight">task عادي</span> و<span class="highlight">task لوكيل متخصص</span> هو أن المهمة المتخصصة تكون موجهة لوكيل له دور محدد ومدخلات ومخرجات متوقعة، مما يجعل النتيجة أسهل للمراجعة والاستخدام داخل Content Studio وCreative Assets وReports.</p>
+
+    <h2>2. خريطة الأقسام الثلاثة</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>القسم</th>
+          <th>الهدف</th>
+          <th>نوع المهام المناسبة</th>
+          <th>أمثلة</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Research & Strategy</td>
+          <td>فهم السوق والجمهور والمنافسين وبناء الاستراتيجية.</td>
+          <td>بحث سوق، تحليل منافسين، شخصيات جمهور، أفكار منتجات، SEO، خطط استراتيجية.</td>
+          <td>تحليل سوق أدوات AI، تحديد جمهور المستقلين، خطة إطلاق خدمة.</td>
+        </tr>
+        <tr>
+          <td>Content & Growth</td>
+          <td>تحويل الاستراتيجية إلى محتوى ورسائل وحملات قابلة للنشر.</td>
+          <td>منشورات، كابشن، إعلانات، سكريبتات، إيميلات، مقالات SEO، Creative Brief.</td>
+          <td>كابشن Instagram، سكريبت Reel، إعلان Google، brief لصورة.</td>
+        </tr>
+        <tr>
+          <td>Sales & Operations</td>
+          <td>تنظيم المبيعات والتواصل والتقارير والمتابعة التشغيلية.</td>
+          <td>Leads، تأهيل عملاء، رسائل تواصل، CRM، دعم عملاء، تقارير أداء.</td>
+          <td>قائمة prospects، رسالة LinkedIn، تقرير شهري.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. قائمة الوكلاء الـ 18</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>رقم</th>
+          <th>اسم الوكيل</th>
+          <th>القسم</th>
+          <th>الدور الأساسي</th>
+          <th>متى أستخدمه؟</th>
+          <th>نوع المخرجات</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Market Research Agent</td><td>Research & Strategy</td><td>بحث اتجاهات السوق والفرص.</td><td>عند دراسة سوق أو قطاع جديد.</td><td>ملخص سوق، فرص، اتجاهات، توصيات.</td></tr>
+        <tr><td>2</td><td>Competitor Analysis Agent</td><td>Research & Strategy</td><td>تحليل المنافسين والتموضع.</td><td>عند مقارنة عروض أو منافسين.</td><td>SWOT، نقاط قوة وضعف، فرص تميز.</td></tr>
+        <tr><td>3</td><td>Audience Persona Agent</td><td>Research & Strategy</td><td>بناء شخصيات الجمهور.</td><td>قبل كتابة محتوى أو حملة.</td><td>Personas، مشاكل، دوافع، رسائل مناسبة.</td></tr>
+        <tr><td>4</td><td>Product Idea Agent</td><td>Research & Strategy</td><td>توليد أفكار منتجات وخدمات.</td><td>عند البحث عن عرض أو خدمة جديدة.</td><td>أفكار، تقييم فرص، أولويات.</td></tr>
+        <tr><td>5</td><td>SEO Keyword Agent</td><td>Research & Strategy</td><td>بحث كلمات SEO.</td><td>قبل كتابة مقال أو خطة محتوى بحثي.</td><td>كلمات، نية بحث، صعوبة، اقتراحات محتوى.</td></tr>
+        <tr><td>6</td><td>Strategy Planner Agent</td><td>Research & Strategy</td><td>بناء خطة واستراتيجية تنفيذ.</td><td>عند تحويل البحث إلى خطة عمل.</td><td>Roadmap، أهداف، مراحل، مخاطر.</td></tr>
+        <tr><td>7</td><td>Social Media Content Agent</td><td>Content & Growth</td><td>إنشاء محتوى اجتماعي.</td><td>عند إعداد منشورات أو أفكار محتوى.</td><td>Posts، hooks، captions، hashtags.</td></tr>
+        <tr><td>8</td><td>Copywriting Agent</td><td>Content & Growth</td><td>كتابة نصوص تسويقية مقنعة.</td><td>لصفحات هبوط، إعلانات، عروض.</td><td>Copy، headlines، CTA، نسخ بديلة.</td></tr>
+        <tr><td>9</td><td>Ads Script Agent</td><td>Content & Growth</td><td>سكريبتات إعلانية للفيديو والحملات.</td><td>عند إعداد Reel أو إعلان فيديو.</td><td>Script، storyboard، CTA.</td></tr>
+        <tr><td>10</td><td>Email Marketing Agent</td><td>Content & Growth</td><td>حملات ورسائل بريدية.</td><td>للنشرات، nurturing، promotions.</td><td>Email sequence، subject lines، body copy.</td></tr>
+        <tr><td>11</td><td>Blog SEO Article Agent</td><td>Content & Growth</td><td>مقالات SEO.</td><td>عند إنشاء مقال لجذب زيارات عضوية.</td><td>Outline، article draft، SEO structure.</td></tr>
+        <tr><td>12</td><td>Visual Brief Agent</td><td>Content & Growth</td><td>تجهيز brief بصري.</td><td>قبل تصميم صورة أو فيديو.</td><td>Creative brief، visual direction، asset specs.</td></tr>
+        <tr><td>13</td><td>Lead Finder Agent</td><td>Sales & Operations</td><td>العثور على leads.</td><td>عند بناء قائمة عملاء محتملين.</td><td>قائمة leads، معايير بحث، فرص.</td></tr>
+        <tr><td>14</td><td>Lead Qualifier Agent</td><td>Sales & Operations</td><td>تأهيل leads.</td><td>بعد جمع قائمة prospects.</td><td>Lead score، أولوية، سبب التأهيل.</td></tr>
+        <tr><td>15</td><td>Outreach Message Agent</td><td>Sales & Operations</td><td>رسائل تواصل ومبيعات.</td><td>لرسائل LinkedIn أو cold email.</td><td>رسائل مخصصة، sequences، pitch.</td></tr>
+        <tr><td>16</td><td>CRM Update Agent</td><td>Sales & Operations</td><td>تنظيم وتحديث CRM.</td><td>عند تلخيص تعاملات العملاء.</td><td>CRM notes، مراحل، next steps.</td></tr>
+        <tr><td>17</td><td>Customer Support Agent</td><td>Sales & Operations</td><td>دعم العملاء وتوثيق الردود.</td><td>عند وجود سؤال أو مشكلة عميل.</td><td>ردود دعم، FAQ، تصنيف مشكلة.</td></tr>
+        <tr><td>18</td><td>Analytics Report Agent</td><td>Sales & Operations</td><td>تقارير وتحليل مؤشرات.</td><td>عند إعداد تقرير أسبوعي أو شهري.</td><td>Report، KPI summary، insights، next actions.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. شرح تفصيلي لكل وكيل</h2>
+
+    <section class="agent-section">
+      <h3>Market Research Agent</h3>
+      <p><strong>القسم:</strong> Research & Strategy</p>
+      <p><strong>الدور:</strong> بحث اتجاهات السوق وتحليل البيانات والفرص.</p>
+      <p><strong>متى أستخدمه؟</strong> عندما تريد فهم سوق جديد، حجم الطلب، الاتجاهات، أو فرص دخول السوق.</p>
+      <p><strong>نوع المهام:</strong> تحليل سوق، بحث قطاع، دراسة فرص، رصد اتجاهات.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> اسم السوق، الكلمات المفتاحية، النطاق الجغرافي، الجمهور، الهدف من البحث.</p>
+      <p><strong>المخرجات المتوقعة:</strong> ملخص سوق، اتجاهات، فرص، مخاطر، توصيات تنفيذية.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: بحث سوق أدوات AI للوكالات الصغيرة<br>الوصف: حلل سوق أدوات إدارة وكالات AI للمستقلين وأصحاب الوكالات الصغيرة في أمريكا وأوروبا.<br>الأولوية: High<br>المخرجات المطلوبة: حجم الفرصة، احتياجات الجمهور، أهم الاتجاهات، توصيات حملة.</div>
+      <p><strong>نصيحة:</strong> اكتب السوق والنطاق بوضوح حتى لا تكون النتيجة عامة.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Competitor Analysis Agent</h3>
+      <p><strong>القسم:</strong> Research & Strategy</p>
+      <p><strong>الدور:</strong> تحليل المنافسين واستراتيجياتهم ونقاط القوة والضعف.</p>
+      <p><strong>متى أستخدمه؟</strong> قبل إطلاق عرض جديد أو عند بناء زاوية تميز لحملة.</p>
+      <p><strong>نوع المهام:</strong> SWOT، مقارنة أسعار، تحليل positioning، مقارنة features.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> أسماء المنافسين، الصناعة، السوق، نقاط المقارنة المطلوبة.</p>
+      <p><strong>المخرجات المتوقعة:</strong> جدول مقارنة، نقاط ضعف يمكن استغلالها، رسائل تميز.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: تحليل منافسي AgentFlow AI<br>الوصف: قارن AgentFlow AI مع أدوات إدارة المحتوى والأتمتة للوكالات، وركز على نقاط التميز في إدارة الوكلاء وContent Studio.<br>الأولوية: High<br>المخرجات المطلوبة: SWOT، جدول مقارنة، زوايا إعلانية.</div>
+      <p><strong>نصيحة:</strong> حدد 3 إلى 5 منافسين فقط للحصول على تحليل أعمق.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Audience Persona Agent</h3>
+      <p><strong>القسم:</strong> Research & Strategy</p>
+      <p><strong>الدور:</strong> بناء personas وشرائح جمهور مفصلة.</p>
+      <p><strong>متى أستخدمه؟</strong> قبل كتابة محتوى أو إعلان حتى تعرف لمن تتحدث.</p>
+      <p><strong>نوع المهام:</strong> buyer persona، journey mapping، segmentation.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> الصناعة، نوع المنتج أو الخدمة، السوق، المشاكل، مستوى الوعي.</p>
+      <p><strong>المخرجات المتوقعة:</strong> شخصيات جمهور، دوافع، اعتراضات، رسائل مناسبة.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: بناء Persona لأصحاب وكالات AI<br>الوصف: أنشئ 3 شخصيات جمهور لـ AgentFlow AI: freelancer، صاحب وكالة صغيرة، مدير عمليات وكالة.<br>الأولوية: Medium<br>المخرجات المطلوبة: الألم، الهدف، الاعتراضات، الرسائل المناسبة لكل persona.</div>
+      <p><strong>نصيحة:</strong> استخدم مخرجات هذا الوكيل كمدخل لوكلاء Content & Growth.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Product Idea Agent</h3>
+      <p><strong>القسم:</strong> Research & Strategy</p>
+      <p><strong>الدور:</strong> توليد أفكار منتجات وخدمات وتقييم فرصها.</p>
+      <p><strong>متى أستخدمه؟</strong> عند تطوير عروض جديدة للوكالة أو ميزات جديدة في المنتج.</p>
+      <p><strong>نوع المهام:</strong> أفكار خدمات، bundles، features، validation.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> الفئة، الجمهور، المشكلة، حدود التنفيذ.</p>
+      <p><strong>المخرجات المتوقعة:</strong> قائمة أفكار، تقييم، أولويات، خطوات اختبار.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: أفكار عروض شهرية لوكالة AI<br>الوصف: اقترح 10 عروض شهرية يمكن لوكالة تستخدم AgentFlow AI بيعها لأصحاب المشاريع الصغيرة.<br>الأولوية: Medium<br>المخرجات المطلوبة: اسم العرض، القيمة، السعر المقترح، متطلبات التنفيذ.</div>
+      <p><strong>نصيحة:</strong> اطلب تقييم الأفكار حسب سهولة التنفيذ والطلب المتوقع.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>SEO Keyword Agent</h3>
+      <p><strong>القسم:</strong> Research & Strategy</p>
+      <p><strong>الدور:</strong> اكتشاف كلمات SEO وتحليل نية البحث.</p>
+      <p><strong>متى أستخدمه؟</strong> قبل كتابة مقالات أو صفحات هبوط أو خطة محتوى عضوي.</p>
+      <p><strong>نوع المهام:</strong> keyword research، search intent، content clusters.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> الموضوع، السوق، مستوى المنافسة، اللغة.</p>
+      <p><strong>المخرجات المتوقعة:</strong> كلمات رئيسية، كلمات طويلة، عناوين محتوى، نية البحث.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: كلمات SEO لـ AI agency dashboard<br>الوصف: ابحث عن كلمات مناسبة لمحتوى AgentFlow AI حول إدارة وكالة AI وأتمتة إنشاء المحتوى.<br>الأولوية: Medium<br>المخرجات المطلوبة: 30 كلمة، intent، صعوبة تقريبية، أفكار مقالات.</div>
+      <p><strong>نصيحة:</strong> اربط الكلمات بمراحل funnel: awareness، consideration، conversion.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Strategy Planner Agent</h3>
+      <p><strong>القسم:</strong> Research & Strategy</p>
+      <p><strong>الدور:</strong> تحويل البحث إلى استراتيجية وخطة تنفيذ.</p>
+      <p><strong>متى أستخدمه؟</strong> بعد البحث وقبل إنشاء المحتوى والحملات.</p>
+      <p><strong>نوع المهام:</strong> go-to-market، roadmap، campaign strategy، risk assessment.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> الهدف، المدة، الموارد، الجمهور، القنوات.</p>
+      <p><strong>المخرجات المتوقعة:</strong> خطة مراحل، أولويات، قنوات، رسائل، مخاطر.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: خطة إطلاق AgentFlow AI خلال 30 يوم<br>الوصف: ابن خطة تسويقية لإطلاق AgentFlow AI للمستقلين وأصحاب وكالات AI.<br>الأولوية: High<br>المخرجات المطلوبة: timeline، قنوات، رسائل، مؤشرات نجاح، next actions.</div>
+      <p><strong>نصيحة:</strong> استخدمه كحلقة وصل بين Research & Strategy وContent & Growth.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Social Media Content Agent</h3>
+      <p><strong>القسم:</strong> Content & Growth</p>
+      <p><strong>الدور:</strong> إنشاء محتوى اجتماعي مناسب للمنصة.</p>
+      <p><strong>متى أستخدمه؟</strong> عند إعداد منشورات LinkedIn، Instagram، Facebook، أو Twitter/X.</p>
+      <p><strong>نوع المهام:</strong> captions، hooks، hashtags، content calendar.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> المنصة، الموضوع، الجمهور، النبرة، CTA.</p>
+      <p><strong>المخرجات المتوقعة:</strong> منشورات، كابشن، أفكار، تقويم محتوى.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: منشورات LinkedIn عن AgentFlow AI<br>الوصف: اكتب 5 منشورات LinkedIn تشرح كيف يساعد AgentFlow AI مدير الوكالة في تنظيم الوكلاء والمحتوى.<br>الأولوية: Medium<br>المخرجات المطلوبة: hook، body، CTA، hashtags.</div>
+      <p><strong>نصيحة:</strong> حدد المنصة دائماً لأن أسلوب LinkedIn يختلف عن Instagram.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Copywriting Agent</h3>
+      <p><strong>القسم:</strong> Content & Growth</p>
+      <p><strong>الدور:</strong> كتابة نصوص تسويقية لزيادة التحويل.</p>
+      <p><strong>متى أستخدمه؟</strong> للصفحات، الإعلانات، العروض، الرسائل البيعية.</p>
+      <p><strong>نوع المهام:</strong> landing page copy، ad copy، headlines، CTA.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> المنتج، الجمهور، العرض، الألم، النبرة، الهدف.</p>
+      <p><strong>المخرجات المتوقعة:</strong> عناوين، نصوص، CTA، نسخ متعددة للاختبار.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: Landing Page Copy لـ AgentFlow AI<br>الوصف: اكتب نص صفحة هبوط يشرح قيمة AgentFlow AI لصاحب وكالة AI صغيرة.<br>الأولوية: High<br>المخرجات المطلوبة: hero، benefits، features، objections، CTA.</div>
+      <p><strong>نصيحة:</strong> أعطه نتائج Audience Persona ليكتب بلغة الجمهور.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Ads Script Agent</h3>
+      <p><strong>القسم:</strong> Content & Growth</p>
+      <p><strong>الدور:</strong> كتابة سكريبتات إعلانية للفيديو والحملات.</p>
+      <p><strong>متى أستخدمه؟</strong> عند إعداد Reel، YouTube ad، أو إعلان فيديو قصير.</p>
+      <p><strong>نوع المهام:</strong> video script، storyboard، display/social ad script.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> نوع الإعلان، المدة، العرض، الجمهور، CTA.</p>
+      <p><strong>المخرجات المتوقعة:</strong> hook، مشاهد، voiceover، on-screen text، CTA.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: سكريبت Reel لـ AgentFlow AI<br>الوصف: اكتب سكريبت Reel مدته 30 ثانية يوضح مشكلة تشتت أدوات الوكالة وكيف يحلها AgentFlow AI.<br>الأولوية: High<br>المخرجات المطلوبة: scene breakdown، voiceover، on-screen text، caption.</div>
+      <p><strong>نصيحة:</strong> حدد مدة الإعلان بدقة حتى تكون المخرجات قابلة للتنفيذ.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Email Marketing Agent</h3>
+      <p><strong>القسم:</strong> Content & Growth</p>
+      <p><strong>الدور:</strong> إنشاء حملات بريدية وتسلسل nurture.</p>
+      <p><strong>متى أستخدمه؟</strong> عند بناء newsletter أو حملة ترحيب أو متابعة leads.</p>
+      <p><strong>نوع المهام:</strong> welcome series، newsletter، promotional email، nurture sequence.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> نوع الحملة، الجمهور، العرض، عدد الرسائل، CTA.</p>
+      <p><strong>المخرجات المتوقعة:</strong> subject lines، email body، sequence، CTA.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: تسلسل بريد ترحيبي لمستخدمي AgentFlow AI<br>الوصف: اكتب 4 رسائل ترحيبية تشرح للمدير كيف يبدأ باستخدام الوكلاء وContent Studio.<br>الأولوية: Medium<br>المخرجات المطلوبة: subject، preview text، body، CTA لكل رسالة.</div>
+      <p><strong>نصيحة:</strong> اجعل كل رسالة لها هدف واحد فقط.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Blog SEO Article Agent</h3>
+      <p><strong>القسم:</strong> Content & Growth</p>
+      <p><strong>الدور:</strong> كتابة مقالات SEO منظمة.</p>
+      <p><strong>متى أستخدمه؟</strong> عند بناء محتوى طويل لجلب زيارات عضوية.</p>
+      <p><strong>نوع المهام:</strong> article outline، blog draft، content cluster.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> الكلمة الرئيسية، طول المقال، الجمهور، الهدف.</p>
+      <p><strong>المخرجات المتوقعة:</strong> outline، مقال، headings، meta title، meta description.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: مقال SEO عن إدارة وكالة AI<br>الوصف: اكتب مقالاً تعليمياً يستهدف كلمة “AI agency management dashboard” ويربط الحل بـ AgentFlow AI.<br>الأولوية: Medium<br>المخرجات المطلوبة: outline، مقال 1500 كلمة، FAQ، meta description.</div>
+      <p><strong>نصيحة:</strong> استخدم مخرجات SEO Keyword Agent قبل هذا الوكيل.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Visual Brief Agent</h3>
+      <p><strong>القسم:</strong> Content & Growth</p>
+      <p><strong>الدور:</strong> إعداد brief بصري للمصممين أو Creative Assets.</p>
+      <p><strong>متى أستخدمه؟</strong> قبل إنشاء صورة، infographic، social post، أو presentation.</p>
+      <p><strong>نوع المهام:</strong> visual direction، image prompt، asset specification، style guide.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> نوع التصميم، brand style، الرسالة، المنصة، الأبعاد.</p>
+      <p><strong>المخرجات المتوقعة:</strong> visual brief، ألوان، عناصر، prompt، ملاحظات تصميم.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: Brief بصري لمنشور Instagram عن AgentFlow AI<br>الوصف: جهز brief لصورة Instagram تشرح فكرة “كل عمل الوكالة في لوحة واحدة”.<br>الأولوية: High<br>المخرجات المطلوبة: visual direction، text overlay، colors، composition، image prompt.</div>
+      <p><strong>نصيحة:</strong> استخدمه قبل Creative Assets لتقليل العشوائية في الصور.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Lead Finder Agent</h3>
+      <p><strong>القسم:</strong> Sales & Operations</p>
+      <p><strong>الدور:</strong> تحديد leads محتملين حسب الصناعة والحجم.</p>
+      <p><strong>متى أستخدمه؟</strong> عند بناء pipeline للعملاء المحتملين.</p>
+      <p><strong>نوع المهام:</strong> lead sourcing، target account research، prospect database.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> الصناعة، حجم الشركة، السوق، نوع العميل المطلوب.</p>
+      <p><strong>المخرجات المتوقعة:</strong> معايير leads، قائمة مقترحة، قنوات بحث، أولويات.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: Leads لوكالات تسويق صغيرة<br>الوصف: اقترح طريقة للعثور على 50 وكالة تسويق صغيرة قد تحتاج AgentFlow AI.<br>الأولوية: Medium<br>المخرجات المطلوبة: criteria، مصادر بحث، معلومات مطلوبة لكل lead.</div>
+      <p><strong>نصيحة:</strong> لا تطلب leads عامة؛ حدد الصناعة والسوق والحجم.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Lead Qualifier Agent</h3>
+      <p><strong>القسم:</strong> Sales & Operations</p>
+      <p><strong>الدور:</strong> تقييم leads وترتيب أولويتهم.</p>
+      <p><strong>متى أستخدمه؟</strong> بعد جمع قائمة leads وقبل التواصل.</p>
+      <p><strong>نوع المهام:</strong> BANT، scoring، fit assessment، priority ranking.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> قائمة leads، معايير التأهيل، إشارات الاهتمام، الميزانية إن وجدت.</p>
+      <p><strong>المخرجات المتوقعة:</strong> score، سبب التأهيل، أولوية، next action.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: تأهيل Leads لـ AgentFlow AI<br>الوصف: قيّم قائمة leads لوكالات صغيرة حسب احتياجهم لإدارة محتوى ووكلاء AI.<br>الأولوية: High<br>المخرجات المطلوبة: score من 1 إلى 5، سبب، أولوية، رسالة مناسبة.</div>
+      <p><strong>نصيحة:</strong> استخدمه قبل Outreach Message Agent لرسائل أدق.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Outreach Message Agent</h3>
+      <p><strong>القسم:</strong> Sales & Operations</p>
+      <p><strong>الدور:</strong> كتابة رسائل تواصل ومبيعات مخصصة.</p>
+      <p><strong>متى أستخدمه؟</strong> لإرسال cold email، LinkedIn message، أو phone script.</p>
+      <p><strong>نوع المهام:</strong> outreach sequence، personalized pitch، follow-up message.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> القناة، الهدف، الجمهور، العرض، نقطة الألم.</p>
+      <p><strong>المخرجات المتوقعة:</strong> رسالة أولى، follow-up، subject، CTA.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: رسالة LinkedIn لأصحاب وكالات AI<br>الوصف: اكتب رسالة LinkedIn قصيرة تعرض AgentFlow AI كحل لتنظيم الوكلاء والمحتوى والتقارير.<br>الأولوية: Medium<br>المخرجات المطلوبة: message، follow-up 1، follow-up 2، CTA لحجز مكالمة.</div>
+      <p><strong>نصيحة:</strong> أعطه نتيجة Lead Qualifier ليخصص الرسالة حسب lead.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>CRM Update Agent</h3>
+      <p><strong>القسم:</strong> Sales & Operations</p>
+      <p><strong>الدور:</strong> تنظيم تحديثات CRM وتلخيص تفاعلات العملاء.</p>
+      <p><strong>متى أستخدمه؟</strong> بعد مكالمة، رد lead، أو تغير حالة صفقة.</p>
+      <p><strong>نوع المهام:</strong> CRM notes، deal stage update، activity summary.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> نظام CRM، تفاصيل التفاعل، حالة العميل، الخطوة التالية.</p>
+      <p><strong>المخرجات المتوقعة:</strong> ملخص CRM، stage، notes، next steps.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: تحديث CRM بعد مكالمة Demo<br>الوصف: لخّص مكالمة مع صاحب وكالة مهتم بـ AgentFlow AI وحدد المرحلة والخطوة التالية.<br>الأولوية: Medium<br>المخرجات المطلوبة: CRM note، deal stage، objections، next action.</div>
+      <p><strong>نصيحة:</strong> اكتب ما حدث فعلاً ولا تطلب منه تخمين بيانات العميل.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Customer Support Agent</h3>
+      <p><strong>القسم:</strong> Sales & Operations</p>
+      <p><strong>الدور:</strong> صياغة ردود دعم وتصنيف مشاكل العملاء.</p>
+      <p><strong>متى أستخدمه؟</strong> عند وجود سؤال، مشكلة تقنية، أو طلب توضيح.</p>
+      <p><strong>نوع المهام:</strong> support response، FAQ، knowledge base، ticket triage.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> نوع المشكلة، رسالة العميل، حالة الحساب، ما تم تجربته.</p>
+      <p><strong>المخرجات المتوقعة:</strong> رد مهني، خطوات حل، تصنيف، تصعيد إن لزم.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: رد دعم عن Provider Setup<br>الوصف: اكتب رداً لعميل لا يعرف لماذا لا تظهر منشورات Instagram كجاهزة للنشر.<br>الأولوية: High<br>المخرجات المطلوبة: رد عربي مهني، خطوات تحقق، تنبيه Provider readiness.</div>
+      <p><strong>نصيحة:</strong> لا تطلب منه إظهار أو طلب مفاتيح API أو tokens من العميل.</p>
+    </section>
+
+    <section class="agent-section">
+      <h3>Analytics Report Agent</h3>
+      <p><strong>القسم:</strong> Sales & Operations</p>
+      <p><strong>الدور:</strong> إعداد تقارير مؤشرات وتحليل تقدم.</p>
+      <p><strong>متى أستخدمه؟</strong> للتقارير الأسبوعية أو الشهرية أو ملخصات الأداء.</p>
+      <p><strong>نوع المهام:</strong> monthly report، KPI summary، trend analysis، dashboard narrative.</p>
+      <p><strong>ما المعلومات المطلوبة؟</strong> الفترة، المؤشرات المتاحة، الهدف، ما تريد تفسيره.</p>
+      <p><strong>المخرجات المتوقعة:</strong> تقرير، ملخص تنفيذي، insights، next actions.</p>
+      <div class="example"><strong>مثال مهمة:</strong><br>العنوان: تقرير شهري لعمليات AgentFlow AI<br>الوصف: جهز تقريراً شهرياً يلخص المحتوى، المهام، المشاكل، provider readiness، والخطوات القادمة.<br>الأولوية: High<br>المخرجات المطلوبة: executive summary، metrics، blockers، recommendations.</div>
+      <p><strong>نصيحة:</strong> استخدمه مع Reports وRecovery Center، ولا تطلب منه اختراع أرقام غير موجودة.</p>
+    </section>
+
+    <h2>5. قسم Research & Strategy</h2>
+    <p>هذا القسم يساعدك قبل إطلاق الحملات. وظيفته تقليل التخمين: من هو الجمهور؟ ما المشكلة؟ من المنافس؟ ما الزاوية؟ وما الخطة؟</p>
+    <div class="workflow">فكرة حملة → بحث السوق → تحليل الجمهور → تحديد الاستراتيجية → تسليم النتائج إلى Content & Growth</div>
+    <p>استخدم Market Research Agent للسوق، Competitor Analysis Agent للمنافسين، Audience Persona Agent للجمهور، Product Idea Agent للعروض، SEO Keyword Agent للكلمات، وStrategy Planner Agent لتحويل كل ذلك إلى خطة.</p>
+
+    <h2>6. قسم Content & Growth</h2>
+    <p>هذا القسم يحول الاستراتيجية إلى أصول قابلة للاستخدام: captions، scripts، ad copy، creative briefs، hashtags، growth ideas، وخطط محتوى.</p>
+    <div class="workflow">استراتيجية جاهزة → توليد أفكار محتوى → كتابة الكابشن → كتابة الإعلان → تجهيز Creative Brief → إدخال المحتوى في Content Studio</div>
+    <p>استخدم Social Media Content Agent للمنشورات، Copywriting Agent للنصوص البيعية، Ads Script Agent للفيديو، Email Marketing Agent للبريد، Blog SEO Article Agent للمقالات، وVisual Brief Agent للتوجيه البصري.</p>
+
+    <h2>7. قسم Sales & Operations</h2>
+    <p>هذا القسم يدعم جانب التشغيل والمبيعات: العثور على leads، تأهيلهم، التواصل معهم، تحديث CRM، دعم العملاء، وإعداد التقارير.</p>
+    <div class="workflow">حملة جاهزة → تنظيم التنفيذ → تتبع الحالة → إعداد التقرير → تحديد الخطوة التالية</div>
+    <p>استخدم Lead Finder Agent لبناء pipeline، Lead Qualifier Agent للترتيب، Outreach Message Agent للتواصل، CRM Update Agent للتنظيم، Customer Support Agent للردود، وAnalytics Report Agent للتقارير.</p>
+
+    <h2>8. كيف أختار الوكيل المناسب؟</h2>
+    <table>
+      <thead>
+        <tr><th>إذا كنت أريد...</th><th>الوكيل/القسم المناسب</th><th>السبب</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>بحث عن السوق</td><td>Market Research Agent</td><td>يفهم الاتجاهات والفرص.</td></tr>
+        <tr><td>تحليل المنافسين</td><td>Competitor Analysis Agent</td><td>يقارن التموضع والاستراتيجية.</td></tr>
+        <tr><td>فهم الجمهور</td><td>Audience Persona Agent</td><td>يبني personas ورسائل مناسبة.</td></tr>
+        <tr><td>خطة حملة</td><td>Strategy Planner Agent</td><td>ينظم الأهداف والقنوات والخطوات.</td></tr>
+        <tr><td>أفكار محتوى</td><td>Social Media Content Agent</td><td>ينتج أفكاراً ومنشورات حسب المنصة.</td></tr>
+        <tr><td>كابشن Instagram</td><td>Social Media Content Agent</td><td>يناسب المحتوى الاجتماعي.</td></tr>
+        <tr><td>سكريبت Reel</td><td>Ads Script Agent</td><td>يبني مشاهد وصوت وCTA.</td></tr>
+        <tr><td>Google Ads copy</td><td>Copywriting Agent</td><td>يركز على copy وتحويلات.</td></tr>
+        <tr><td>Creative Brief</td><td>Visual Brief Agent</td><td>يجهز اتجاه الصورة أو الفيديو.</td></tr>
+        <tr><td>تحسين عرض الخدمة</td><td>Product Idea Agent</td><td>يقترح عروضاً وفرصاً.</td></tr>
+        <tr><td>رسالة مبيعات</td><td>Outreach Message Agent</td><td>يكتب رسائل تواصل مخصصة.</td></tr>
+        <tr><td>تقرير شهري</td><td>Analytics Report Agent</td><td>يلخص مؤشرات وتوصيات.</td></tr>
+        <tr><td>تنظيم المهام والعمليات</td><td>CRM Update Agent أو Analytics Report Agent</td><td>يناسب التوثيق والمتابعة.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>9. كيف أكتب مهمة جيدة للوكيل؟</h2>
+    <p>المهمة الجيدة تكون واضحة ومحددة. لا تكتب: “اكتب محتوى”. الأفضل أن تكتب الهدف، الجمهور، المنصة، النبرة، والمخرجات المطلوبة.</p>
+    <div class="card">
+      <p><strong>العنوان:</strong></p>
+      <p><strong>أريد من الوكيل:</strong></p>
+      <p><strong>السياق:</strong></p>
+      <p><strong>الجمهور المستهدف:</strong></p>
+      <p><strong>المنصة:</strong></p>
+      <p><strong>الهدف:</strong></p>
+      <p><strong>النبرة:</strong></p>
+      <p><strong>المخرجات المطلوبة:</strong></p>
+      <p><strong>ملاحظات إضافية:</strong></p>
+    </div>
+
+    <h2>10. أمثلة جاهزة للمهام</h2>
+    <table>
+      <thead>
+        <tr><th>الوكيل</th><th>Task title</th><th>Task description</th><th>Priority</th><th>Expected output</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Market Research Agent</td><td>بحث سوق AI agency tools</td><td>حلل سوق أدوات إدارة وكالات AI للمستقلين وأصحاب الوكالات الصغيرة.</td><td>High</td><td>اتجاهات، فرص، مخاطر، توصيات.</td></tr>
+        <tr><td>Competitor Analysis Agent</td><td>تحليل منافسي AgentFlow AI</td><td>قارن AgentFlow AI مع أدوات إدارة المحتوى والأتمتة.</td><td>High</td><td>SWOT وجدول مقارنة.</td></tr>
+        <tr><td>Audience Persona Agent</td><td>Personas لأصحاب وكالات AI</td><td>أنشئ 3 personas للمستقل وصاحب الوكالة ومدير العمليات.</td><td>Medium</td><td>مشاكل، دوافع، اعتراضات، رسائل.</td></tr>
+        <tr><td>Product Idea Agent</td><td>عروض خدمات شهرية</td><td>اقترح عروض وكالة AI يمكن تشغيلها عبر AgentFlow AI.</td><td>Medium</td><td>أفكار، قيمة، تسعير، تنفيذ.</td></tr>
+        <tr><td>SEO Keyword Agent</td><td>كلمات SEO لـ AgentFlow AI</td><td>استخرج كلمات مرتبطة بإدارة وكالات AI والمحتوى.</td><td>Medium</td><td>Keywords، intent، عناوين مقالات.</td></tr>
+        <tr><td>Strategy Planner Agent</td><td>خطة إطلاق 30 يوم</td><td>ابن خطة إطلاق AgentFlow AI لجمهور freelancers وAI agency owners.</td><td>High</td><td>Roadmap، قنوات، KPIs.</td></tr>
+        <tr><td>Social Media Content Agent</td><td>منشورات LinkedIn</td><td>اكتب 5 منشورات LinkedIn عن فوائد AgentFlow AI.</td><td>Medium</td><td>Hook، body، CTA، hashtags.</td></tr>
+        <tr><td>Copywriting Agent</td><td>Landing page copy</td><td>اكتب نص صفحة هبوط لبيع AgentFlow AI لأصحاب الوكالات.</td><td>High</td><td>Hero، benefits، CTA.</td></tr>
+        <tr><td>Ads Script Agent</td><td>سكريبت Reel</td><td>اكتب سكريبت Reel يوضح مشكلة تشتت أدوات الوكالة.</td><td>High</td><td>Scenes، voiceover، text overlay.</td></tr>
+        <tr><td>Email Marketing Agent</td><td>Welcome sequence</td><td>اكتب 4 رسائل ترحيبية لمستخدم جديد في AgentFlow AI.</td><td>Medium</td><td>Subjects، body، CTA.</td></tr>
+        <tr><td>Blog SEO Article Agent</td><td>مقال إدارة وكالة AI</td><td>اكتب مقال SEO عن كيفية إدارة وكالة AI بلوحة واحدة.</td><td>Medium</td><td>Outline، article، FAQ.</td></tr>
+        <tr><td>Visual Brief Agent</td><td>Brief لصورة Instagram</td><td>جهز brief بصري لمنشور يشرح AgentFlow AI.</td><td>High</td><td>Visual direction، prompt، colors.</td></tr>
+        <tr><td>Lead Finder Agent</td><td>مصادر leads للوكالات</td><td>اقترح مصادر ومعايير للعثور على وكالات صغيرة مناسبة.</td><td>Medium</td><td>Criteria، sources، fields.</td></tr>
+        <tr><td>Lead Qualifier Agent</td><td>تأهيل leads</td><td>قيّم قائمة leads حسب احتياجهم لإدارة الوكلاء والمحتوى.</td><td>High</td><td>Score، priority، reason.</td></tr>
+        <tr><td>Outreach Message Agent</td><td>رسالة LinkedIn</td><td>اكتب رسالة تواصل قصيرة لصاحب وكالة AI.</td><td>Medium</td><td>Message، follow-ups، CTA.</td></tr>
+        <tr><td>CRM Update Agent</td><td>CRM note بعد demo</td><td>لخص مكالمة demo وحدد المرحلة والخطوة التالية.</td><td>Medium</td><td>Notes، stage، next action.</td></tr>
+        <tr><td>Customer Support Agent</td><td>رد دعم Provider Setup</td><td>اكتب رداً يشرح سبب setup_required في Instagram.</td><td>High</td><td>رد مهني وخطوات تحقق.</td></tr>
+        <tr><td>Analytics Report Agent</td><td>تقرير عمليات شهري</td><td>لخص المحتوى والمهام والمشاكل والتوصيات الشهرية.</td><td>High</td><td>Executive summary، metrics، actions.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>11. كيف يمر العمل داخل AgentFlow AI؟</h2>
+    <div class="workflow">Create Task → اختيار الوكيل → كتابة العنوان والوصف → pending → Run Task → processing → n8n/callback if configured → needs_review → Approve أو Request Changes → completed</div>
+    <table>
+      <thead><tr><th>الحالة</th><th>المعنى</th></tr></thead>
+      <tbody>
+        <tr><td>pending</td><td>المهمة جاهزة ولكن لم يبدأ تنفيذها بعد.</td></tr>
+        <tr><td>processing</td><td>المهمة قيد التنفيذ أو تم إرسالها لنظام التشغيل.</td></tr>
+        <tr><td>needs_review</td><td>النتيجة جاهزة وتحتاج مراجعة المدير.</td></tr>
+        <tr><td>completed</td><td>تمت الموافقة أو إنهاء المهمة.</td></tr>
+        <tr><td>failed</td><td>حدث خطأ أو تعذر التنفيذ ويجب مراجعة السبب.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>12. كيف أربط الوكلاء مع Content Studio؟</h2>
+    <p>استخدم الوكلاء عندما تريد مساراً منظماً للمراجعة أو عندما تكون المهمة أكبر من توليد مباشر. مثال: Create Caption Task، Create Script Task، Create Ad Copy Task، Create Creative Brief Task.</p>
+    <table>
+      <thead><tr><th>الخيار</th><th>متى أستخدمه؟</th></tr></thead>
+      <tbody>
+        <tr><td>Generate button</td><td>توليد مباشر داخل Content Studio عندما تحتاج نتيجة سريعة داخل نفس الشاشة.</td></tr>
+        <tr><td>Create Task</td><td>إرسال مهمة لوكيل داخل النظام للمراجعة والتنظيم والمتابعة.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>13. كيف أستخدم الوكلاء مع Creative Assets؟</h2>
+    <p>قبل إنشاء صورة أو فيديو، استخدم Visual Brief Agent لكتابة الاتجاه البصري، النص الظاهر على التصميم، الألوان، نوع المشهد، وأي ملاحظات Brand Kit. بعد ذلك انسخ المخرجات إلى Creative Assets لإنشاء أو تنظيم الأصل البصري.</p>
+
+    <h2>14. كيف أستخدم الوكلاء مع الحملات الإعلانية؟</h2>
+    <p>أفضل تسلسل للحملة الإعلانية:</p>
+    <div class="workflow">Research agent للجمهور → Strategy agent للزاوية → Content agent للكابشن/الإعلان → Creative agent للـ brief → Operations/reporting agent للتتبع</div>
+    <div class="card">
+      <h3>مثال: حملة Instagram Post لـ AgentFlow AI</h3>
+      <ol>
+        <li>Audience Persona Agent: حدد الجمهور المستهدف.</li>
+        <li>Strategy Planner Agent: حدد زاوية الحملة.</li>
+        <li>Social Media Content Agent: اكتب الكابشن والهاشتاقات.</li>
+        <li>Visual Brief Agent: جهز brief للصورة.</li>
+        <li>Analytics Report Agent: بعد التنفيذ، جهز ملخص التقدم.</li>
+      </ol>
+    </div>
+
+    <h2>15. أخطاء يجب تجنبها</h2>
+    <ul>
+      <li>لا تكتب وصف مهمة غامض.</li>
+      <li>لا تختار وكيلاً غير مناسب لنوع المهمة.</li>
+      <li>لا تطلب من وكيل واحد كل شيء إذا كانت المهمة كبيرة.</li>
+      <li>لا تنشر مباشرة بدون مراجعة.</li>
+      <li>لا تعتمد على fake success.</li>
+      <li>لا تخلط بين organic publishing وpaid ads.</li>
+      <li>لا تنسى ربط Creative Assets بالمحتوى.</li>
+      <li>لا تنسى مراجعة Provider readiness قبل النشر أو الجدولة.</li>
+    </ul>
+
+    <h2>16. أفضل طريقة للعمل يومياً</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>الصباح</h3>
+        <ul>
+          <li>افتح Manager Command Center.</li>
+          <li>راجع Today’s Actions.</li>
+          <li>راجع Recovery Center.</li>
+          <li>افحص Provider Setup.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>منتصف اليوم</h3>
+        <ul>
+          <li>أنشئ Campaign أو Content Draft.</li>
+          <li>استخدم الوكلاء المناسبين.</li>
+          <li>راجع Content Studio.</li>
+          <li>جهز Creative Assets إذا لزم.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>المساء</h3>
+        <ul>
+          <li>راجع Calendar.</li>
+          <li>راجع Reports.</li>
+          <li>حدد مهام الغد.</li>
+          <li>سجل المشاكل في Recovery Center.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>17. ملخص سريع</h2>
+    <table>
+      <thead><tr><th>القسم</th><th>متى أستخدمه؟</th><th>أمثلة مهام</th></tr></thead>
+      <tbody>
+        <tr><td>Research & Strategy</td><td>قبل الحملة، عند البحث والتخطيط.</td><td>بحث السوق، تحليل المنافسين، personas، strategy.</td></tr>
+        <tr><td>Content & Growth</td><td>عند إنشاء المحتوى والنسخ الإعلانية.</td><td>كابشن، سكريبت، إعلان، مقال، visual brief.</td></tr>
+        <tr><td>Sales & Operations</td><td>عند البيع، المتابعة، الدعم، والتقارير.</td><td>Leads، outreach، CRM، دعم، تقرير شهري.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>18. توصيات لتحسين استعمال الوكلاء</h2>
+    <ul>
+      <li>استخدم Brand Kit قبل توليد المحتوى حتى تكون النبرة والهوية واضحة.</li>
+      <li>استعمل Campaign Templates لتسريع إنشاء المسودات.</li>
+      <li>استعمل Calendar لتنظيم المحتوى حسب الأيام والأسابيع.</li>
+      <li>استعمل Recovery Center لحل المشاكل بدلاً من البحث اليدوي.</li>
+      <li>استعمل Reports لمعرفة التقدم الحقيقي بدون أرقام وهمية.</li>
+      <li>استعمل الوكلاء بالتسلسل: بحث، استراتيجية، محتوى، أصول، تشغيل، تقرير.</li>
+    </ul>
+
+    <h2>19. ملاحظات أمان وتشغيل</h2>
+    <ul>
+      <li>لا تضع API keys أو tokens أو secrets داخل وصف المهمة.</li>
+      <li>لا تطلب من الوكلاء تنفيذ نشر مباشر خارج مسار المنصة.</li>
+      <li>راجع مخرجات الوكلاء قبل استخدامها في Content Studio أو الحملات.</li>
+      <li>بالنسبة إلى paid ads، تأكد أن المسودات أو الحملات المدفوعة لا يتم تفعيلها بدون مراجعة صريحة.</li>
+    </ul>
+
+    <h2>20. الخلاصة</h2>
+    <p>يساعدك هذا الدليل كمدير وكالة على استخدام وكلاء AgentFlow AI الثمانية عشر بطريقة منظمة: تبدأ بالبحث، ثم التخطيط، ثم إنشاء المحتوى والأصول، ثم متابعة المبيعات والعمليات، ثم إعداد التقارير. عندما تستخدم الوكلاء بالتسلسل الصحيح، تصبح منصة AgentFlow AI مركز تشغيل واضح لإدارة وكالة AI من الفكرة إلى المحتوى والجدولة والمراجعة والتقرير.</p>
+  </main>
+</body>
+</html>

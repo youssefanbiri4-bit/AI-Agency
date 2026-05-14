@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { buttonStyles } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { cn } from '@/lib/utils';
 import {
   getMetaAdAccountsForWorkspace,
   type MetaAdAccountsForWorkspaceData,
@@ -15,6 +16,10 @@ interface MetaAdAccountsProps {
 type MetaAccountBadgeStatus = 'Ready' | 'Setup Required' | 'No Data';
 
 const META_CONNECT_HREF = '/api/ads/meta/connect';
+const gradientButtonClassName =
+  'border-[#F7CBCA] bg-gradient-to-r from-[#F7CBCA] to-[#F7CBCA] text-white shadow-[0_12px_26px_rgba(202,40,81,0.20)] hover:border-[#5D6B6B] hover:from-[#5D6B6B] hover:to-[#F7CBCA] hover:text-white';
+const warmOutlineButtonClassName =
+  'border-[#5D6B6B]/12 bg-[#F1F7F7] text-[#5D6B6B] hover:border-[#F7CBCA]/35 hover:bg-[#D5E5E5]/55 hover:text-[#F7CBCA]';
 
 function displayValue(value: string | number | null) {
   if (value === null || value === '') {
@@ -53,7 +58,7 @@ function MetaAdAccountsState({
   badgeStatus: MetaAccountBadgeStatus;
 }) {
   return (
-    <div className="mt-4 muted-panel flex min-w-0 flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="mt-4 flex min-w-0 flex-col gap-4 rounded-2xl border border-[#5D6B6B]/8 bg-[#F1F7F7] p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <h4 className="break-words text-sm font-bold text-black">Meta ad accounts</h4>
@@ -68,6 +73,9 @@ function MetaAdAccountsState({
           className={buttonStyles({
             variant: actionLabel.startsWith('Reconnect') ? 'outline' : 'primary',
             size: 'sm',
+            className: actionLabel.startsWith('Reconnect')
+              ? warmOutlineButtonClassName
+              : gradientButtonClassName,
           })}
         >
           {actionLabel}
@@ -163,9 +171,12 @@ export async function MetaAdAccounts({ workspaceId, userId }: MetaAdAccountsProp
         {data.accounts.map((account, index) => (
           <article
             key={account.id ?? account.accountId ?? `meta-account-${index}`}
-            className="muted-panel min-w-0 p-4"
+            className={cn(
+              'min-w-0 rounded-2xl border border-[#5D6B6B]/8 bg-[#F1F7F7] p-4 shadow-sm transition-all',
+              'hover:border-[#F7CBCA]/22 hover:shadow-[0_18px_38px_rgba(202,40,81,0.10)]'
+            )}
           >
-            <dl className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <dl className="dashboard-stat-grid">
               <AccountField label="account_id" value={account.accountId} />
               <AccountField label="name" value={account.name} />
               <AccountField label="account_status" value={account.accountStatus} />

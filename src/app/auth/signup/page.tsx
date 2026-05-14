@@ -137,13 +137,13 @@ export default function SignUpPage() {
               value={formData.password}
               onChange={handleChange}
               placeholder="Password"
-              className="pr-11"
+              className="pe-11"
               disabled={isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-2.5 text-black/38 hover:text-black"
+              className="absolute end-3 top-2.5 text-black/38 hover:text-black"
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -170,7 +170,7 @@ export default function SignUpPage() {
 
       <p className="mt-6 text-center leading-6 text-black/58">
         Already have an account?{' '}
-        <Link href="/auth/login" className="font-bold text-[#8B3CDE] hover:text-black">
+        <Link href="/auth/login" className="font-bold text-[#F7CBCA] hover:text-black">
           Sign In
         </Link>
       </p>

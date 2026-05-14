@@ -203,10 +203,6 @@ export async function POST(request: NextRequest) {
     const callbackBaseUrl = getCallbackBaseUrl(request);
     const callbackUrl = `${callbackBaseUrl}/api/n8n/callback`;
 
-    console.log('APP_BASE_URL:', process.env.APP_BASE_URL);
-    console.log('Callback URL:', callbackUrl);
-    console.log('N8N_WEBHOOK_URL configured:', Boolean(n8nReadiness.webhookUrl));
-
     const payload = {
       taskId: task.id,
       workspaceId,
@@ -229,18 +225,6 @@ export async function POST(request: NextRequest) {
           }
         : {}),
     };
-
-    console.log('n8n payload revision notes present:', Boolean(latestRevisionNotes));
-
-    const loggedPayload = latestRevisionNotes
-      ? {
-          ...payload,
-          revisionNotes: '[redacted]',
-          revision_notes: '[redacted]',
-        }
-      : payload;
-
-    console.log('n8n task payload:', loggedPayload);
 
     let response: Response;
 

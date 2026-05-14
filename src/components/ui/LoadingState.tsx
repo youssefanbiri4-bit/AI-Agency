@@ -18,8 +18,8 @@ export function LoadingState({
       aria-busy="true"
       aria-live="polite"
     >
-      <div className="w-full max-w-md rounded-lg border border-black/8 bg-white p-6 text-center shadow-[0_18px_48px_rgba(0,0,0,0.06)]">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-[#F0DBEF] text-[#8B3CDE] shadow-sm">
+      <div className="w-full max-w-md rounded-lg border border-[#F7CBCA]/10 bg-white/70 p-6 text-center shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-[#D5E5E5] text-[#F7CBCA] shadow-sm">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
         <h2 className="mt-4 text-base font-bold text-black">{title}</h2>

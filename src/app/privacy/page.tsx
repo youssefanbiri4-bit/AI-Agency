@@ -20,7 +20,7 @@ export default function PrivacyPage() {
         </Link>
 
         <div className="rounded-lg border border-black/8 bg-white p-5 shadow-[0_18px_48px_rgba(0,0,0,0.06)] sm:p-8">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#8B3CDE]">Legal</p>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#F7CBCA]">Legal</p>
           <h1 className="mt-3 break-words text-3xl font-black text-black sm:text-4xl">Privacy Policy</h1>
           <p className="mt-3 text-sm leading-6 text-black/58">Last updated: May 2, 2026</p>
 

@@ -59,7 +59,7 @@ export function ReportsListClient({ reports }: ReportsListClientProps) {
     <section className="space-y-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#8B3CDE]">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#F7CBCA]">
             Report Library
           </p>
           <h2 className="mt-2 break-words text-2xl font-black tracking-normal text-black">
@@ -70,20 +70,20 @@ export function ReportsListClient({ reports }: ReportsListClientProps) {
           </p>
         </div>
 
-        <div className="inline-flex w-fit rounded-lg border border-black/8 bg-white px-3 py-2 text-sm font-bold text-black shadow-sm">
+        <div className="inline-flex w-fit rounded-lg border border-[#F7CBCA]/8 bg-white/58 px-3 py-2 text-sm font-bold text-black shadow-sm backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]">
           {filteredReports.length} of {reports.length} reports
         </div>
       </div>
 
-      <div className="grid min-w-0 gap-3 rounded-lg border border-black/8 bg-white p-4 shadow-[0_18px_48px_rgba(0,0,0,0.06)] lg:grid-cols-[minmax(0,1fr)_190px_190px]">
+      <div className="grid min-w-0 gap-3 rounded-lg border border-[#F7CBCA]/8 bg-white/58 p-4 shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] lg:grid-cols-[minmax(0,1fr)_190px_190px]">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
+          <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
           <Input
             type="search"
             placeholder="Search reports by title, summary, or agent"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="pl-10"
+            className="ps-10"
           />
         </div>
 

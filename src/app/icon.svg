@@ -1,11 +1,11 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <title>AgentFlow AI</title>
-  <rect x="28" y="28" width="456" height="456" rx="116" fill="#000000"/>
+  <rect x="28" y="28" width="456" height="456" rx="116" fill="#171717"/>
   <path d="M154 371L254 137L356 371" stroke="#FFFFFF" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M194 293H316" stroke="#F0DBEF" stroke-width="40" stroke-linecap="round"/>
-  <path d="M123 218C191 125 309 106 395 179" stroke="#8B3CDE" stroke-width="43" stroke-linecap="round"/>
-  <path d="M365 140L406 190L347 208" stroke="#F55477" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="254" cy="137" r="40" fill="#8B3CDE"/>
-  <circle cx="154" cy="371" r="40" fill="#F55477"/>
-  <circle cx="356" cy="371" r="40" fill="#F0DBEF"/>
+  <path d="M194 293H316" stroke="#FFE3B3" stroke-width="40" stroke-linecap="round"/>
+  <path d="M123 218C191 125 309 106 395 179" stroke="#CA2851" stroke-width="43" stroke-linecap="round"/>
+  <path d="M365 140L406 190L347 208" stroke="#FF6766" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="254" cy="137" r="40" fill="#CA2851"/>
+  <circle cx="154" cy="371" r="40" fill="#FF6766"/>
+  <circle cx="356" cy="371" r="40" fill="#FFE3B3"/>
 </svg>

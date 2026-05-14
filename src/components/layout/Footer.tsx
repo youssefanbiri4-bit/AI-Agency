@@ -1,25 +1,23 @@
-'use client';
-
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { BrandMark } from '@/components/brand/BrandMark';
 
-export function Footer() {
-  const currentYear = new Date().getFullYear();
-  const pathname = usePathname();
+interface FooterProps {
+  hide?: boolean;
+}
 
-  if (pathname?.startsWith('/dashboard')) {
-    return null;
-  }
+export function Footer({ hide }: FooterProps) {
+  if (hide) return null;
+
+  const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-black/8 bg-white">
+    <footer className="mt-auto border-t border-[#F7CBCA]/10 bg-[#F1F7F7]/40 backdrop-blur-[18px] [-webkit-backdrop-filter:blur(18px)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div>
             <BrandMark href="/" size="sm" className="mb-4" />
             <p className="text-sm leading-6 text-black/58">
-              Professional AI agent management platform.
+              AI agency operations platform.
             </p>
           </div>
 
@@ -29,7 +27,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/dashboard"
-                  className="text-sm text-black/58 hover:text-[#8B3CDE] transition-colors"
+                  className="text-sm text-black/58 hover:text-[#F7CBCA] transition-colors"
                 >
                   Dashboard
                 </Link>
@@ -37,7 +35,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/dashboard/tasks"
-                  className="text-sm text-black/58 hover:text-[#8B3CDE] transition-colors"
+                  className="text-sm text-black/58 hover:text-[#F7CBCA] transition-colors"
                 >
                   Tasks
                 </Link>
@@ -45,7 +43,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/dashboard/create-task"
-                  className="text-sm text-black/58 hover:text-[#8B3CDE] transition-colors"
+                  className="text-sm text-black/58 hover:text-[#F7CBCA] transition-colors"
                 >
                   Create Task
                 </Link>
@@ -59,7 +57,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/dashboard/agents"
-                  className="text-sm text-black/58 hover:text-[#8B3CDE] transition-colors"
+                  className="text-sm text-black/58 hover:text-[#F7CBCA] transition-colors"
                 >
                   Agents
                 </Link>
@@ -67,15 +65,15 @@ export function Footer() {
               <li>
                 <Link
                   href="/dashboard/settings"
-                  className="text-sm text-black/58 hover:text-[#8B3CDE] transition-colors"
+                  className="text-sm text-black/58 hover:text-[#F7CBCA] transition-colors"
                 >
-                  Integration Settings
+                  Settings
                 </Link>
               </li>
               <li>
                 <Link
                   href="/dashboard/reports"
-                  className="text-sm text-black/58 hover:text-[#8B3CDE] transition-colors"
+                  className="text-sm text-black/58 hover:text-[#F7CBCA] transition-colors"
                 >
                   Reports
                 </Link>
@@ -89,7 +87,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/privacy"
-                  className="text-sm text-black/58 hover:text-[#8B3CDE] transition-colors"
+                  className="text-sm text-black/58 hover:text-[#F7CBCA] transition-colors"
                 >
                   Privacy Policy
                 </Link>
@@ -97,7 +95,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/terms"
-                  className="text-sm text-black/58 hover:text-[#8B3CDE] transition-colors"
+                  className="text-sm text-black/58 hover:text-[#F7CBCA] transition-colors"
                 >
                   Terms of Service
                 </Link>
@@ -109,18 +107,18 @@ export function Footer() {
         <div className="border-t border-black/8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-sm text-black/58">
-              © {currentYear} AgentFlow AI. All rights reserved.
+              &copy; {currentYear} AgentFlow AI. All rights reserved.
             </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <span className="text-sm text-black/46">
+            <div className="flex gap-6 mt-4 md:mt-0">
+              <a href="https://x.com/agentflowai" target="_blank" rel="noopener noreferrer" className="text-sm text-black/46 hover:text-[#F7CBCA] transition-colors">
                 Twitter
-              </span>
-              <span className="text-sm text-black/46">
+              </a>
+              <a href="https://linkedin.com/company/agentflowai" target="_blank" rel="noopener noreferrer" className="text-sm text-black/46 hover:text-[#F7CBCA] transition-colors">
                 LinkedIn
-              </span>
-              <span className="text-sm text-black/46">
+              </a>
+              <a href="https://github.com/agentflowai" target="_blank" rel="noopener noreferrer" className="text-sm text-black/46 hover:text-[#F7CBCA] transition-colors">
                 GitHub
-              </span>
+              </a>
             </div>
           </div>
         </div>

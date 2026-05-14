@@ -14,8 +14,8 @@ interface NoticeProps {
 const toneStyles = {
   info: {
     icon: Info,
-    className: 'border-[#8B3CDE]/18 bg-[#F0DBEF]/58 text-black',
-    iconClassName: 'text-[#8B3CDE]',
+    className: 'border-[#F7CBCA]/18 bg-white/78 text-black shadow-[0_12px_30px_rgba(93,107,107,0.05)] backdrop-blur-[16px]',
+    iconClassName: 'text-[#F7CBCA]',
   },
   success: {
     icon: CheckCircle2,
@@ -24,13 +24,13 @@ const toneStyles = {
   },
   warning: {
     icon: ShieldAlert,
-    className: 'border-[#F55477]/20 bg-[#F0DBEF]/62 text-black',
-    iconClassName: 'text-[#F55477]',
+    className: 'border-[#F7CBCA]/20 bg-[#F1F7F7]/88 text-black shadow-[0_12px_30px_rgba(93,107,107,0.05)]',
+    iconClassName: 'text-[#F7CBCA]',
   },
   danger: {
     icon: AlertCircle,
-    className: 'border-[#F55477]/22 bg-[#F0DBEF]/70 text-black',
-    iconClassName: 'text-[#F55477]',
+    className: 'border-[#F7CBCA]/22 bg-[#F1F7F7]/92 text-black shadow-[0_12px_30px_rgba(93,107,107,0.05)]',
+    iconClassName: 'text-[#F7CBCA]',
   },
 };
 

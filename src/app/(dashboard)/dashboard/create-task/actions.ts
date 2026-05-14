@@ -8,6 +8,7 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { createTask } from '@/lib/data/tasks';
+import { createNotification } from '@/lib/data/notifications';
 import type { AgentType } from '@/types';
 import type { TaskPriority } from '@/types/database';
 
@@ -15,6 +16,8 @@ const allowedPriorities: TaskPriority[] = ['Low', 'Normal', 'High'];
 
 export interface CreateTaskState {
   error: string | null;
+  message?: string | null;
+  taskId?: string | null;
 }
 
 function readField(formData: FormData, key: string) {
@@ -92,16 +95,46 @@ export async function createTaskAction(
   );
 
   if (taskResult.error || !taskResult.data) {
-    return {
+  return {
       error: taskResult.error ?? 'Task could not be created.',
     };
   }
 
+  try {
+    await createNotification(
+      {
+        workspaceId: workspaceResult.data.id,
+        userId: user.id,
+        type: 'task_created',
+        severity: 'info',
+        title: 'Task created',
+        message: `${taskResult.data.title} was created and is ready to run.`,
+        relatedEntityType: 'task',
+        relatedEntityId: taskResult.data.id,
+        relatedUrl: `/dashboard/tasks/${taskResult.data.id}`,
+        metadata: {
+          category: 'task',
+          task_id: taskResult.data.id,
+          agent_type: agentType,
+          priority,
+        },
+      },
+      supabase
+    );
+  } catch {
+    // Notifications are best-effort and must not block task creation.
+  }
+
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard', 'layout');
   revalidatePath('/dashboard/tasks');
   revalidatePath('/dashboard/agents');
   revalidatePath(`/dashboard/agents/${agentType}`);
   revalidatePath(`/dashboard/tasks/${taskResult.data.id}`);
 
-  redirect(`/dashboard/tasks/${taskResult.data.id}`);
+  return {
+    error: null,
+    message: 'Task created.',
+    taskId: taskResult.data.id,
+  };
 }

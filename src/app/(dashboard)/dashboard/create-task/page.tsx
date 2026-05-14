@@ -29,6 +29,8 @@ export default async function CreateTaskPage({
   const agentsResult = await listAgents(supabase);
   const initialAgent = getStringParam(params.agent);
   const initialExample = getStringParam(params.example) ?? '';
+  const initialTitle = getStringParam(params.title) ?? initialExample;
+  const initialDescription = getStringParam(params.description) ?? initialExample;
   const initialAgentId = agentsResult.data.some((agent) => agent.id === initialAgent)
     ? (initialAgent as AgentType)
     : null;
@@ -63,8 +65,8 @@ export default async function CreateTaskPage({
         <CreateTaskForm
           agents={agentsResult.data}
           initialAgentId={initialAgentId}
-          initialTitle={initialExample}
-          initialDescription={initialExample}
+          initialTitle={initialTitle}
+          initialDescription={initialDescription}
         />
       )}
     </div>

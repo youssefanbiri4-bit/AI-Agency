@@ -50,17 +50,6 @@ export async function POST(request: NextRequest) {
     const incomingSecret = request.headers.get("x-n8n-callback-secret")?.trim();
     const expectedSecret = process.env.N8N_CALLBACK_SECRET?.trim();
 
-    console.error('N8N callback secret debug', {
-      hasIncomingSecret: Boolean(incomingSecret),
-      hasExpectedSecret: Boolean(expectedSecret),
-      incomingLength: incomingSecret?.length ?? 0,
-      expectedLength: expectedSecret?.length ?? 0,
-      incomingPrefix: incomingSecret ? incomingSecret.slice(0, 4) : null,
-      expectedPrefix: expectedSecret ? expectedSecret.slice(0, 4) : null,
-      path: request.nextUrl.pathname,
-      headerNames: Array.from(request.headers.keys()),
-    });
-
     if (!expectedSecret) {
       return jsonError('Server missing N8N_CALLBACK_SECRET', 500);
     }

@@ -9,17 +9,20 @@
     "dev": "bash scripts/next-node20.sh dev",
     "build": "bash scripts/next-node20.sh build",
     "start": "bash scripts/next-node20.sh start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "security:audit": "node scripts/security-audit.mjs"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.105.1",
     "axios": "^1.15.2",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "next": "16.2.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "stripe": "^22.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

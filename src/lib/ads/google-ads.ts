@@ -53,6 +53,23 @@ interface GoogleAdsAccessibleCustomersResponse {
   };
 }
 
+interface GoogleAdsApiErrorPayload {
+  error?: {
+    code?: unknown;
+    message?: unknown;
+    status?: unknown;
+  };
+}
+
+interface GoogleAdsSearchStreamChunk {
+  results?: unknown;
+  error?: {
+    code?: unknown;
+    message?: unknown;
+    status?: unknown;
+  };
+}
+
 export interface GoogleOAuthToken {
   accessToken: string;
   refreshToken: string | null;
@@ -68,7 +85,42 @@ export interface GoogleAdsAccessibleCustomer {
   accountTypeHint: string | null;
 }
 
-type GoogleAdsApiErrorKind = 'invalid_token' | 'permission' | 'unknown';
+export interface GoogleAdsCampaignMetrics {
+  customerId: string;
+  customerResourceName: string;
+  customerName: string | null;
+  campaignId: string;
+  campaignName: string;
+  status: string | null;
+  channelType: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  impressions: number | null;
+  clicks: number | null;
+  ctr: number | null;
+  averageCpc: number | null;
+  cost: number | null;
+  conversions: number | null;
+  conversionsValue: number | null;
+}
+
+type GoogleAdsApiErrorKind = 'invalid_token' | 'permission' | 'api_issue' | 'unknown';
+
+const GOOGLE_ADS_CAMPAIGN_METRICS_FIELDS = [
+  'campaign.id',
+  'campaign.name',
+  'campaign.status',
+  'campaign.advertising_channel_type',
+  'campaign.start_date',
+  'campaign.end_date',
+  'metrics.impressions',
+  'metrics.clicks',
+  'metrics.ctr',
+  'metrics.average_cpc',
+  'metrics.cost_micros',
+  'metrics.conversions',
+  'metrics.conversions_value',
+] as const;
 
 export class GoogleAdsConfigError extends Error {
   readonly status: GoogleAdsConfigStatus;
@@ -129,6 +181,14 @@ function safeNumber(value: unknown) {
   return null;
 }
 
+function safeRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || Array.isArray(value) || typeof value !== 'object') {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
 function normalizeGoogleAdsApiVersion(value: string | null) {
   const normalized = value?.trim();
 
@@ -142,6 +202,39 @@ function normalizeGoogleAdsApiVersion(value: string | null) {
 function normalizeGoogleAdsCustomerId(value: string | null) {
   const normalized = value?.replace(/\D/g, '') ?? '';
   return normalized || null;
+}
+
+function normalizeGoogleAdsCampaignLimit(value: number | null | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return 50;
+  }
+
+  return Math.max(1, Math.min(50, Math.floor(value)));
+}
+
+function microsToCurrencyUnits(value: unknown) {
+  const micros = safeNumber(value);
+  return micros === null ? null : micros / 1_000_000;
+}
+
+function readApiValue(
+  record: Record<string, unknown> | null,
+  camelKey: string,
+  snakeKey?: string
+) {
+  if (!record) {
+    return null;
+  }
+
+  if (camelKey in record) {
+    return record[camelKey];
+  }
+
+  if (snakeKey && snakeKey in record) {
+    return record[snakeKey];
+  }
+
+  return null;
 }
 
 function getMissingGoogleAdsEnvVars(): GoogleAdsRequiredEnvVar[] {
@@ -245,16 +338,73 @@ export function buildGoogleAdsOAuthUrl({ state }: { state: string }) {
   return url;
 }
 
-function classifyGoogleAdsApiError(status: number): GoogleAdsApiErrorKind {
+function classifyGoogleAdsApiError(
+  status: number,
+  payload?: GoogleAdsApiErrorPayload | null
+): GoogleAdsApiErrorKind {
+  const apiStatus = safeString(payload?.error?.status)?.toUpperCase() ?? '';
+  const apiMessage = safeString(payload?.error?.message)?.toLowerCase() ?? '';
+
   if (status === 401) {
     return 'invalid_token';
   }
 
-  if (status === 403) {
+  if (apiStatus === 'UNAUTHENTICATED') {
+    return 'invalid_token';
+  }
+
+  if (
+    apiMessage.includes('developer token') ||
+    apiMessage.includes('developer-token') ||
+    apiMessage.includes('login-customer-id') ||
+    apiStatus === 'INVALID_ARGUMENT' ||
+    apiStatus === 'FAILED_PRECONDITION' ||
+    status === 400 ||
+    status === 404
+  ) {
+    return 'api_issue';
+  }
+
+  if (status === 403 || apiStatus === 'PERMISSION_DENIED') {
     return 'permission';
   }
 
   return 'unknown';
+}
+
+function buildGoogleAdsApiHeaders(
+  accessToken: string,
+  env: GoogleAdsEnv,
+  options: { hasJsonBody?: boolean } = {}
+) {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    Authorization: `Bearer ${accessToken}`,
+    'developer-token': env.developerToken,
+  };
+
+  if (options.hasJsonBody) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (env.loginCustomerId) {
+    headers['login-customer-id'] = env.loginCustomerId;
+  }
+
+  return headers;
+}
+
+function buildGoogleAdsCampaignMetricsQuery(limit: number) {
+  return `SELECT
+  ${GOOGLE_ADS_CAMPAIGN_METRICS_FIELDS.join(',\n  ')}
+FROM campaign
+WHERE segments.date DURING LAST_30_DAYS
+ORDER BY campaign.id
+LIMIT ${normalizeGoogleAdsCampaignLimit(limit)}`;
+}
+
+export function getGoogleAdsCampaignMetricsFields() {
+  return [...GOOGLE_ADS_CAMPAIGN_METRICS_FIELDS];
 }
 
 async function fetchGoogleOAuthToken(
@@ -336,7 +486,7 @@ function buildGoogleAdsApiUrl(path: string, env = getGoogleAdsEnv()) {
 
 function getCustomerIdFromResourceName(resourceName: string) {
   const match = /^customers\/(\d+)$/.exec(resourceName);
-  return match?.[1] ?? resourceName.replace(/^customers\//, '');
+  return match?.[1] ?? null;
 }
 
 export async function listAccessibleGoogleAdsCustomers(
@@ -349,15 +499,7 @@ export async function listAccessibleGoogleAdsCustomers(
   }
 
   const env = getGoogleAdsEnv();
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-    Authorization: `Bearer ${accessToken}`,
-    'developer-token': env.developerToken,
-  };
-
-  if (env.loginCustomerId) {
-    headers['login-customer-id'] = env.loginCustomerId;
-  }
+  const headers = buildGoogleAdsApiHeaders(accessToken, env);
 
   const response = await fetch(buildGoogleAdsApiUrl('/customers:listAccessibleCustomers', env), {
     method: 'GET',
@@ -370,7 +512,7 @@ export async function listAccessibleGoogleAdsCustomers(
 
   if (!response.ok || payload?.error || !Array.isArray(payload?.resourceNames)) {
     throw new GoogleAdsApiError(
-      classifyGoogleAdsApiError(response.status),
+      classifyGoogleAdsApiError(response.status, payload),
       'Google Ads accessible customers request failed.',
       response.status
     );
@@ -378,8 +520,12 @@ export async function listAccessibleGoogleAdsCustomers(
 
   return payload.resourceNames
     .filter((resourceName): resourceName is string => typeof resourceName === 'string')
-    .map((resourceName) => {
+    .flatMap((resourceName) => {
       const customerId = getCustomerIdFromResourceName(resourceName);
+
+      if (!customerId) {
+        return [];
+      }
 
       return {
         resourceName,
@@ -388,4 +534,127 @@ export async function listAccessibleGoogleAdsCustomers(
         accountTypeHint: null,
       };
     });
+}
+
+function getGoogleAdsSearchStreamErrorPayload(
+  payload: unknown
+): GoogleAdsApiErrorPayload | null {
+  const record = safeRecord(payload);
+
+  if (record?.error) {
+    return { error: safeRecord(record.error) ?? undefined };
+  }
+
+  if (Array.isArray(payload)) {
+    const chunkWithError = payload.find((chunk) => Boolean(safeRecord(chunk)?.error));
+    const chunkRecord = safeRecord(chunkWithError);
+
+    if (chunkRecord?.error) {
+      return { error: safeRecord(chunkRecord.error) ?? undefined };
+    }
+  }
+
+  return null;
+}
+
+function getGoogleAdsSearchStreamResults(payload: unknown) {
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  return payload.flatMap((chunk) => {
+    const chunkRecord = safeRecord(chunk) as GoogleAdsSearchStreamChunk | null;
+    return Array.isArray(chunkRecord?.results) ? chunkRecord.results : [];
+  });
+}
+
+function mapGoogleAdsCampaignMetricsResult({
+  result,
+  customer,
+}: {
+  result: unknown;
+  customer: GoogleAdsAccessibleCustomer;
+}): GoogleAdsCampaignMetrics | null {
+  const resultRecord = safeRecord(result);
+  const campaign = safeRecord(resultRecord?.campaign);
+  const metrics = safeRecord(resultRecord?.metrics);
+  const campaignId = safeString(readApiValue(campaign, 'id'));
+
+  if (!campaignId) {
+    return null;
+  }
+
+  return {
+    customerId: customer.customerId,
+    customerResourceName: customer.resourceName,
+    customerName: customer.displayName,
+    campaignId,
+    campaignName: safeString(readApiValue(campaign, 'name')) ?? campaignId,
+    status: safeString(readApiValue(campaign, 'status')),
+    channelType: safeString(
+      readApiValue(campaign, 'advertisingChannelType', 'advertising_channel_type')
+    ),
+    startDate: safeString(readApiValue(campaign, 'startDate', 'start_date')),
+    endDate: safeString(readApiValue(campaign, 'endDate', 'end_date')),
+    impressions: safeNumber(readApiValue(metrics, 'impressions')),
+    clicks: safeNumber(readApiValue(metrics, 'clicks')),
+    ctr: safeNumber(readApiValue(metrics, 'ctr')),
+    averageCpc: microsToCurrencyUnits(
+      readApiValue(metrics, 'averageCpc', 'average_cpc')
+    ),
+    cost: microsToCurrencyUnits(readApiValue(metrics, 'costMicros', 'cost_micros')),
+    conversions: safeNumber(readApiValue(metrics, 'conversions')),
+    conversionsValue: safeNumber(
+      readApiValue(metrics, 'conversionsValue', 'conversions_value')
+    ),
+  };
+}
+
+export async function fetchGoogleAdsCampaignMetrics(
+  accessToken: string,
+  customer: GoogleAdsAccessibleCustomer,
+  options: { limit?: number } = {}
+): Promise<GoogleAdsCampaignMetrics[]> {
+  assertServerOnly();
+
+  if (!accessToken.trim()) {
+    throw new GoogleAdsApiError('invalid_token', 'Google Ads access token is missing.', 0);
+  }
+
+  const customerId = normalizeGoogleAdsCustomerId(customer.customerId);
+
+  if (!customerId) {
+    throw new GoogleAdsApiError(
+      'api_issue',
+      'Google Ads customer ID is not valid for campaign metrics.',
+      0
+    );
+  }
+
+  const env = getGoogleAdsEnv();
+  const response = await fetch(
+    buildGoogleAdsApiUrl(`/customers/${customerId}/googleAds:searchStream`, env),
+    {
+      method: 'POST',
+      headers: buildGoogleAdsApiHeaders(accessToken, env, { hasJsonBody: true }),
+      body: JSON.stringify({
+        query: buildGoogleAdsCampaignMetricsQuery(options.limit ?? 50),
+      }),
+      cache: 'no-store',
+    }
+  );
+  const payload = (await response.json().catch(() => null)) as unknown;
+  const errorPayload = getGoogleAdsSearchStreamErrorPayload(payload);
+
+  if (!response.ok || errorPayload) {
+    throw new GoogleAdsApiError(
+      classifyGoogleAdsApiError(response.status, errorPayload),
+      'Google Ads campaign metrics request failed.',
+      response.status
+    );
+  }
+
+  return getGoogleAdsSearchStreamResults(payload)
+    .map((result) => mapGoogleAdsCampaignMetricsResult({ result, customer }))
+    .filter((campaign): campaign is GoogleAdsCampaignMetrics => campaign !== null);
 }

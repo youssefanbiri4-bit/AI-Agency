@@ -4,6 +4,7 @@ import type { JsonObject } from '@/types';
 import type {
   Database,
   NotificationRecord,
+  NotificationSeverity,
   NotificationStatus,
   NotificationType,
 } from '@/types/database';
@@ -14,6 +15,7 @@ export interface ListNotificationsInput {
   userId: string;
   limit?: number;
   status?: NotificationStatus;
+  search?: string;
 }
 
 export interface CountUnreadNotificationsInput {
@@ -25,8 +27,12 @@ export interface CreateNotificationInput {
   workspaceId: string;
   userId: string;
   type: NotificationType;
+  severity?: NotificationSeverity;
   title: string;
   message: string;
+  relatedEntityType?: string | null;
+  relatedEntityId?: string | null;
+  relatedUrl?: string | null;
   metadata?: JsonObject;
 }
 
@@ -59,6 +65,11 @@ export async function listLatestNotifications(
 
   if (input.status) {
     query = query.eq('status', input.status);
+  }
+
+  if (input.search?.trim()) {
+    const search = input.search.trim().replaceAll('%', '').replaceAll('_', '');
+    query = query.or(`title.ilike.%${search}%,message.ilike.%${search}%`);
   }
 
   const { data, error } = await query;
@@ -106,8 +117,12 @@ export async function createNotification(
       workspace_id: input.workspaceId,
       user_id: input.userId,
       type: input.type,
+      severity: input.severity ?? 'info',
       title: input.title,
       message: input.message,
+      related_entity_type: input.relatedEntityType ?? null,
+      related_entity_id: input.relatedEntityId ?? null,
+      related_url: input.relatedUrl ?? null,
       status: 'unread',
       metadata: input.metadata ?? {},
     })

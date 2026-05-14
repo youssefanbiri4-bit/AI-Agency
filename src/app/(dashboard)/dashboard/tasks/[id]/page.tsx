@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, ClipboardCheck, CopyPlus, FileText, Workflow, Zap } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ClipboardCheck, CopyPlus, ExternalLink, FileText, GitBranch, Workflow, Zap } from 'lucide-react';
 import { RunTaskButton } from './RunTaskButton';
 import { TaskProcessingPoller } from './TaskProcessingPoller';
 import { ReviewForm } from '../../review/ReviewForm';
@@ -63,6 +63,20 @@ export default async function TaskDetailsPage({
   const agent = agentsResult.data.find((item) => item.id === task.agent_type);
   const inputEntries = Object.entries(task.input_data || {});
   const n8nReadiness = getN8nReadiness();
+  const githubInput =
+    task.input_data?.source === 'github_issue' &&
+    task.input_data.github &&
+    typeof task.input_data.github === 'object' &&
+    !Array.isArray(task.input_data.github)
+      ? (task.input_data.github as Record<string, unknown>)
+      : null;
+  const pullRequestInput =
+    task.input_data?.source === 'pull_request_review' &&
+    task.input_data.github &&
+    typeof task.input_data.github === 'object' &&
+    !Array.isArray(task.input_data.github)
+      ? (task.input_data.github as Record<string, unknown>)
+      : null;
   const taskErrorMessage =
     task.status === 'failed'
       ? typeof task.result?.error_message === 'string'
@@ -111,6 +125,36 @@ export default async function TaskDetailsPage({
           {taskErrorMessage}
         </Notice>
       )}
+
+      {githubInput ? (
+        <Notice tone="info" title={`GitHub issue #${String(githubInput.issue_number ?? '')}`}>
+          <span className="inline-flex flex-wrap items-center gap-2">
+            This task was imported from a GitHub issue and remains an AgentFlow task only.
+            {typeof githubInput.issue_url === 'string' ? (
+              <a href={githubInput.issue_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-black text-[#F7CBCA] underline">
+                <GitBranch className="h-4 w-4" />
+                Open issue
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            ) : null}
+          </span>
+        </Notice>
+      ) : null}
+
+      {pullRequestInput ? (
+        <Notice tone="info" title={`Pull request #${String(pullRequestInput.pr_number ?? '')}`}>
+          <span className="inline-flex flex-wrap items-center gap-2">
+            This task was created from a read-only PR review and remains an AgentFlow task only.
+            {typeof pullRequestInput.pr_url === 'string' ? (
+              <a href={pullRequestInput.pr_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-black text-[#F7CBCA] underline">
+                <GitBranch className="h-4 w-4" />
+                Open PR
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            ) : null}
+          </span>
+        </Notice>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,0.8fr)]">
         <div className="space-y-8">
@@ -258,7 +302,7 @@ export default async function TaskDetailsPage({
             )}
             <div className="muted-panel mt-5 p-4">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#8B3CDE] shadow-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#F7CBCA] shadow-sm">
                   <Workflow className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">

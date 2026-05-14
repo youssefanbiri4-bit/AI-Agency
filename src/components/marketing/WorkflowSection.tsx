@@ -31,7 +31,7 @@ const workflowSteps = [
 
 export function WorkflowSection() {
   return (
-    <section id="workflow" className="border-y border-black/8 bg-white py-24 sm:py-28">
+    <section id="workflow" className="border-y border-[#F7CBCA]/8 bg-white/30 py-24 backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] sm:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow="Workflow"
@@ -46,10 +46,10 @@ export function WorkflowSection() {
             return (
               <article
                 key={step.title}
-                className="relative rounded-lg border border-black/8 bg-[#F0DBEF]/35 p-5 shadow-sm"
+                className="relative rounded-lg border border-[#F7CBCA]/10 bg-white/58 p-5 shadow-sm backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)]"
               >
                 <div className="mb-5 flex items-center justify-between">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-[#8B3CDE] shadow-sm">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-[#F7CBCA] shadow-sm">
                     <Icon className="h-5 w-5" />
                   </div>
                   <span className="text-sm font-black text-black/22">0{index + 1}</span>
@@ -61,7 +61,7 @@ export function WorkflowSection() {
           })}
         </div>
 
-        <div className="mt-10 rounded-lg border border-[#F55477]/18 bg-[#F0DBEF]/48 p-5 sm:p-6">
+        <div className="mt-10 rounded-lg border border-[#F7CBCA]/18 bg-white/58 p-5 backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <h3 className="font-bold text-black">Future workflow integrations stay server-side</h3>
@@ -69,7 +69,7 @@ export function WorkflowSection() {
                 n8n can be connected later through protected API routes without exposing workflow secrets in the browser.
               </p>
             </div>
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white text-[#F55477] shadow-sm">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-white text-[#F7CBCA] shadow-sm">
               <Send className="h-5 w-5" />
             </div>
           </div>

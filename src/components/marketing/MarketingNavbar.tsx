@@ -7,22 +7,22 @@ const navItems = [
   { label: 'Features', href: '#features' },
   { label: 'Agents', href: '#agents' },
   { label: 'Workflow', href: '#workflow' },
-  { label: 'Pricing', href: '#pricing' },
+  // { label: 'Pricing', href: '#pricing' },
   { label: 'Dashboard', href: '/dashboard' },
 ];
 
 export function MarketingNavbar() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-black/8 bg-white/88 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-[#F7CBCA]/10 bg-[#F1F7F7]/40 backdrop-blur-[18px] [-webkit-backdrop-filter:blur(18px)]">
       <nav className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:gap-6 lg:px-8">
         <BrandMark href="/" showTagline={false} className="max-w-[58vw]" />
 
-        <div className="hidden items-center rounded-lg border border-black/8 bg-[#F0DBEF]/35 p-1 lg:flex">
+        <div className="hidden items-center rounded-lg border border-[#F7CBCA]/10 bg-white/38 p-1 backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] lg:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-md px-3.5 py-2 text-sm font-bold text-black/58 hover:bg-white hover:text-black hover:shadow-sm"
+              className="rounded-md px-3.5 py-2 text-sm font-bold text-black/70 hover:bg-white/55 hover:text-black hover:shadow-sm"
             >
               {item.label}
             </Link>

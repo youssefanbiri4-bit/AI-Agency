@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import { buttonStyles } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { cn } from '@/lib/utils';
 import type { MetaCampaignInsights } from '@/lib/ads/meta';
 import {
   type MetaCampaignInsightsState,
@@ -21,6 +22,8 @@ interface MetaCampaignsProps {
 type MetaCampaignBadgeStatus = 'Ready' | 'Setup Required' | 'No Data' | 'Awaiting Data';
 
 const META_CONNECT_HREF = '/api/ads/meta/connect';
+const warmOutlineButtonClassName =
+  'border-[#5D6B6B]/12 bg-[#F1F7F7] text-[#5D6B6B] hover:border-[#F7CBCA]/35 hover:bg-[#D5E5E5]/55 hover:text-[#F7CBCA]';
 
 function displayValue(value: string | null) {
   return value?.trim() || 'Unavailable';
@@ -96,7 +99,7 @@ function CampaignField({ label, value }: { label: string; value: string | null }
 
 function MetricField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-lg border border-black/8 bg-white px-3 py-2">
+    <div className="min-w-0 rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-2 shadow-sm">
       <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
         {label}
       </dt>
@@ -115,7 +118,7 @@ function MetaCampaignsStatePanel({
   badgeStatus: MetaCampaignBadgeStatus;
 }) {
   return (
-    <div className="mt-4 flex min-w-0 flex-col gap-3 border-t border-black/8 pt-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mt-4 flex min-w-0 flex-col gap-3 border-t border-[#5D6B6B]/8 pt-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <h5 className="break-words text-sm font-bold text-black">Campaigns</h5>
@@ -127,7 +130,11 @@ function MetaCampaignsStatePanel({
       {actionLabel && (
         <Link
           href={META_CONNECT_HREF}
-          className={buttonStyles({ variant: 'outline', size: 'sm' })}
+          className={buttonStyles({
+            variant: 'outline',
+            size: 'sm',
+            className: warmOutlineButtonClassName,
+          })}
         >
           {actionLabel}
         </Link>
@@ -260,7 +267,7 @@ function MetaCampaignInsightsPanel({
     (campaign.insightsState === 'connected' || campaign.insightsState === 'empty');
 
   return (
-    <div className="mt-4 space-y-4 border-t border-black/8 pt-4">
+    <div className="mt-4 space-y-4 border-t border-[#5D6B6B]/8 pt-4">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h6 className="break-words text-sm font-bold text-black">
@@ -280,13 +287,17 @@ function MetaCampaignInsightsPanel({
       </div>
 
       {stateMessage && (
-        <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-black/8 bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm leading-6 text-black/58">{stateMessage}</p>
           {(campaign.insightsState === 'token_invalid' ||
             campaign.insightsState === 'permission_issue') && (
             <Link
               href={META_CONNECT_HREF}
-              className={buttonStyles({ variant: 'outline', size: 'sm' })}
+              className={buttonStyles({
+                variant: 'outline',
+                size: 'sm',
+                className: warmOutlineButtonClassName,
+              })}
             >
               Reconnect Meta Ads
             </Link>
@@ -320,7 +331,7 @@ export function MetaCampaigns({
   }
 
   return (
-    <div className="mt-4 min-w-0 space-y-3 border-t border-black/8 pt-4">
+    <div className="mt-4 min-w-0 space-y-3 border-t border-[#5D6B6B]/8 pt-4">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h5 className="break-words text-sm font-bold text-black">Campaigns</h5>
@@ -331,14 +342,14 @@ export function MetaCampaigns({
         <StatusBadge status="Ready" type="system" size="sm" />
       </div>
 
-      <div className="divide-y divide-black/8">
+      <div className="grid gap-3">
         {campaigns.map((campaign, index) => (
           <details
             key={campaign.id ?? `meta-campaign-${index}`}
-            className="group py-4 first:pt-0 last:pb-0"
+            className="group rounded-2xl border border-[#5D6B6B]/8 bg-white px-4 py-3 shadow-sm transition-all hover:border-[#F7CBCA]/22 hover:shadow-[0_16px_34px_rgba(202,40,81,0.10)]"
             open={index === 0}
           >
-            <summary className="flex cursor-pointer list-none items-start justify-between gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-white/70">
+            <summary className="flex cursor-pointer list-none items-start justify-between gap-3 rounded-xl px-1 py-2 transition-colors hover:bg-[#F1F7F7]">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h6 className="break-words text-sm font-bold text-black">
@@ -355,7 +366,7 @@ export function MetaCampaigns({
                   {displayValue(campaign.objective)}
                 </p>
               </div>
-              <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-black/42 transition-transform group-open:rotate-180" />
+              <ChevronDown className={cn('mt-1 h-4 w-4 shrink-0 text-[#F7CBCA]/70 transition-transform group-open:rotate-180')} />
             </summary>
 
             <div className="mt-3 px-1">

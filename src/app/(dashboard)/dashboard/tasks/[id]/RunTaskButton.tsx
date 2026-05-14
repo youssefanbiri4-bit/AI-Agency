@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Play, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
+import { toast } from '@/components/ui/toast';
 
 const POLL_INTERVAL_MS = 3000;
 const PROCESSING_TIMEOUT_MS = 120000;
@@ -55,10 +56,18 @@ export function RunTaskButton({
   }, [isProcessing, router]);
 
   const runTask = async () => {
+    if (disabled) {
+      toast.warning('Task execution is currently guarded.', {
+        description: disabledReason ?? 'Execution is not available yet for this task.',
+      });
+      return;
+    }
+
     setError(null);
     setIsRunning(true);
     setIsProcessing(true);
     setHasTimedOut(false);
+    const loadingToastId = toast.loading('Sending task to automation...');
 
     try {
       const response = await fetch('/api/tasks/execute', {
@@ -74,10 +83,20 @@ export function RunTaskButton({
         throw new Error(payload.error || 'Task could not be sent to n8n.');
       }
 
+      toast.update(loadingToastId, {
+        tone: 'success',
+        title: 'Task sent.',
+        description: 'Processing has started and the task page will refresh automatically.',
+      });
       router.refresh();
     } catch (err) {
       setIsProcessing(false);
       setError(err instanceof Error ? err.message : 'Task could not be sent to n8n.');
+      toast.update(loadingToastId, {
+        tone: 'error',
+        title: 'Task was not sent.',
+        description: err instanceof Error ? err.message : 'Task could not be sent to n8n.',
+      });
       router.refresh();
     } finally {
       setIsRunning(false);
@@ -108,7 +127,7 @@ export function RunTaskButton({
         type="button"
         size="lg"
         className="w-full"
-        disabled={disabled || isRunning || isProcessing}
+        disabled={isRunning || isProcessing}
         onClick={runTask}
       >
         {isRunning || isProcessing ? (

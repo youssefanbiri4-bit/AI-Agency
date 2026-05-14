@@ -8,6 +8,8 @@ interface BrandMarkProps {
   showTagline?: boolean;
   tagline?: string;
   inverted?: boolean;
+  customLogoUrl?: string | null;
+  customLogoAlt?: string | null;
   className?: string;
   onClick?: () => void;
 }
@@ -31,9 +33,9 @@ const sizeStyles = {
 };
 
 function BrandSymbol({ inverted = false }: { inverted?: boolean }) {
-  const tileColor = inverted ? '#FFFFFF' : '#000000';
-  const primaryStroke = inverted ? '#000000' : '#FFFFFF';
-  const softStroke = inverted ? '#8B3CDE' : '#F0DBEF';
+  const tileColor = inverted ? '#FFFFFF' : '#5D6B6B';
+  const primaryStroke = inverted ? '#5D6B6B' : '#FFFFFF';
+  const softStroke = inverted ? '#F7CBCA' : '#D5E5E5';
 
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true" className="h-full w-full">
@@ -63,21 +65,21 @@ function BrandSymbol({ inverted = false }: { inverted?: boolean }) {
       <path
         d="M11.5 20.4C17.9 11.7 29 9.9 37 16.8"
         fill="none"
-        stroke="#8B3CDE"
+        stroke="#F7CBCA"
         strokeLinecap="round"
         strokeWidth="4"
       />
       <path
         d="M34.2 13.1L38.1 17.8L32.5 19.5"
         fill="none"
-        stroke="#F55477"
+        stroke="#F7CBCA"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="3.4"
       />
-      <circle cx="23.8" cy="12.8" r="3.8" fill="#8B3CDE" />
-      <circle cx="14.4" cy="34.8" r="3.8" fill="#F55477" />
-      <circle cx="33.4" cy="34.8" r="3.8" fill="#F0DBEF" />
+      <circle cx="23.8" cy="12.8" r="3.8" fill="#F7CBCA" />
+      <circle cx="14.4" cy="34.8" r="3.8" fill="#F7CBCA" />
+      <circle cx="33.4" cy="34.8" r="3.8" fill="#D5E5E5" />
     </svg>
   );
 }
@@ -87,22 +89,33 @@ function BrandContent({
   showTagline = true,
   tagline = 'Autonomous Agent Operations',
   inverted = false,
+  customLogoUrl,
+  customLogoAlt,
 }: Omit<BrandMarkProps, 'href' | 'className'>) {
   const selectedSize = sizeStyles[size];
+  const hasCustomLogo = Boolean(customLogoUrl);
 
   return (
     <>
       <span
         className={cn(
           'relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border p-0.5',
-          'shadow-[0_14px_30px_rgba(139,60,222,0.24)]',
-          selectedSize.mark,
+          'shadow-[0_14px_30px_rgba(202,40,81,0.24)]',
+          hasCustomLogo ? 'h-10 w-32 max-w-[9rem]' : selectedSize.mark,
           inverted
             ? 'border-white/20 bg-white'
             : 'border-black/10 bg-white'
         )}
       >
-        <BrandSymbol inverted={inverted} />
+        {customLogoUrl ? (
+          <img
+            src={customLogoUrl}
+            alt={customLogoAlt || `${BRAND_NAME} logo`}
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <BrandSymbol inverted={inverted} />
+        )}
       </span>
       <span className="min-w-0 overflow-hidden">
         <span

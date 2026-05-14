@@ -47,8 +47,8 @@ interface TaskReportContext {
 }
 
 const priorityStyles: Record<StructuredOutputPriority, string> = {
-  high: 'border-[#F55477]/22 bg-[#F55477]/10 text-[#A90F31]',
-  medium: 'border-[#8B3CDE]/18 bg-[#F0DBEF]/70 text-[#6D2FB1]',
+  high: 'border-[#F7CBCA]/22 bg-[#F7CBCA]/10 text-[#A90F31]',
+  medium: 'border-[#F7CBCA]/18 bg-[#D5E5E5]/70 text-[#6D2FB1]',
   low: 'border-black/10 bg-white text-black/62',
 };
 
@@ -345,7 +345,7 @@ function JsonValueRenderer({ value }: { value: JsonValue }) {
       <ul className="space-y-2">
         {items.map((item, index) => (
           <li key={index} className="flex min-w-0 gap-2">
-            <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8B3CDE]" />
+            <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#F7CBCA]" />
             <div className="min-w-0 flex-1">
               <JsonValueRenderer value={item} />
             </div>
@@ -390,7 +390,7 @@ function ClientReportDetailSection({ section }: { section: DetailSection }) {
 
   return (
     <div className="overflow-hidden rounded-lg border border-black/8 bg-white">
-      <div className="border-b border-black/8 bg-[#F0DBEF]/24 px-4 py-3">
+      <div className="border-b border-black/8 bg-[#D5E5E5]/24 px-4 py-3">
         <h4 className="text-sm font-bold text-black">{section.title}</h4>
         <p className="mt-1 text-xs leading-5 text-black/52">{section.description}</p>
       </div>
@@ -433,7 +433,7 @@ function ClientReportList({
     <ul className="space-y-2">
       {cleanItems.map((item, index) => (
         <li key={`${item}-${index}`} className="flex gap-3 rounded-md border border-black/8 bg-white px-4 py-3">
-          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#8B3CDE]" />
+          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#F7CBCA]" />
           <p className="min-w-0 text-sm leading-6 text-black/68">{item}</p>
         </li>
       ))}
@@ -521,7 +521,7 @@ function ClientReadyReport({
       <article id="client-ready-report-print" className="overflow-hidden rounded-lg border border-black/10 bg-white">
         <PrintableReportHeader output={output} context={reportContext} />
 
-        <section className="border-b border-black/8 bg-[#F0DBEF]/18 p-4 sm:p-5">
+        <section className="border-b border-black/8 bg-[#D5E5E5]/18 p-4 sm:p-5">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-black/42">Executive Summary</p>
           {output.summary ? (
             <p className="mt-3 text-sm leading-7 text-black/72 sm:text-base">{output.summary}</p>
@@ -588,7 +588,7 @@ function SummaryCard({ output }: { output: StructuredTaskOutput }) {
       <CardHeader
         title="Summary"
         description="Executive-ready overview returned by the agent."
-        action={<CheckCircle2 className="h-5 w-5 text-[#8B3CDE]" />}
+        action={<CheckCircle2 className="h-5 w-5 text-[#F7CBCA]" />}
       />
       {output.summary ? (
         <>
@@ -724,7 +724,7 @@ function QualityNotesCard({ notes }: { notes: string[] }) {
         <ul className="space-y-3">
           {cleanNotes.map((note, index) => (
             <li key={`${note}-${index}`} className="flex gap-3 rounded-lg border border-black/8 bg-white p-4">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#8B3CDE]" />
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#F7CBCA]" />
               <p className="min-w-0 text-sm leading-6 text-black/70">{note}</p>
             </li>
           ))}

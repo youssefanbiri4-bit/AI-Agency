@@ -1,10 +1,10 @@
 # Final Production Audit
 
 Project: AgentFlow AI / AI Agency Dashboard
-Date: 2026-05-06
+Date: 2026-05-07
 Production URL: https://agentflow-ai-sigma.vercel.app
 
-This audit records the current portfolio-ready production state, launch-readiness UI, in-app notifications foundation, and read-only ad provider status. It does not require environment variable changes, n8n workflow changes, callback payload changes, or task execution contract changes.
+This audit records the current portfolio-ready production state, launch-readiness UI, Reels Studio foundation, Creative Assets and OpenAI image generation foundation, in-app notifications foundation, and read-only ad provider status. It does not require environment variable changes, n8n workflow changes, callback payload changes, or task execution contract changes.
 
 ## Auth
 
@@ -123,7 +123,37 @@ Status: Foundation implemented
 - `/dashboard/notifications` lists current-user notifications for the active workspace.
 - Mark as read and mark all as read are available.
 - Task review readiness, task completion, task failure, and campaign task creation can create in-app notifications.
+- Reels Studio draft, ready, published, failed, AI script task, and AI caption task events can create in-app notifications.
 - Email and browser push notifications are not implemented.
+
+## Reels Studio
+
+Status: Foundation implemented
+
+- Reels Studio routes exist at `/dashboard/reels`, `/dashboard/reels/new`, and `/dashboard/reels/[id]`.
+- The sidebar includes Reels Studio.
+- Users can plan campaign basics, creative direction, script, storyboard, caption, hashtags, media references, subtitles, sound notes, and scheduling metadata.
+- Reels support `draft`, `ready`, `scheduled`, `publishing`, `published`, and `failed` states.
+- The detail page includes a dashboard preview, content sections, media section, status timeline, edit form, and publishing readiness.
+- AI script and caption actions create normal `pending` AgentFlow tasks and do not auto-run them.
+- Publishing readiness is gated behind Meta app configuration, Instagram content publishing permissions, Instagram Business/Creator account metadata, Facebook Page connection, and a public video URL.
+- Publishing never happens automatically and requires an explicit user click.
+- Reels Studio is organic-only. It does not create campaigns or ads and does not request `ads_management`.
+
+## Creative Assets And OpenAI Image Foundation
+
+Status: Foundation implemented
+
+- Creative Assets routes exist at `/dashboard/creative-assets`, `/dashboard/creative-assets/new`, and `/dashboard/creative-assets/[id]`.
+- The sidebar includes Creative Assets.
+- Users can save creative briefs, generate deterministic image prompts, copy prompts, and mark assets as selected.
+- Prompt generation works without `OPENAI_API_KEY`.
+- Real image generation is disabled until `OPENAI_API_KEY` is configured server-side in Vercel.
+- OpenAI image generation uses server actions and `src/lib/ai/openai-images.ts`; no client component receives the API key.
+- Generated image files are designed to be saved to private Supabase Storage bucket `creative-assets`; large base64 images are not stored in the database.
+- Settings includes AI Image Generation Readiness for OpenAI key status, generation status, and storage status.
+- Creative Assets includes future placement hooks for Reel covers and campaign/ad creative use.
+- No automatic ad publishing and no video editor are connected.
 
 ## Campaigns And Meta Ads
 
@@ -184,8 +214,11 @@ Status: Passed
 
 - Automated test coverage is still limited compared with a commercial SaaS production system.
 - Meta Ads is read-only. Real ad publishing is not connected yet.
-- `ads_management` is not requested yet.
-- Publishing will require a future approval flow and extra platform permissions.
+- `ads_management` is not requested.
+- Organic Instagram Reels publishing foundation is gated and requires Meta App Review, content publishing permissions, a Facebook Page connection, and an Instagram Business/Creator account before use.
+- Reels Studio does not include an external video editor yet.
+- Creative Assets real image generation requires `OPENAI_API_KEY` and may incur OpenAI API usage cost.
+- Generated image storage requires the `creative-assets` Supabase Storage bucket and policies from the migration.
 - Custom domain connection still happens through Vercel and DNS provider.
 - Email and push notifications are future improvements.
 - Advanced analytics are planned but not yet implemented.

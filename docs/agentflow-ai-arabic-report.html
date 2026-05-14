@@ -1,0 +1,712 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تقرير شامل حول بناء وتطوير منصة AgentFlow AI</title>
+  <style>
+    body {
+      direction: rtl;
+      text-align: right;
+      font-family: "Cairo", "Tajawal", "Noto Sans Arabic", sans-serif;
+      line-height: 1.8;
+      color: #171717;
+      background: #fffaf5;
+      margin: 0;
+      padding: 0;
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 48px 28px 72px;
+      background: #ffffff;
+    }
+    h1, h2, h3 {
+      font-weight: 700;
+      line-height: 1.45;
+      color: #171717;
+    }
+    h1 {
+      font-size: 36px;
+      margin: 0 0 12px;
+    }
+    h2 {
+      font-size: 26px;
+      margin: 48px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #ca2851;
+    }
+    h3 {
+      font-size: 20px;
+      margin: 28px 0 10px;
+    }
+    p {
+      margin: 0 0 14px;
+    }
+    ul, ol {
+      padding-right: 24px;
+      padding-left: 0;
+      margin: 10px 0 18px;
+    }
+    li {
+      margin: 6px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 28px;
+      background: #ffffff;
+    }
+    th, td {
+      text-align: right;
+      padding: 10px;
+      border: 1px solid #ddd;
+      vertical-align: top;
+    }
+    th {
+      background: #fff0d9;
+      font-weight: 700;
+    }
+    code {
+      direction: ltr;
+      unicode-bidi: embed;
+      display: inline-block;
+      background: #f7f2ee;
+      border: 1px solid #eadfd7;
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.92em;
+    }
+    .cover {
+      min-height: 620px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border: 1px solid #eadfd7;
+      border-radius: 16px;
+      padding: 48px;
+      background: linear-gradient(135deg, #ffffff 0%, #fff4df 100%);
+      margin-bottom: 48px;
+    }
+    .subtitle {
+      font-size: 20px;
+      color: #4a4a4a;
+      margin-bottom: 28px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .meta-card, .note {
+      border: 1px solid #eadfd7;
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: #fffdf9;
+    }
+    .note {
+      border-right: 4px solid #ca2851;
+      margin: 18px 0;
+    }
+    .badge {
+      display: inline-block;
+      border: 1px solid #ca2851;
+      border-radius: 999px;
+      padding: 2px 10px;
+      color: #ca2851;
+      background: #fff7f8;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    @media print {
+      body { background: #ffffff; }
+      main { padding: 0; max-width: none; }
+      h2 { break-after: avoid; }
+      table { break-inside: avoid; }
+      .cover { min-height: 760px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="cover">
+    <p class="badge">Production SaaS Platform – In Active Development</p>
+    <h1>تقرير شامل حول بناء وتطوير منصة AgentFlow AI</h1>
+    <p class="subtitle">من الفكرة الأولية إلى منصة SaaS إنتاجية لإدارة وكالة ذكاء اصطناعي متعددة الوكلاء</p>
+    <div class="meta-grid">
+      <div class="meta-card"><strong>اسم المشروع:</strong><br />AgentFlow AI</div>
+      <div class="meta-card"><strong>الوصف المختصر:</strong><br />منصة SaaS لإدارة وكالة ذكاء اصطناعي من مكان واحد</div>
+      <div class="meta-card"><strong>التاريخ:</strong><br />10 مايو 2026</div>
+      <div class="meta-card"><strong>خط عربي مقترح:</strong><br />Cairo أو Tajawal أو Noto Sans Arabic</div>
+    </div>
+    <h3>التقنيات الأساسية</h3>
+    <p>Next.js، TypeScript، Supabase، Vercel، n8n، OpenAI، NVIDIA NIM، Meta، Google Ads، Pinterest.</p>
+  </section>
+
+  <h2>1. الملخص التنفيذي</h2>
+  <p>
+    AgentFlow AI هي لوحة تحكم SaaS بُنيت لإدارة وكالة ذكاء اصطناعي من منصة واحدة. تجمع المنصة بين إدارة الوكلاء الذكيين،
+    المهام، المراجعات، مساحات العمل، الأصول الإبداعية، تخطيط المحتوى، مسودات الحملات، جاهزية مزودي الخدمات، أساسات النشر،
+    التنفيذ المجدول، والتحليلات التشغيلية.
+  </p>
+  <p>
+    الهدف الرئيسي من المنصة هو تحويل تشغيل وكالة ذكاء اصطناعي من مجموعة أدوات متفرقة إلى نظام مركزي قابل للتوسع، مع الحفاظ
+    على الأمان، وضوح الحالة، ومنع النجاح الوهمي في عمليات النشر أو إنشاء الحملات.
+  </p>
+
+  <h2>2. الرؤية والهدف من المشروع</h2>
+  <p>
+    تعاني وكالات الذكاء الاصطناعي عادة من تشتت العمل بين أدوات المهام، أدوات المحتوى، أدوات التصميم، منصات الإعلانات،
+    أنظمة الأتمتة، وأدوات المراجعة. جاءت AgentFlow AI لتجميع هذه المكونات في لوحة واحدة تنظّم دورة العمل من الفكرة إلى
+    التنفيذ والمتابعة.
+  </p>
+  <ul>
+    <li>حل مشكلة تشتت مهام الوكالة بين أنظمة منفصلة.</li>
+    <li>توفير مسار واضح لإنشاء المهام، مراجعتها، وربطها بالأتمتة.</li>
+    <li>تجهيز المحتوى والإعلانات عبر قنوات متعددة من مكان واحد.</li>
+    <li>تطبيق مبدأ الجاهزية قبل التنفيذ بدلاً من إظهار نجاح غير حقيقي.</li>
+    <li>بناء المنصة على مراحل حتى يكون كل جزء قابلاً للاختبار والإطلاق الآمن.</li>
+  </ul>
+
+  <h2>3. البنية التقنية للمشروع</h2>
+  <table>
+    <thead>
+      <tr><th>المكوّن</th><th>الاستخدام داخل المنصة</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Next.js</td><td>تطبيق الويب ولوحات التحكم باستخدام App Router.</td></tr>
+      <tr><td>TypeScript</td><td>تحسين سلامة الأنواع وتقليل أخطاء الإنتاج.</td></tr>
+      <tr><td>Tailwind CSS ومكوّنات بأسلوب shadcn</td><td>بناء واجهة مرنة، نظيفة، وقابلة للتوسع.</td></tr>
+      <tr><td>Supabase</td><td>المصادقة، قاعدة البيانات، التخزين، ومساحات العمل.</td></tr>
+      <tr><td>Vercel</td><td>النشر الإنتاجي، Cron Jobs، وتشغيل تطبيق Next.js.</td></tr>
+      <tr><td>n8n</td><td>تنفيذ تدفقات الأتمتة الخاصة بالمهام.</td></tr>
+      <tr><td>OpenAI</td><td>توليد النصوص والصور عند توفر المفاتيح والفوترة.</td></tr>
+      <tr><td>NVIDIA NIM</td><td>مزود بديل أو احتياطي لتوليد النصوص.</td></tr>
+      <tr><td>Meta / Facebook / Instagram</td><td>أساس النشر العضوي، Reels، ومسودات الإعلانات المدفوعة المتوقفة.</td></tr>
+      <tr><td>Google Ads</td><td>إنشاء مسودات حملات Search بحالة PAUSED.</td></tr>
+      <tr><td>Pinterest</td><td>نشر Pin عضوي عند اكتمال OAuth واللوحة والأصل الإبداعي.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. نظام المصادقة ومساحات العمل</h2>
+  <p>
+    يعتمد النظام على Supabase Auth لتسجيل الدخول وإدارة الجلسات. بعد تسجيل الدخول، يتم التأكد من وجود مساحة عمل نشطة
+    قبل السماح بالوصول إلى لوحة التحكم. كل البيانات المهمة مرتبطة بمساحة العمل لضمان العزل بين العملاء أو الفرق.
+  </p>
+  <ul>
+    <li>مصادقة المستخدم عبر Supabase.</li>
+    <li>إنشاء مساحة عمل وربط المستخدم بها.</li>
+    <li>حماية مسارات لوحة التحكم.</li>
+    <li>التحقق من مساحة العمل قبل قراءة أو تعديل البيانات.</li>
+    <li>تقليل مخاطر تسرب بيانات عميل إلى عميل آخر.</li>
+  </ul>
+
+  <h2>5. نظام الوكلاء AI Agents</h2>
+  <p>
+    تتضمن AgentFlow AI بنية من 18 وكيلاً متخصصاً موزعين على ثلاثة أقسام تشغيلية:
+  </p>
+  <table>
+    <thead>
+      <tr><th>القسم</th><th>الدور</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Research & Strategy</td><td>البحث، التحليل، فهم السوق، وبناء الاستراتيجية.</td></tr>
+      <tr><td>Content & Growth</td><td>المحتوى، الحملات، النصوص، الإبداع، والنمو.</td></tr>
+      <tr><td>Sales & Operations</td><td>المبيعات، التواصل، التشغيل، وخدمة العملاء.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    دور هؤلاء الوكلاء هو تحويل طلبات الوكالة إلى مهام منظمة يمكن تنفيذها ومراجعتها وربطها بنتائج قابلة للتسليم.
+  </p>
+
+  <h2>6. نظام المهام Tasks</h2>
+  <p>
+    يسمح نظام المهام بإنشاء مهمة، عرض قائمة المهام، فتح تفاصيل المهمة، ومتابعة حالتها عبر دورة حياة واضحة:
+  </p>
+  <p><code>pending → processing → needs_review → completed</code></p>
+  <ul>
+    <li><strong>pending:</strong> المهمة جاهزة للإرسال أو تنتظر التنفيذ.</li>
+    <li><strong>processing:</strong> المهمة قيد التنفيذ عبر النظام أو n8n.</li>
+    <li><strong>needs_review:</strong> النتيجة جاهزة للمراجعة البشرية.</li>
+    <li><strong>completed:</strong> تمت الموافقة على المهمة.</li>
+    <li><strong>failed:</strong> حدث خطأ أثناء التنفيذ.</li>
+  </ul>
+  <p>
+    تم الحفاظ على تدفق تنفيذ المهام المرتبط بـ n8n دون كسر المسارات أو callbacks أو webhooks أثناء إضافة أنظمة المحتوى
+    والنشر والتحليلات.
+  </p>
+
+  <h2>7. نظام المراجعات Reviews</h2>
+  <p>
+    عندما تصل المهمة إلى حالة <code>needs_review</code> يمكن للمستخدم مراجعة المخرجات. الموافقة تنقل المهمة إلى
+    <code>completed</code>، بينما طلب التعديلات يعيدها إلى <code>pending</code>.
+  </p>
+  <p>
+    هذا التدفق مهم لضبط الجودة داخل وكالة ذكاء اصطناعي، لأن المخرجات الآلية تحتاج غالباً إلى مراجعة بشرية قبل إرسالها
+    للعميل أو استخدامها في حملات حقيقية.
+  </p>
+
+  <h2>8. تكامل n8n</h2>
+  <p>
+    تم ربط المنصة بـ n8n عبر webhook لتنفيذ المهام، مع callback route لإرجاع النتائج إلى AgentFlow AI. خلال مراحل البناء
+    تم التعامل مع مشكلات مثل سر callback غير صحيح، روابط غير صالحة، أخطاء في صياغة nodes، ومشكلات routing داخل workflow.
+  </p>
+  <div class="note">
+    قاعدة السلامة الأساسية: تم الحفاظ على n8n وcallbacks وwebhooks وتدفق تنفيذ المهام أثناء إضافة الأنظمة الجديدة.
+  </div>
+
+  <h2>9. النشر على Vercel</h2>
+  <p>
+    يتم نشر AgentFlow AI على Vercel كمنصة إنتاجية. رابط الإنتاج الحالي:
+  </p>
+  <p><code>https://agentflow-ai-sigma.vercel.app</code></p>
+  <ul>
+    <li>يجب ضبط متغيرات البيئة في Vercel دون كشف القيم.</li>
+    <li>يجب إعادة النشر بعد أي تغيير في البيئة أو الكود.</li>
+    <li>تم تشغيل فحوصات lint وtypecheck وbuild قبل الإطلاق.</li>
+  </ul>
+
+  <h2>10. تحسين واجهة المستخدم UX/UI</h2>
+  <p>
+    تم تحسين الواجهة لتصبح أكثر احترافية وملاءمة لمنصة SaaS، عبر بطاقات أوضح، مسافات أفضل، تسميات حالة مفهومة، حالات
+    فارغة مفيدة، ورسائل toast عالمية تعطي المستخدم تغذية راجعة فورية.
+  </p>
+  <p>
+    الهدف من هذه التحسينات ليس الزخرفة فقط، بل تقليل الالتباس، منع النقرات المتكررة، وتوضيح ما يحدث عند الحفظ أو التوليد
+    أو النشر أو فشل الإعداد.
+  </p>
+
+  <h2>11. إعدادات الدومين والتنبيهات داخل التطبيق</h2>
+  <p>
+    تم دعم إعدادات الدومين والتنبيهات داخل التطبيق لتحسين جودة تجربة SaaS. هذه العناصر تمنح المستخدم مؤشرات واضحة حول
+    الإعدادات، الأخطاء، والعمليات التي تحتاج انتباهاً.
+  </p>
+
+  <h2>12. نظام Creative Assets</h2>
+  <p>
+    يوفر نظام Creative Assets مكاناً مركزياً لإدارة الأصول الإبداعية مثل الصور والفيديوهات ومواد الحملات.
+  </p>
+  <ul>
+    <li>صفحة لإدارة الأصول الإبداعية.</li>
+    <li>إنشاء أصل جديد عبر prompt builder.</li>
+    <li>أساس لتوليد الصور عبر OpenAI عند توفر الإعدادات.</li>
+    <li>دعم Upload Image وتخزين الملفات في Supabase Storage.</li>
+    <li>استخدام bucket باسم <code>creative-assets</code>.</li>
+    <li>دعم بيانات وصفية للأصول، بما في ذلك الفيديوهات.</li>
+    <li>ربط الأصول بعناصر Content Studio.</li>
+    <li>دعم تعديل وتحديث الأصول، وفصل الأصول المرتبطة عند الحاجة حسب ما تسمح به الواجهة.</li>
+  </ul>
+
+  <h2>13. أساس Content & Ads Studio</h2>
+  <p>
+    المسار الرئيسي للنظام هو:
+  </p>
+  <p><code>/dashboard/content-studio</code></p>
+  <p>يدعم Content Studio تدفقات عمل متعددة:</p>
+  <ul>
+    <li>منشورات Facebook وInstagram.</li>
+    <li>Reels لفيسبوك وإنستغرام من ناحية التخطيط والجاهزية.</li>
+    <li>مسودات حملات Google Ads.</li>
+    <li>Pinterest Pins.</li>
+    <li>LinkedIn Manual Planner.</li>
+    <li>إنشاء العناصر وتعديل المسودات.</li>
+    <li>مكتبة محتوى مع فلاتر حسب المنصة والحالة.</li>
+    <li>ربط Creative Assets وإظهار عدد الأصول المرتبطة.</li>
+  </ul>
+
+  <h2>14. نظام حالات Content Studio</h2>
+  <table>
+    <thead>
+      <tr><th>الحالة</th><th>المعنى</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>draft</code></td><td>مسودة قابلة للتعديل.</td></tr>
+      <tr><td><code>ready</code></td><td>جاهزة للتنفيذ أو النسخ اليدوي.</td></tr>
+      <tr><td><code>scheduled</code></td><td>مجدولة للتنفيذ عند موعد محدد.</td></tr>
+      <tr><td><code>published</code></td><td>تم النشر بعد تأكيد مزود الخدمة.</td></tr>
+      <tr><td><code>failed</code></td><td>فشل التنفيذ أو النشر.</td></tr>
+      <tr><td><code>setup_required</code></td><td>إعداد خارجي أو داخلي ناقص.</td></tr>
+      <tr><td><code>approval_pending</code></td><td>بانتظار موافقة خارجية مثل Google Ads.</td></tr>
+      <tr><td><code>manual_only</code></td><td>يدعم النسخ اليدوي فقط.</td></tr>
+      <tr><td><code>unsupported</code></td><td>غير مدعوم آلياً حالياً.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    لا يقوم النظام بتزييف النجاح ولا يضع المحتوى في حالة published إلا بعد نجاح مؤكد من مزود الخدمة.
+  </p>
+
+  <h2>15. إجراءات مهام الذكاء الاصطناعي</h2>
+  <p>تم دعم إجراءات لإنشاء مهام حقيقية من Content Studio:</p>
+  <ul>
+    <li>Create Script Task.</li>
+    <li>Create Caption Task.</li>
+    <li>Create Ad Copy Task.</li>
+    <li>Create Creative Brief Task.</li>
+  </ul>
+  <p>
+    هذه الإجراءات تنشئ مهام فعلية دون تغيير أو كسر n8n أو callbacks أو تدفق تنفيذ المهام.
+  </p>
+
+  <h2>16. Global Toast Notifications</h2>
+  <p>
+    تم إضافة نظام toast عالمي لإظهار رسائل التحميل والنجاح والخطأ والتحذير. هذا يقلل النقرات المتكررة ويجعل حالة النظام
+    واضحة للمستخدم.
+  </p>
+  <ul>
+    <li>AI task created.</li>
+    <li>Content item saved.</li>
+    <li>Provider setup required.</li>
+    <li>Google Ads approval pending.</li>
+    <li>Scheduler completed.</li>
+  </ul>
+
+  <h2>17. أتمتة توليد المحتوى بالذكاء الاصطناعي</h2>
+  <p>داخل Content Studio توجد أزرار توليد مثل:</p>
+  <ul>
+    <li>Generate Script.</li>
+    <li>Generate Caption.</li>
+    <li>Generate Ad Copy.</li>
+    <li>Generate Creative Brief.</li>
+    <li>Generate Hook.</li>
+    <li>Generate Hashtags.</li>
+    <li>Generate Headlines.</li>
+    <li>Generate Full Campaign Package.</li>
+  </ul>
+  <p>
+    يتم استخدام OpenAI من جهة الخادم فقط، وتبقى مفاتيح API خارج المتصفح. بعد التوليد يمكن للمستخدم حفظ النص يدوياً. كما
+    تمت معالجة رسائل quota وbilling بشكل لطيف وواضح.
+  </p>
+
+  <h2>18. مزود NVIDIA NIM البديل</h2>
+  <p>
+    تم دعم NVIDIA NIM كمزود بديل أو احتياطي لتوليد النصوص. يدعم النظام أوضاع <code>AI_TEXT_PROVIDER</code> التالية:
+  </p>
+  <ul>
+    <li><code>openai</code></li>
+    <li><code>nvidia</code></li>
+    <li><code>auto</code></li>
+  </ul>
+  <p>
+    يبقى OpenAI مدعوماً، بينما NVIDIA مخصص لتوليد النصوص. توليد الصور يبقى OpenAI-only ما لم يتم تغييره لاحقاً.
+  </p>
+  <p>متغيرات البيئة المطلوبة عند استخدام NVIDIA:</p>
+  <ul>
+    <li><code>NVIDIA_API_KEY</code></li>
+    <li><code>NVIDIA_BASE_URL</code></li>
+    <li><code>NVIDIA_MODEL</code></li>
+    <li><code>AI_TEXT_PROVIDER</code></li>
+  </ul>
+
+  <h2>19. نظام Provider Readiness</h2>
+  <p>
+    نظام الجاهزية يضمن أن كل زر تنفيذ إما يقوم بعملية حقيقية وآمنة، أو يوضح بالضبط ما ينقص قبل التنفيذ.
+  </p>
+  <table>
+    <thead>
+      <tr><th>الحالة</th><th>المعنى</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>ready</code></td><td>جاهز للتنفيذ.</td></tr>
+      <tr><td><code>setup_required</code></td><td>إعداد ناقص.</td></tr>
+      <tr><td><code>approval_pending</code></td><td>بانتظار موافقة خارجية.</td></tr>
+      <tr><td><code>billing_required</code></td><td>تحتاج فوترة أو رصيد.</td></tr>
+      <tr><td><code>token_missing</code></td><td>OAuth أو token غير موجود.</td></tr>
+      <tr><td><code>manual_only</code></td><td>نسخ يدوي فقط.</td></tr>
+      <tr><td><code>unsupported</code></td><td>غير مدعوم حالياً.</td></tr>
+      <tr><td><code>error</code></td><td>خطأ يحتاج معالجة.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>20. أساس Real Publishing Foundation</h2>
+  <p>
+    تم بناء أساس للنشر الحقيقي عبر server-side provider actions. يتم تسجيل كل محاولة في
+    <code>content_studio_publish_attempts</code> مع <code>provider_external_id</code> و
+    <code>provider_response_summary</code> بشكل آمن دون أسرار أو tokens.
+  </p>
+  <p>
+    لا يوجد نجاح وهمي. إذا لم يؤكد مزود الخدمة النجاح، لا يتم اعتبار العنصر منشوراً.
+  </p>
+
+  <h2>21. Google Ads: إنشاء مسودة حملة متوقفة</h2>
+  <p>
+    يدعم النظام إرسال مسودة إلى Google Ads لإنشاء campaign budget وحملة Search بحالة <code>PAUSED</code>. يتحقق النظام من:
+  </p>
+  <ul>
+    <li>OAuth connection.</li>
+    <li>refresh token.</li>
+    <li>customer ID.</li>
+    <li>developer token وAPI readiness.</li>
+  </ul>
+  <p>
+    عند انتظار موافقة Google Ads يتم إرجاع <code>approval_pending</code>. لا يتم وضع المحتوى كـ published ولا يتم إنشاء
+    حملات إنفاق حية.
+  </p>
+  <p>متغيرات البيئة المطلوبة:</p>
+  <ul>
+    <li><code>GOOGLE_ADS_CLIENT_ID</code></li>
+    <li><code>GOOGLE_ADS_CLIENT_SECRET</code></li>
+    <li><code>GOOGLE_ADS_DEVELOPER_TOKEN</code></li>
+    <li><code>GOOGLE_ADS_REDIRECT_URI</code></li>
+  </ul>
+  <p>اختيارية:</p>
+  <ul>
+    <li><code>GOOGLE_ADS_LOGIN_CUSTOMER_ID</code></li>
+    <li><code>GOOGLE_ADS_API_VERSION</code></li>
+  </ul>
+
+  <h2>22. النشر العضوي عبر Meta / Facebook / Instagram</h2>
+  <p>
+    الحالة الحالية تشمل وجود helpers لمنشور Facebook Page، منشور صورة Instagram، ومساعد Instagram Reel. جاهزية الإنتاج
+    جزئية وتتطلب تدقيق الحسابات، الصلاحيات، وmedia URLs.
+  </p>
+  <p>تمت مراجعة:</p>
+  <ul>
+    <li>Meta OAuth.</li>
+    <li>تخزين tokens داخل <code>ad_connections</code>.</li>
+    <li>اختيار Facebook Page.</li>
+    <li>اختيار Instagram Business Account.</li>
+    <li>granted scopes.</li>
+    <li>جاهزية media URL.</li>
+  </ul>
+  <p>
+    التصلب التالي يشمل اختيار الصفحة والحساب بشكل أوضح، تخزين scopes الحقيقية، استخدام روابط صور عامة ومستقرة، وجاهزية
+    على مستوى كل عنصر.
+  </p>
+
+  <h2>23. Reels Video Asset Pipeline</h2>
+  <p>
+    تم تجهيز مسار فيديوهات Reels لدعم رفع الفيديو داخل Creative Assets، مع صيغ مقبولة مثل <code>mp4</code> و
+    <code>mov</code> و<code>webm</code> عند توفر الدعم. يتضمن المسار preview للفيديو، metadata، ومتطلب رابط فيديو عام
+    عبر HTTPS حتى يمكن لـ Meta الوصول إليه.
+  </p>
+  <p>
+    جاهزية Instagram Reel تتطلب حساب Instagram، caption، video asset، رابط HTTPS عام، وصيغة مدعومة. أما Instagram Reel Ad
+    فيبقى manual/draft ما لم يتم ربطه بآلية paid ads آمنة.
+  </p>
+
+  <h2>24. Pinterest Real Pin Publishing Hardening</h2>
+  <p>
+    تم تقوية أساس Pinterest للنشر العضوي عبر OAuth، اختيار board، والتحقق من صورة عامة قابلة للنشر.
+  </p>
+  <p>المتطلبات:</p>
+  <ul>
+    <li><code>PINTEREST_APP_ID</code> أو <code>PINTEREST_CLIENT_ID</code></li>
+    <li><code>PINTEREST_APP_SECRET</code></li>
+    <li><code>PINTEREST_REDIRECT_URI</code></li>
+    <li>OAuth token.</li>
+    <li>selected board.</li>
+    <li>public image asset.</li>
+  </ul>
+  <p>
+    يتم نشر Pin حقيقي فقط عند اكتمال الجاهزية. Pinterest Ads غير منفذة.
+  </p>
+
+  <h2>25. Meta Paid Ads Draft / Paused Campaign Builder</h2>
+  <p>
+    تم التعامل مع إعلانات Meta المدفوعة بأمان. الهدف هو إنشاء بنية حملة/مجموعة إعلانية/إبداع/إعلان بحالة
+    <code>PAUSED</code> فقط، دون إنفاق حي ودون تفعيل تلقائي.
+  </p>
+  <ul>
+    <li>يتطلب <code>ads_management</code> كصلاحية من Meta.</li>
+    <li>يتطلب selected ad account.</li>
+    <li>يتطلب صفحة Facebook وحساب Instagram عند الحاجة.</li>
+    <li>يتطلب budget وaudience وcreative asset وdestination URL.</li>
+    <li>كل الهياكل المنشأة يجب أن تبقى PAUSED.</li>
+    <li>لم تتم إضافة ads_management كوحدة مستقلة داخل المشروع.</li>
+  </ul>
+
+  <h2>26. Real Scheduling Execution</h2>
+  <p>
+    يعمل التنفيذ المجدول عبر Vercel Cron route:
+  </p>
+  <p><code>/api/cron/content-studio-scheduler</code></p>
+  <ul>
+    <li>محمي عبر <code>CRON_SECRET</code>.</li>
+    <li>الجدولة اليومية المناسبة لخطة Vercel Hobby: <code>0 9 * * *</code>.</li>
+    <li>يوجد زر admin يدوي لتشغيل المجدول.</li>
+    <li>يفحص العناصر المستحقة.</li>
+    <li>يمنع التنفيذ المكرر عبر حقول idempotency.</li>
+    <li>يسجل attempts.</li>
+    <li>يوجه مزودي الخدمات بشكل آمن.</li>
+    <li>لا ينشر manual أو unsupported providers.</li>
+    <li>لا ينشئ حملات إنفاق حية.</li>
+  </ul>
+
+  <h2>27. تشغيل المجدول يدوياً من الإدارة</h2>
+  <p>
+    زر Run Scheduler Now مخصص للمشرفين، يعمل من جهة الخادم فقط، ولا يكشف <code>CRON_SECRET</code> للمتصفح. يعيد ملخصاً
+    يتضمن:
+  </p>
+  <p>
+    <code>scanned</code>، <code>executed</code>، <code>skipped</code>، <code>succeeded</code>،
+    <code>failed</code>، <code>setup_required</code>، <code>approval_pending</code>،
+    <code>manual_only</code>، <code>unsupported</code>.
+  </p>
+
+  <h2>28. Multi-Channel Ads & Social Campaign Builder</h2>
+  <p>يدعم النظام تخطيط حملات ومحتوى عبر قنوات متعددة:</p>
+  <ul>
+    <li>Instagram posts / ads / reels planning.</li>
+    <li>Facebook posts / ads planning.</li>
+    <li>Google Ads draft campaigns.</li>
+    <li>Pinterest pins.</li>
+    <li>LinkedIn manual planner.</li>
+  </ul>
+  <p>
+    يشمل ذلك campaign basics، حقول الرسائل والإبداع، توليد AI، copy-ready packages، readiness، والنشر الآمن عند توفر
+    الجاهزية.
+  </p>
+
+  <h2>29. Copy-Ready Workflow</h2>
+  <p>تدعم المنصة أزرار نسخ تساعد المستخدم عند عدم اكتمال الإعداد الخارجي:</p>
+  <ul>
+    <li>Copy Script.</li>
+    <li>Copy Caption.</li>
+    <li>Copy Ad Copy.</li>
+    <li>Copy Creative Brief.</li>
+    <li>Copy Full Content Package.</li>
+    <li>Copy Instagram Package.</li>
+    <li>Copy Google Ads Package.</li>
+    <li>Copy Pinterest Package.</li>
+    <li>Copy Meta Ads Package.</li>
+  </ul>
+  <p>
+    هذا يحافظ على قيمة المنصة حتى قبل اكتمال OAuth أو موافقات المنصات الخارجية.
+  </p>
+
+  <h2>30. Analytics, Reports, and Performance Tracking</h2>
+  <p>
+    تم تحسين صفحة التقارير لتعرض analytics تشغيلية تشمل:
+  </p>
+  <ul>
+    <li>مقاييس readiness التشغيلية.</li>
+    <li>publish attempts timeline.</li>
+    <li>provider readiness summary.</li>
+    <li>scheduler monitoring.</li>
+    <li>content status counts.</li>
+    <li>creative assets analytics.</li>
+    <li>tasks/reviews analytics.</li>
+    <li>production setup checklist.</li>
+  </ul>
+  <p>
+    لا يتم عرض impressions أو clicks أو spend أو engagement بشكل وهمي. تظهر هذه المقاييس فقط إذا توفرت من API حقيقي.
+  </p>
+
+  <h2>31. الخلفية والهوية البصرية</h2>
+  <p>
+    تم تحديث الهوية البصرية بلوحة ألوان مشرقة وخلفية تحفيزية للمطورين، مع أسلوب glassmorphism، sidebar وtopbar أكثر
+    شفافية، وتجربة dashboard أخف وأكثر تحفيزاً. هذه التغييرات بصرية ولا تغيّر منطق الأنظمة الأساسية.
+  </p>
+
+  <h2>32. تجربة المؤثرات الصوتية والتراجع عنها</h2>
+  <p>
+    تم اختبار نظام مؤثرات صوتية لتحسين التفاعل، لكن ظهرت مخاوف تتعلق بالاستقرار runtime. لذلك تمت إزالة الميزة أو
+    التراجع عنها.
+  </p>
+  <div class="note">
+    الدرس المستفاد: أي مؤثر UX يجب ألا يهدد استقرار الإنتاج.
+  </div>
+
+  <h2>33. الحالة الحالية العاملة</h2>
+  <ul>
+    <li>نشر إنتاجي على Vercel.</li>
+    <li>Auth ومساحات عمل.</li>
+    <li>بنية 18 AI agents.</li>
+    <li>Tasks وReviews.</li>
+    <li>Creative Assets.</li>
+    <li>Content Studio.</li>
+    <li>AI task actions.</li>
+    <li>AI content generation logic.</li>
+    <li>NVIDIA/OpenAI text provider support.</li>
+    <li>Toast notifications.</li>
+    <li>Provider readiness.</li>
+    <li>Google Ads paused draft creation.</li>
+    <li>Real scheduling foundation.</li>
+    <li>Admin scheduler controls.</li>
+    <li>Copy-ready workflows.</li>
+    <li>Reports/Analytics foundation.</li>
+    <li>Storage bucket باسم <code>creative-assets</code>.</li>
+  </ul>
+
+  <h2>34. الإعدادات الخارجية التي ما زالت مطلوبة</h2>
+  <table>
+    <thead>
+      <tr><th>Provider</th><th>Required setup</th><th>Current blocker</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>OpenAI</td><td>API billing / credit / quota</td><td>الفوترة أو الرصيد قد يمنع التوليد</td><td>لا يتم عرض أو تخزين المفاتيح في الواجهة.</td></tr>
+      <tr><td>NVIDIA</td><td><code>NVIDIA_API_KEY</code> / model / credits</td><td>يتطلب إعداد المزود إذا تم استخدامه</td><td>مخصص لتوليد النصوص.</td></tr>
+      <tr><td>Meta</td><td>Meta app، OAuth، scopes، selected Page، selected Instagram Business Account، و<code>ads_management</code> للمدفوع</td><td>الصلاحيات والحسابات المختارة</td><td>النشر المدفوع يبقى PAUSED فقط.</td></tr>
+      <tr><td>Google Ads</td><td>developer token approval، OAuth، customer ID</td><td>موافقة Google Ads قد تكون مطلوبة</td><td>إنشاء مسودات PAUSED فقط.</td></tr>
+      <tr><td>Pinterest</td><td>app secret، OAuth، board selection</td><td>اختيار board وصلاحية OAuth</td><td>Pinterest Ads غير منفذة.</td></tr>
+      <tr><td>Scheduler</td><td><code>CRON_SECRET</code> وVercel Cron</td><td>تأكيد الإعداد الإنتاجي</td><td>المسار محمي ولا يكشف السر.</td></tr>
+      <tr><td>Supabase</td><td>migrations applied وbucket <code>creative-assets</code></td><td>تأكيد بيئة الإنتاج</td><td>ضروري للتخزين والبيانات.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>35. ما تم الحفاظ عليه عمداً دون تغيير</h2>
+  <ul>
+    <li>تم الحفاظ على n8n.</li>
+    <li>تم الحفاظ على callbacks.</li>
+    <li>تم الحفاظ على webhooks.</li>
+    <li>تم الحفاظ على task execution flow.</li>
+    <li>لا يوجد fake success.</li>
+    <li>لا يتم كشف secrets.</li>
+    <li>لا يتم إنشاء حملات إنفاق حية افتراضياً.</li>
+    <li>لم تتم إضافة ads_management كوحدة مستقلة.</li>
+  </ul>
+
+  <h2>36. قواعد الأمان والسلامة</h2>
+  <ul>
+    <li>API keys تبقى server-side فقط.</li>
+    <li>عدم استخدام <code>NEXT_PUBLIC</code> للأسرار.</li>
+    <li>عدم تسجيل tokens في logs.</li>
+    <li>التحقق من workspace قبل العمليات.</li>
+    <li>provider readiness قبل أي action.</li>
+    <li>النشر فقط بعد provider success.</li>
+    <li>إعلانات PAUSED أو draft فقط.</li>
+    <li>idempotency في scheduler لمنع التكرار.</li>
+  </ul>
+
+  <h2>37. الدروس المستفادة</h2>
+  <ul>
+    <li>ابنِ الأساسات قبل الأتمتة الكاملة.</li>
+    <li>استخدم provider readiness بدلاً من fake success.</li>
+    <li>أبقِ الأسرار في الخادم فقط.</li>
+    <li>استخدم toast feedback لتقليل النقرات المكررة.</li>
+    <li>واجهات APIs الخارجية تحتاج موافقات وإعداد حسابات.</li>
+    <li>الجدولة تتطلب idempotency.</li>
+    <li>تحسين الواجهة يجب ألا يكسر الإنتاج.</li>
+    <li>استقرار الإنتاج أهم من الميزات الزخرفية.</li>
+  </ul>
+
+  <h2>38. الخطوات التالية الموصى بها</h2>
+  <ul>
+    <li>إكمال إعدادات مزودي الخدمات الخارجية.</li>
+    <li>اختبار Meta OAuth واختيار الحسابات end-to-end.</li>
+    <li>اختبار نشر Instagram image post.</li>
+    <li>اختبار نشر Facebook Page post.</li>
+    <li>اختبار Pinterest Pin publishing.</li>
+    <li>انتظار موافقة Google Ads عند الحاجة.</li>
+    <li>إضافة OpenAI billing أو الاعتماد على NVIDIA fallback للنصوص.</li>
+    <li>إجراء اختبارات قوية للفيديو وReels.</li>
+    <li>إضافة metrics حقيقية فقط عندما تتوفر من API موثوق.</li>
+    <li>متابعة تحسين الواجهة بحذر.</li>
+  </ul>
+
+  <h2>39. الخلاصة النهائية</h2>
+  <p>
+    تطورت AgentFlow AI من فكرة بسيطة إلى منصة SaaS إنتاجية منظمة لإدارة عمليات وكالة ذكاء اصطناعي. أصبحت المنصة تشمل
+    مهام، مراجعات، أصولاً إبداعية، تخطيط محتوى وإعلانات، توليداً بالذكاء الاصطناعي، جاهزية مزودي الخدمات، أساسات نشر
+    آمنة، تنفيذ جدولة، وتحليلات تشغيلية.
+  </p>
+  <p>
+    ما تبقى ليس إعادة بناء جوهرية، بل إكمال إعدادات خارجية مثل OAuth، الموافقات، الفوترة، اختيار الحسابات، واختبارات
+    end-to-end في الإنتاج. المنصة الآن تمتلك أساساً واضحاً وقابلاً للتوسع نحو تشغيل وكالة ذكاء اصطناعي متعددة الوكلاء من
+    مكان واحد.
+  </p>
+</main>
+</body>
+</html>

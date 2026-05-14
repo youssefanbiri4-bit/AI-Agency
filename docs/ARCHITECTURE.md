@@ -20,6 +20,8 @@ The frontend is responsible for:
 - Report rendering.
 - Copy and PDF export interactions.
 - Reports search and filters.
+- Organic Instagram Reels planning, drafting, preview, and safe publishing readiness.
+- Creative Assets prompt generation and server-gated OpenAI image generation readiness.
 
 ## Dashboard Routes
 
@@ -39,6 +41,12 @@ Key routes include:
 - `/dashboard/review`
 - `/dashboard/reports`
 - `/dashboard/campaigns`
+- `/dashboard/reels`
+- `/dashboard/reels/new`
+- `/dashboard/reels/[id]`
+- `/dashboard/creative-assets`
+- `/dashboard/creative-assets/new`
+- `/dashboard/creative-assets/[id]`
 - `/dashboard/settings`
 - `/privacy`
 - `/terms`
@@ -55,6 +63,8 @@ Supabase provides authentication and persistence. The app uses Supabase for:
 - Task events.
 - Task reviews.
 - Stored task results.
+- Reels Studio drafts and publishing state.
+- Creative asset prompts, generation status, and stored image references.
 
 Client-side code uses public Supabase configuration only. Server-only code handles privileged reads and writes where needed, including automation callbacks.
 
@@ -205,11 +215,61 @@ Current supported notification behavior:
 - Latest notifications dropdown with mark-as-read and mark-all-as-read actions.
 - Notifications page at `/dashboard/notifications`.
 - Server-rendered latest notifications scoped to the active workspace and signed-in user.
-- Notification records for task review readiness, task completion, task failure, and campaign task creation.
+- Notification records for task review readiness, task completion, task failure, campaign task creation, and Reels Studio events.
+- Notification records for Creative Asset creation, prompt readiness, image generation success, and image generation failure.
 
 The `notifications` table stores `id`, `workspace_id`, `user_id`, `type`, `title`, `message`, `status`, `metadata`, `created_at`, and `read_at`. RLS allows authenticated users to select, insert, and update only their own notifications in workspaces they belong to. Service-role server flows can create callback notifications after validating their existing boundaries.
 
 Email notifications, browser push notifications, realtime subscriptions, and external notification providers are not connected in this phase.
+
+## Instagram Reels Studio
+
+The Reels Studio module is an organic Instagram Reels planning workflow.
+
+Current supported behavior:
+
+- Sidebar navigation entry for Reels Studio.
+- Reels overview at `/dashboard/reels` with draft, ready, scheduled, published, and failed counts.
+- New Reel form at `/dashboard/reels/new` for campaign basics, creative planning, captions, hashtags, media references, and scheduling metadata.
+- Reel detail page at `/dashboard/reels/[id]` with preview, script, caption, hashtags, media, status timeline, publishing readiness, and edit form.
+- Normal pending AI task creation for Reel scripts and captions.
+- Best-effort notifications for draft creation, ready state, publishing outcomes, and AI task creation.
+
+The `public.reels` table stores workspace/user-scoped organic Reel records. RLS prevents cross-workspace access and requires `auth.uid()` to match `user_id` on inserts.
+
+Instagram Reels publishing is a gated foundation. The UI shows setup-required states until Meta app configuration, Instagram content publishing permissions, Facebook Page connection, Instagram Business/Creator account metadata, and a public video URL are available. No automatic publishing occurs; publishing requires an explicit user click.
+
+Reels Studio does not create, edit, pause, delete, or publish ads or campaigns. It does not request `ads_management` and does not change the read-only Meta Ads tracking integration.
+
+## Creative Assets And OpenAI Image Foundation
+
+Creative Assets is a workspace-scoped prompt and image asset system.
+
+Current supported behavior:
+
+- Sidebar navigation entry for Creative Assets.
+- Asset overview at `/dashboard/creative-assets` with total assets, draft prompts, generated images, and failed generation counts.
+- New asset form at `/dashboard/creative-assets/new` for creative brief fields, prompt builder fields, aspect ratio, output style, and generation mode.
+- Asset detail page at `/dashboard/creative-assets/[id]` with brief, prompt, negative prompt, image preview, status timeline, source, and future Reel/Campaign placement hints.
+- Deterministic prompt generation works without `OPENAI_API_KEY`.
+- Real image generation is disabled until `OPENAI_API_KEY` is configured server-side.
+- OpenAI calls are made only from server actions through `src/lib/ai/openai-images.ts`.
+- Generated base64 image data is not stored in the database; image files should be uploaded to Supabase Storage bucket `creative-assets`.
+- Settings shows AI Image Generation Readiness without displaying any secret values.
+
+The `public.creative_assets` table stores workspace/user-scoped creative records. RLS prevents cross-workspace access and requires `auth.uid()` to match `user_id` on inserts. The storage bucket is private, with object policies scoped by workspace path.
+
+Required future environment variable:
+
+- `OPENAI_API_KEY`
+
+Optional future environment variables:
+
+- `OPENAI_IMAGE_MODEL`
+- `OPENAI_IMAGE_SIZE`
+- `OPENAI_IMAGE_QUALITY`
+
+OpenAI image generation may incur paid API usage. Creative Assets does not automatically publish ads, does not create campaigns, and does not include a video editor.
 
 ## Meta Ads Read-only Tracking
 
@@ -232,6 +292,8 @@ The app does not fetch Meta ad sets, ads, creatives, or lead records in the curr
 
 Meta publishing is not connected. The app does not request `ads_management` and does not create, update, pause, delete, or publish ads or campaigns. Publishing will require a future approval flow and additional Meta permissions.
 
+Organic Instagram Reels publishing readiness is handled separately in `src/lib/ads/instagram-publishing.ts`. That helper checks content publishing scopes and Instagram account metadata before enabling a publish attempt and does not alter the Meta Ads read-only OAuth scope.
+
 ## Pinterest Ads Provider Foundation
 
 The Campaigns page also includes a safe-disabled Pinterest Ads provider foundation.
@@ -248,7 +310,7 @@ Pinterest token exchange and storage are not enabled yet. The `ad_connections` d
 
 ## Google Ads Read-Only Connection
 
-The Campaigns page includes a Google Ads OAuth connection for read-only customer account discovery.
+The Campaigns page includes a Google Ads OAuth connection for read-only customer account discovery, campaign display, and last 30 days campaign metrics.
 
 Current supported Google Ads behavior:
 
@@ -261,9 +323,11 @@ Current supported Google Ads behavior:
 - Store Google access and refresh tokens encrypted in `ad_connections` with provider `google_ads`.
 - Refresh expired Google access tokens server-side from the encrypted refresh token.
 - List accessible Google Ads customer resource names through `customers:listAccessibleCustomers`.
-- Display safe customer IDs/resource names only.
+- Fetch campaign rows through GoogleAdsService `searchStream` with GAQL for `campaign.id`, `campaign.name`, `campaign.status`, `campaign.advertising_channel_type`, `campaign.start_date`, `campaign.end_date`, `metrics.impressions`, `metrics.clicks`, `metrics.ctr`, `metrics.average_cpc`, `metrics.cost_micros`, `metrics.conversions`, and `metrics.conversions_value`.
+- Display safe customer IDs/resource names, campaign fields, and converted aggregate metrics only.
+- Create a normal pending AgentFlow AI analysis task from a selected Google Ads campaign metrics row.
 
-Google Ads campaign fetching, metrics, GAQL reporting, campaign creation, edits, pauses, deletes, and publishing are not connected in this phase. `GOOGLE_ADS_CLIENT_SECRET` and `GOOGLE_ADS_DEVELOPER_TOKEN` must stay only in server environment variables.
+Google Ads ad group, ad, creative, keyword, search term, conversion record, background sync, campaign database storage, campaign creation, edits, pauses, deletes, and publishing are not connected in this phase. `GOOGLE_ADS_CLIENT_SECRET` and `GOOGLE_ADS_DEVELOPER_TOKEN` must stay only in server environment variables.
 
 ## Error Handling And Retry
 
@@ -296,14 +360,17 @@ Vercel hosts the Next.js application and server routes. Environment variables ar
 - Keep `PINTEREST_APP_SECRET` server-only.
 - Keep `GOOGLE_ADS_CLIENT_SECRET` server-only.
 - Keep `GOOGLE_ADS_DEVELOPER_TOKEN` server-only.
+- Keep `OPENAI_API_KEY` server-only and never add `NEXT_PUBLIC_OPENAI_API_KEY`.
 - Keep `AD_TOKEN_ENCRYPTION_KEY` server-only.
 - Decrypt ad platform tokens only in server helpers.
 - Do not expose callback secret values in UI, logs, reports, or exports.
 - Do not expose Meta, Pinterest, or Google Ads tokens, encrypted tokens, OAuth codes, full API URLs with paging cursors, or secrets in UI, logs, reports, or exports.
 - Keep notifications scoped by `workspace_id` and `user_id`; do not show cross-workspace or cross-user notifications.
 - Keep Meta OAuth scopes read-only unless a separate publishing plan is approved.
+- Keep Reels Studio organic-only; do not add ad publishing, campaign creation, or `ads_management`.
 - Keep Pinterest OAuth scopes read-only unless a separate publishing plan is approved.
 - Keep Google Ads OAuth scopes read-only unless a separate publishing plan is approved.
+- Keep Creative Assets workspace-scoped and store generated images in Supabase Storage, not as base64 database values.
 - Preserve callback route validation.
 - Preserve the stable `callbackPayload` shape unless a planned integration migration is approved.
 - Keep workspace scoping intact for task, review, and report data.

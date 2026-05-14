@@ -144,7 +144,7 @@ export default function SignInPage() {
             <button
               type="button"
               onClick={handlePasswordReset}
-              className="text-sm font-bold text-[#8B3CDE] hover:text-black"
+              className="text-sm font-bold text-[#F7CBCA] hover:text-black"
             >
               Forgot password?
             </button>
@@ -157,13 +157,13 @@ export default function SignInPage() {
               value={formData.password}
               onChange={handleChange}
               placeholder="Password"
-              className="pr-11"
+              className="pe-11"
               disabled={isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-2.5 text-black/38 hover:text-black"
+              className="absolute end-3 top-2.5 text-black/38 hover:text-black"
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -177,7 +177,7 @@ export default function SignInPage() {
 
       <p className="mt-6 text-center leading-6 text-black/58">
         Don&apos;t have an account?{' '}
-        <Link href="/auth/signup" className="font-bold text-[#8B3CDE] hover:text-black">
+        <Link href="/auth/signup" className="font-bold text-[#F7CBCA] hover:text-black">
           Create one
         </Link>
       </p>

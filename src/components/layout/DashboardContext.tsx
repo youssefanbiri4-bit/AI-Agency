@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
 
 export interface DashboardUserProfile {
@@ -13,6 +13,10 @@ export interface DashboardWorkspaceProfile {
   id: string;
   name: string;
   slug: string | null;
+  branding?: {
+    logoUrl: string | null;
+    logoAltText: string | null;
+  };
 }
 
 interface DashboardContextValue {
@@ -29,8 +33,10 @@ export function DashboardContextProvider({
 }: DashboardContextValue & {
   children: ReactNode;
 }) {
+  const value = useMemo(() => ({ user, workspace }), [user, workspace]);
+
   return (
-    <DashboardContext.Provider value={{ user, workspace }}>
+    <DashboardContext.Provider value={value}>
       {children}
     </DashboardContext.Provider>
   );

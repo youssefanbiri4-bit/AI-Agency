@@ -18,7 +18,7 @@ export function MarketingDepartmentCard({
   const brandColor = getDepartmentBrandColor(department.name);
 
   return (
-    <article className="card-lift flex h-full flex-col rounded-lg border border-black/8 bg-white p-6 shadow-[0_18px_48px_rgba(0,0,0,0.06)] hover:border-[#8B3CDE]/24 hover:shadow-[0_24px_64px_rgba(139,60,222,0.12)]">
+    <article className="card-lift flex h-full flex-col rounded-lg border border-[#F7CBCA]/10 bg-white/70 p-6 shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] hover:border-[#F7CBCA]/24 hover:shadow-[0_24px_64px_rgba(202,40,81,0.12)]">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h3 className="break-words text-xl font-bold text-black">{department.name}</h3>
@@ -33,11 +33,11 @@ export function MarketingDepartmentCard({
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-black/8 bg-[#F0DBEF]/35 p-3">
+        <div className="rounded-lg border border-black/8 bg-[#D5E5E5]/35 p-3">
           <p className="text-xs font-semibold text-black/52">Agents</p>
           <p className="mt-1 text-2xl font-black text-black">{departmentAgents.length}</p>
         </div>
-        <div className="rounded-lg border border-black/8 bg-[#F0DBEF]/35 p-3">
+        <div className="rounded-lg border border-black/8 bg-[#D5E5E5]/35 p-3">
           <p className="flex items-center gap-1 text-xs font-semibold text-black/52">
             <Database className="h-3.5 w-3.5" />
             Task data
@@ -51,7 +51,7 @@ export function MarketingDepartmentCard({
         <div className="mt-3 space-y-3">
           {exampleTasks.map((task) => (
             <div key={task} className="flex gap-2 text-sm leading-6 text-black/62">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#8B3CDE]" />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#F7CBCA]" />
               <span>{task}</span>
             </div>
           ))}

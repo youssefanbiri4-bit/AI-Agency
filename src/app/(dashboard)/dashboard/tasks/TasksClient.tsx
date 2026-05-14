@@ -62,7 +62,7 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+      <div className="dashboard-stat-grid">
         <StatCard title="Total" value={taskStats.total} icon={FileText} tone="neutral" subtitle={taskStats.total === 0 ? 'Create a task to begin' : 'Real workspace tasks'} />
         <StatCard title="Pending" value={taskStats.pending} icon={Clock} tone="accent" />
         <StatCard title="Processing" value={taskStats.processing} icon={Zap} tone="brand" />
@@ -71,25 +71,25 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
         <StatCard title="Failed" value={taskStats.failed} icon={AlertCircle} tone="accent" />
       </div>
 
-      <section className="min-w-0 rounded-lg border border-black/8 bg-white p-4 shadow-[0_18px_48px_rgba(0,0,0,0.06)] sm:p-5">
+      <section className="min-w-0 rounded-lg border border-[#F7CBCA]/8 bg-white/58 p-4 shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] sm:p-5">
         <div className="mb-5">
           <h2 className="text-lg font-semibold text-black">Task Filters</h2>
           <p className="mt-1 text-sm text-black/52">Find work by agent, department, status, or task description.</p>
         </div>
         <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_220px_240px_180px]">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
+            <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
             <Input
               type="search"
               placeholder="Search tasks by title or description"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="pl-10"
+              className="ps-10"
             />
           </div>
 
           <div className="relative">
-            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
+            <ChevronDown className="pointer-events-none absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
             <Select
               value={selectedDepartment}
               onChange={(event) => setSelectedDepartment(event.target.value)}
@@ -104,7 +104,7 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
           </div>
 
           <div className="relative">
-            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
+            <ChevronDown className="pointer-events-none absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
             <Select value={selectedAgent} onChange={(event) => setSelectedAgent(event.target.value)}>
               <option value="all">All Agents</option>
               {agents.map((agent) => (
@@ -116,7 +116,7 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
           </div>
 
           <div className="relative">
-            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
+            <ChevronDown className="pointer-events-none absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
             <Select
               value={selectedStatus}
               onChange={(event) => setSelectedStatus(event.target.value as TaskStatus | 'all')}

@@ -43,7 +43,7 @@ export default async function OnboardingPage() {
           <BrandMark href="/" tagline="Workspace setup" />
 
           <div>
-            <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-[#8B3CDE]">
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-[#F7CBCA]">
               Welcome{userLabel ? `, ${userLabel}` : ''}
             </p>
             <h1 className="max-w-3xl text-3xl font-black tracking-normal text-black sm:text-4xl">
@@ -57,21 +57,21 @@ export default async function OnboardingPage() {
 
           <div className="grid max-w-3xl gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-black/8 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[#F0DBEF] text-[#8B3CDE]">
+              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[#D5E5E5] text-[#F7CBCA]">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <p className="text-sm font-bold text-black">Authenticated</p>
               <p className="mt-1 text-xs leading-5 text-black/54">Your Supabase session is active.</p>
             </div>
             <div className="rounded-lg border border-black/8 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[#F0DBEF] text-[#8B3CDE]">
+              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[#D5E5E5] text-[#F7CBCA]">
                 <Database className="h-5 w-5" />
               </div>
               <p className="text-sm font-bold text-black">Supabase configured</p>
               <p className="mt-1 text-xs leading-5 text-black/54">Workspace records will be stored with RLS.</p>
             </div>
             <div className="rounded-lg border border-black/8 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[#F0DBEF] text-[#F55477]">
+              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[#D5E5E5] text-[#F7CBCA]">
                 <Workflow className="h-5 w-5" />
               </div>
               <p className="text-sm font-bold text-black">n8n guarded</p>

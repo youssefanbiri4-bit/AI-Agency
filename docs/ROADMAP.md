@@ -1,13 +1,17 @@
 # Roadmap
 
-Date updated: 2026-05-06
+Date updated: 2026-05-07
 Project: AgentFlow AI / AI Agency Dashboard
 
 ## Current Stable State
 
-AgentFlow AI is currently in a production-tested portfolio state. The core SaaS dashboard, Supabase-backed workspace model, n8n automation flow, review system, report rendering, retry path, reports dashboard, in-app notifications foundation, domain launch-readiness UI, and read-only Meta Ads tracking foundation have been verified or prepared for production smoke testing.
+AgentFlow AI is currently in a production-tested portfolio state. The core SaaS dashboard, Supabase-backed workspace model, n8n automation flow, review system, report rendering, retry path, reports dashboard, Reels Studio drafting workflow, Creative Assets prompt workflow, OpenAI image generation foundation, in-app notifications foundation, domain launch-readiness UI, and read-only Meta Ads tracking foundation have been verified or prepared for production smoke testing.
 
-The Meta Ads integration remains read-only. It requests `ads_read`, does not request `ads_management`, does not publish ads, and does not create, update, pause, or delete ad platform resources. Pinterest Ads remains a provider foundation. Google Ads OAuth can connect, store encrypted tokens server-side, and list accessible customer accounts only.
+The Meta Ads integration remains read-only. It requests `ads_read`, does not request `ads_management`, does not publish ads, and does not create, update, pause, or delete ad platform resources. Pinterest Ads remains a provider foundation. Google Ads can connect, store encrypted tokens server-side, list accessible customer accounts, display read-only campaigns with last 30 days metrics, and create pending AI analysis tasks from those metrics.
+
+Reels Studio is organic Instagram content planning only. It supports draft, preview, AI task creation, media references, status management, and a gated Instagram Reels publishing foundation. It does not publish ads, does not request `ads_management`, does not create campaigns, and does not publish automatically.
+
+Creative Assets supports prompt generation without an OpenAI key. Real image generation is disabled until `OPENAI_API_KEY` is configured server-side in Vercel. Generated images should be stored in Supabase Storage bucket `creative-assets`; usage may incur OpenAI API cost. No automatic ad publishing and no video editor are connected.
 
 ## Completed
 
@@ -41,6 +45,15 @@ The Meta Ads integration remains read-only. It requests `ads_read`, does not req
 - Pinterest setup-required state on the Campaigns page.
 - Google Ads OAuth connection with encrypted token storage.
 - Google Ads accessible customer account display.
+- Google Ads read-only campaign and last 30 days metrics display.
+- Normal AgentFlow AI analysis task creation from real Google Ads campaign metrics.
+- Reels Studio at `/dashboard/reels`, `/dashboard/reels/new`, and `/dashboard/reels/[id]`.
+- Instagram Reel draft, ready, scheduled, published, and failed status foundation.
+- Reels AI script and caption task creation as normal pending AgentFlow tasks.
+- Reels preview, media reference, and guarded publishing readiness UI.
+- Creative Assets routes at `/dashboard/creative-assets`, `/dashboard/creative-assets/new`, and `/dashboard/creative-assets/[id]`.
+- Creative asset table, RLS policies, prompt workflow, OpenAI image helper, and private `creative-assets` storage bucket foundation.
+- AI Image Generation Readiness section in Settings.
 - Production Domain & Launch Readiness UI in Settings.
 - In-app notifications foundation with workspace/user scoped unread state.
 - Production deployment on Vercel.
@@ -87,10 +100,10 @@ Build a focused command center for marketing operators and growth teams.
 - Campaign status and performance summaries.
 - Read-only Meta Ads / Instagram and Facebook tracking.
 - Pinterest Ads read-only provider foundation.
-- Google Ads read-only customer account discovery.
+- Google Ads read-only customer account, campaign, and metrics tracking.
 - Last 30 days spend, delivery, click, and summarized conversion metrics.
 - Safe local performance diagnosis from real metrics.
-- AI analysis task creation from imported Meta metrics.
+- AI analysis task creation from imported Meta and Google Ads metrics.
 - Saved campaign briefs.
 - AI-generated campaign recommendations.
 
@@ -101,8 +114,20 @@ Add deeper planning and analysis workflows on top of the existing agent/task fou
 - Campaign brief generator.
 - Audience and offer analyzer.
 - Creative angle planner.
+- Creative Assets selection for campaign visuals and ad creative prompts.
 - Landing page and funnel checklist.
 - Post-campaign analysis reports.
+
+### Instagram Reels Studio
+
+Continue the organic Reels workflow without changing ad platform write behavior.
+
+- Asset upload/storage integration beyond URL/reference fields.
+- Creative Assets linking for Reel covers.
+- Richer script and storyboard version history.
+- Calendar view for scheduled Reels.
+- Publishing audit log and explicit approval records.
+- External video editor integration remains future work.
 
 ### Better Analytics
 
@@ -122,15 +147,19 @@ In-app notifications are now prepared for dashboard events. Email notifications,
 
 Read-only Meta tracking is connected first. Real publishing remains future work and will require a separate approval flow, extra platform permissions, and careful operational safeguards.
 
-- Meta publishing with explicit human approval.
+- Meta ad publishing with explicit human approval.
 - Google Ads API full connection.
 - TikTok Ads API.
 
 `ads_management` is not requested in the current Meta integration. Publishing should stay disconnected until the app has a dedicated approval UX, audit trail, and permission review.
 
+Organic Instagram Reels publishing is separate from ads. The Reels Studio foundation remains gated behind Meta app configuration, `instagram_basic`, `instagram_content_publish`, `pages_show_list`, `pages_read_engagement`, an Instagram Business/Creator account, a Facebook Page connection, a public video URL, and an explicit user Publish click.
+
 Pinterest Ads connection requires `PINTEREST_APP_ID`, `PINTEREST_APP_SECRET`, and `PINTEREST_REDIRECT_URI` in Vercel. The database provider constraint allows `pinterest`, but Pinterest token exchange and storage remain disabled until a future connection phase.
 
-Google Ads connection requires `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`, and `GOOGLE_ADS_REDIRECT_URI` in Vercel. Optional variables are `GOOGLE_ADS_LOGIN_CUSTOMER_ID` and `GOOGLE_ADS_API_VERSION`. Google Ads tokens are encrypted server-side in `ad_connections` with provider `google_ads`. The current phase lists accessible customer accounts only; it does not fetch campaigns, metrics, or publishing surfaces.
+Google Ads connection requires `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`, and `GOOGLE_ADS_REDIRECT_URI` in Vercel. Optional variables are `GOOGLE_ADS_LOGIN_CUSTOMER_ID` and `GOOGLE_ADS_API_VERSION`. Google Ads tokens are encrypted server-side in `ad_connections` with provider `google_ads`. The current phase fetches accessible customer accounts, read-only campaigns, and last 30 days campaign metrics only. It does not fetch ad groups, ads, creatives, keywords, search terms, conversion records, or publishing surfaces.
+
+OpenAI image generation requires `OPENAI_API_KEY` in Vercel. Optional variables are `OPENAI_IMAGE_MODEL`, `OPENAI_IMAGE_SIZE`, and `OPENAI_IMAGE_QUALITY`. The key must stay server-only; do not add `NEXT_PUBLIC_OPENAI_API_KEY`. Prompt generation remains deterministic and works without the key.
 
 ### Public SaaS Features
 
@@ -162,8 +191,11 @@ Do not change the following without a separate implementation plan:
 - Vercel project settings.
 - Meta OAuth scopes.
 - Meta publishing behavior.
+- Instagram Reels automatic publishing.
+- Instagram Reels ad publishing or campaign creation.
 - Pinterest OAuth scopes.
 - Pinterest publishing behavior.
 - Google Ads OAuth scopes.
 - Google Ads publishing behavior.
+- OpenAI key handling or Creative Assets storage policies.
 - Meta task execution, callback, review, or report rendering contracts.
