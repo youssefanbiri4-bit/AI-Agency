@@ -13,7 +13,7 @@ import {
   normalizeWorkspaceRole,
   type StrictWorkspaceRole,
 } from '@/lib/workspace-permissions';
-import { checkInMemoryRateLimit } from '@/lib/rate-limit';
+import { checkRateLimit } from '@/lib/rate-limit';
 import {
   buildBrandKitGenerationContext,
   getBrandKitForWorkspace,
@@ -393,8 +393,8 @@ function assertCanGenerateAssets(role: StrictWorkspaceRole) {
   }
 }
 
-function assertCreativeGenerationLimit(workspaceId: string, userId: string) {
-  const limiter = checkInMemoryRateLimit({
+async function assertCreativeGenerationLimit(workspaceId: string, userId: string) {
+  const limiter = await checkRateLimit({
     key: `creative-generation:${workspaceId}:${userId}`,
     limit: 10,
     windowMs: 10 * 60 * 1000,
@@ -484,7 +484,7 @@ async function generatePromptForAsset(
 async function generateImageForAsset(assetId: string): Promise<CreativeAssetActionState> {
   const { supabase, user, workspace, role, asset } = await loadOwnedAsset(assetId);
   assertCanGenerateAssets(role);
-  assertCreativeGenerationLimit(workspace.id, user.id);
+  await assertCreativeGenerationLimit(workspace.id, user.id);
   const readiness = checkOpenAIImageReadiness();
 
   if (!readiness.isReady) {

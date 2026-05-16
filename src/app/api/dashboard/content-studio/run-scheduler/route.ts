@@ -6,9 +6,10 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
-import { checkInMemoryRateLimit } from '@/lib/rate-limit';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { canRunScheduler, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
+import { setupBlockerMessage } from '@/lib/safe-messages';
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ success: false, error }, { status });
@@ -62,7 +63,7 @@ async function handleRunScheduler() {
     return jsonError('Scheduler controls are restricted to workspace owners and admins.', 403);
   }
 
-  const limiter = checkInMemoryRateLimit({
+  const limiter = await checkRateLimit({
     key: `manual-scheduler:${workspaceResult.data.id}:${user.id}`,
     limit: 3,
     windowMs: 60 * 1000,
@@ -100,10 +101,11 @@ async function handleRunScheduler() {
       userId: user.id,
     });
 
-    return jsonError(
-      error instanceof Error ? error.message : 'Internal server error',
-      500
-    );
+    return jsonError(setupBlockerMessage({
+      missing: 'completed scheduler run',
+      reason: 'the server could not safely complete the manual scheduler operation',
+      next: 'check server logs, provider readiness, and scheduler configuration, then retry',
+    }), 500);
   }
 }
 

@@ -44,7 +44,7 @@ export async function getDashboardData(
 
   const [catalogResult, tasksResult] = await Promise.all([
     listAgentCatalog(client),
-    listTasks({ workspaceId }, client),
+    listTasks({ workspaceId, limit: 40 }, client),
   ]);
 
   if (catalogResult.error) {
@@ -57,7 +57,7 @@ export async function getDashboardData(
 
   let eventsQuery = client
     .from('task_events')
-    .select('*')
+    .select('id, workspace_id, task_id, actor_id, event_type, message, metadata, created_at')
     .order('created_at', { ascending: false })
     .limit(10);
 

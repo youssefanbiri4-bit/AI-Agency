@@ -9,6 +9,10 @@ export const LANGUAGES: { code: LanguageCode; label: string; dir: 'rtl' | 'ltr' 
   { code: 'es', label: 'Español', dir: 'ltr' },
 ];
 
+export function isLanguageCode(value: unknown): value is LanguageCode {
+  return value === 'ar' || value === 'en' || value === 'fr' || value === 'es';
+}
+
 export function getLanguageDir(code: LanguageCode): 'rtl' | 'ltr' {
   const lang = LANGUAGES.find((l) => l.code === code);
   return lang?.dir ?? 'ltr';

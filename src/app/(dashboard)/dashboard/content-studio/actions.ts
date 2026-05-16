@@ -30,7 +30,8 @@ import {
 import { createNotification } from '@/lib/data/notifications';
 import { createTask } from '@/lib/data/tasks';
 import { getBrandKitForWorkspace } from '@/lib/data/brand-kit';
-import { checkInMemoryRateLimit } from '@/lib/rate-limit';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { setupBlockerMessage } from '@/lib/safe-messages';
 import { generateContentStudioText, type ContentGenerationKind } from '@/lib/ai/openai-content';
 import { generateMarketingText } from '@/lib/ai/text-provider';
 import {
@@ -1406,7 +1407,7 @@ function buildTaskTitle(item: ContentStudioItemRecord, kind: ContentStudioTaskKi
 }
 
 function checkGenerationLimit(workspaceId: string, userId: string) {
-  return checkInMemoryRateLimit({
+  return checkRateLimit({
     key: `content-generation:${workspaceId}:${userId}`,
     limit: 20,
     windowMs: 10 * 60 * 1000,
@@ -2142,7 +2143,7 @@ export async function generateContentStudioFieldAction(
       };
     }
 
-    if (!checkGenerationLimit(workspace.id, user.id).allowed) {
+    if (!(await checkGenerationLimit(workspace.id, user.id)).allowed) {
       return {
         ...initialGenerateState,
         error: 'وصلتي للحد المؤقت لتوليد المحتوى. عاود المحاولة بعد شوية.',
@@ -2292,7 +2293,7 @@ export async function generateCampaignPlanAction(
       };
     }
 
-    if (!checkGenerationLimit(workspace.id, user.id).allowed) {
+    if (!(await checkGenerationLimit(workspace.id, user.id)).allowed) {
       return {
         error: 'وصلتي للحد المؤقت لتوليد الحملات. عاود المحاولة بعد شوية.',
       };
@@ -2311,8 +2312,16 @@ export async function generateCampaignPlanAction(
       return {
         error:
           generationResult.status === 'setup_required'
-            ? 'AI provider setup required.'
-            : generationResult.error || 'AI generation failed.',
+            ? setupBlockerMessage({
+                missing: 'OpenAI server-side setup',
+                reason: 'campaign planning uses OpenAI and cannot run until the server provider is ready',
+                next: 'configure OpenAI in Vercel, redeploy, and retry Generate Campaign Plan',
+              })
+            : generationResult.error || setupBlockerMessage({
+                missing: 'valid OpenAI campaign plan response',
+                reason: 'OpenAI did not return a usable campaign plan',
+                next: 'retry with a shorter brief, then check OpenAI quota/model access if it continues',
+              }),
         providerUsed: generationResult.providerUsed,
         model: generationResult.model,
       };
@@ -2322,7 +2331,11 @@ export async function generateCampaignPlanAction(
 
     if (!plan) {
       return {
-        error: 'AI generation failed. The provider returned an invalid campaign plan.',
+        error: setupBlockerMessage({
+          missing: 'valid campaign plan JSON from OpenAI',
+          reason: 'the generated response could not be safely converted into campaign drafts',
+          next: 'retry generation with clearer inputs before creating drafts',
+        }),
         providerUsed: generationResult.providerUsed,
         fallbackUsed: false,
         model: generationResult.model,
@@ -2342,7 +2355,11 @@ export async function generateCampaignPlanAction(
       error:
         error instanceof Error
           ? error.message
-          : 'AI generation failed.',
+          : setupBlockerMessage({
+              missing: 'completed campaign generation',
+              reason: 'the server could not safely finish the OpenAI campaign planning request',
+              next: 'retry, then check OpenAI readiness and server logs if it continues',
+            }),
     };
   }
 }

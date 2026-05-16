@@ -10,6 +10,7 @@ import {
   recordN8nCallback,
   buildN8nCallbackKey,
 } from '@/lib/n8n-callback-idempotency';
+import { genericServerSetupMessage, setupBlockerMessage } from '@/lib/safe-messages';
 import type { JsonObject, JsonValue, TaskStatus } from '@/types';
 
 function jsonError(error: string, status: number) {
@@ -57,13 +58,17 @@ export async function POST(request: NextRequest) {
     const expectedSecret = getN8nCallbackSecret();
 
     if (!expectedSecret) {
-      return jsonError('n8n callback secret is not configured', 500);
+      return jsonError(setupBlockerMessage({
+        missing: 'N8N_CALLBACK_SECRET',
+        reason: 'callbacks cannot be trusted without the server-side shared secret',
+        next: 'add N8N_CALLBACK_SECRET in Vercel, redeploy, and retry the callback',
+      }), 500);
     }
 
     const callbackSecret = request.headers.get('x-callback-secret')?.trim() ?? '';
 
     if (!callbackSecret || !safeCompare(callbackSecret, expectedSecret)) {
-      return jsonError('Invalid callback secret', 401);
+      return jsonError('Callback blocked: the callback secret is missing or invalid. Next: verify the n8n HTTP Request header without exposing the secret. / تم حظر الكالباك لأن السر غير صحيح.', 401);
     }
 
     const body = await request.json().catch(() => null);
@@ -81,10 +86,10 @@ export async function POST(request: NextRequest) {
       return jsonError('Task ID is required', 400);
     }
 
-    const { client: adminClient, error: adminError } = getSupabaseAdmin();
+    const { client: adminClient } = getSupabaseAdmin();
 
     if (!adminClient) {
-      return jsonError(adminError ?? 'Supabase admin client is not configured', 500);
+      return jsonError(genericServerSetupMessage('Supabase admin'), 500);
     }
 
     const { data: taskRecord, error: taskError } = await adminClient
@@ -94,7 +99,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (taskError) {
-      return jsonError(taskError.message, 500);
+      return jsonError('Callback blocked: task lookup failed safely. Next: check Supabase logs and task id, then retry. / تعذر التحقق من المهمة بأمان.', 500);
     }
 
     if (!taskRecord) {

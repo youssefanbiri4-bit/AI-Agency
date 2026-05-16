@@ -6,7 +6,7 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
-import { checkInMemoryRateLimit } from '@/lib/rate-limit';
+import { checkRateLimit } from '@/lib/rate-limit';
 import {
   formatRecommendationContextForAlex,
   recommendAgentTemplates,
@@ -21,6 +21,7 @@ import {
 } from '@/lib/alex-tools/registry';
 import type { AlexToolContext } from '@/lib/alex-tools/types';
 import { formatIndustryPackRecommendationsForAlex } from '@/lib/industry-packs/packs';
+import { setupBlockerMessage } from '@/lib/safe-messages';
 
 const OPENAI_CHAT_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const ALEX_CHAT_RATE_LIMIT = 20;
@@ -226,7 +227,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const limiter = checkInMemoryRateLimit({
+    const limiter = await checkRateLimit({
       key: `alex-chat:${user.id}`,
       limit: ALEX_CHAT_RATE_LIMIT,
       windowMs: ALEX_CHAT_RATE_LIMIT_WINDOW_MS,
@@ -243,7 +244,11 @@ export async function POST(request: Request) {
     const apiKey = getOpenAIKey();
     if (!apiKey) {
       return NextResponse.json({
-        error: 'OpenAI API key is missing. Add OPENAI_API_KEY in Vercel Environment Variables.',
+        error: setupBlockerMessage({
+          missing: 'OPENAI_API_KEY',
+          reason: 'Alex can only call OpenAI from the server after the key is configured',
+          next: 'add OPENAI_API_KEY in Vercel server environment variables, redeploy, and retry Alex',
+        }),
         category: 'missing_key',
       }, { status: 200 });
     }
@@ -360,18 +365,34 @@ export async function POST(request: Request) {
       const message = errorBody?.message ?? '';
 
       if (statusCode === 401) {
-        return NextResponse.json({ error: 'Invalid OpenAI API key. Check OPENAI_API_KEY.', category: 'invalid_key' }, { status: 200 });
+        return NextResponse.json({ error: setupBlockerMessage({
+          missing: 'valid OpenAI server key',
+          reason: 'OpenAI rejected the configured server credential',
+          next: 'rotate or correct OPENAI_API_KEY in Vercel, then redeploy',
+        }), category: 'invalid_key' }, { status: 200 });
       }
       if (statusCode === 429 || code === 'insufficient_quota' || message.includes('quota')) {
-        return NextResponse.json({ error: 'OpenAI quota exceeded. Check billing and usage limits.', category: 'quota_required' }, { status: 200 });
+        return NextResponse.json({ error: setupBlockerMessage({
+          missing: 'OpenAI quota or billing capacity',
+          reason: 'OpenAI rate/quota limits prevent a safe response',
+          next: 'review OpenAI billing/quota and try again after capacity is restored',
+        }), category: 'quota_required' }, { status: 200 });
       }
       if (statusCode === 404 || code === 'model_not_found' || message.includes('model')) {
-        return NextResponse.json({ error: `Model "${model}" not found. Check OPENAI_MODEL or your OpenAI account access.`, category: 'model_not_found' }, { status: 200 });
+        return NextResponse.json({ error: setupBlockerMessage({
+          missing: 'available OpenAI model access',
+          reason: 'the configured model is not available to this OpenAI account',
+          next: 'set OPENAI_MODEL to an available model or enable access in OpenAI',
+        }), category: 'model_not_found' }, { status: 200 });
       }
       if (statusCode === 429) {
-        return NextResponse.json({ error: 'Rate limited by OpenAI. Please wait and try again.', category: 'rate_limited' }, { status: 200 });
+        return NextResponse.json({ error: 'OpenAI is temporarily rate limited. Blocked because the provider asked us to slow down. Next: wait a moment and retry. / OpenAI محدود مؤقتاً، انتظر قليلاً ثم أعد المحاولة.', category: 'rate_limited' }, { status: 200 });
       }
-      return NextResponse.json({ error: 'OpenAI provider failed. Check OPENAI_API_KEY, model access, quota, or billing.', category: 'provider_error' }, { status: 200 });
+      return NextResponse.json({ error: setupBlockerMessage({
+        missing: 'healthy OpenAI provider response',
+        reason: 'OpenAI did not return a usable response',
+        next: 'check OpenAI key, model access, quota, billing, and provider status, then retry',
+      }), category: 'provider_error' }, { status: 200 });
     }
 
     const content = payload?.choices?.[0]?.message?.content?.trim() || '';
@@ -398,6 +419,10 @@ export async function POST(request: Request) {
     if (isTimeout) {
       return NextResponse.json({ error: 'Request timed out. Please try again.', category: 'timeout' }, { status: 200 });
     }
-    return NextResponse.json({ error: 'OpenAI provider failed. Check OPENAI_API_KEY, model access, quota, or billing.', category: 'provider_error' }, { status: 200 });
+    return NextResponse.json({ error: setupBlockerMessage({
+      missing: 'healthy OpenAI provider response',
+      reason: 'Alex could not complete the server-side OpenAI request safely',
+      next: 'check OpenAI key, model access, quota, billing, and provider status, then retry',
+    }), category: 'provider_error' }, { status: 200 });
   }
 }

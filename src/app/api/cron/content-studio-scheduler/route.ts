@@ -5,6 +5,7 @@ import {
   runContentStudioScheduler,
 } from '@/lib/content-studio/scheduler';
 import { reportAppError } from '@/lib/logger';
+import { setupBlockerMessage } from '@/lib/safe-messages';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -77,10 +78,11 @@ async function handleSchedulerRequest(request: NextRequest) {
     });
   } catch (error) {
     reportAppError('Content Studio scheduler route failed', error);
-    return jsonError(
-      error instanceof Error ? error.message : 'Internal server error',
-      500
-    );
+    return jsonError(setupBlockerMessage({
+      missing: 'completed cron scheduler run',
+      reason: 'the server could not safely complete the scheduled operation',
+      next: 'check Vercel function logs, CRON_SECRET configuration, and provider readiness',
+    }), 500);
   }
 }
 

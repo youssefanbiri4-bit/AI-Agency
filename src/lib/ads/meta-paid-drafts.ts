@@ -419,7 +419,7 @@ async function postMetaGraph<T>({
   };
 
   if (!response.ok || payload?.error) {
-    throw new Error(payload?.error?.message || 'Meta Marketing API request failed.');
+    throw new Error('Meta paid ads action could not be completed. Confirm OAuth permissions, selected ad account, spend controls, and Meta account status.');
   }
 
   return payload;

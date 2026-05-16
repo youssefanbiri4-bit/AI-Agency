@@ -22,6 +22,8 @@ import {
 } from '@/lib/workspace-permissions';
 import { getProductionReadiness, type ProductionCheck } from '@/lib/production-readiness';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
+import { ProductionSettingsForm } from './ProductionSettingsForm';
+import { refreshProductionReadinessAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,6 +112,10 @@ function DecisionCard({
   );
 }
 
+function allReady(checks: ProductionCheck[]) {
+  return checks.every((check) => check.status === 'ready');
+}
+
 export default async function ProductionOperationsPage() {
   const access = await getWorkspaceAccessContext();
 
@@ -137,6 +143,7 @@ export default async function ProductionOperationsPage() {
     workspaceId: access.data.workspace.id,
     userId: access.data.user.id,
     logEvent: true,
+    cacheTtlMs: 45_000,
   });
   const StatusIcon =
     readiness.overallStatus === 'ready'
@@ -154,6 +161,11 @@ export default async function ProductionOperationsPage() {
           description="A hard launch gate for real-client work and paid ads. The platform stays blocked until security, monitoring, providers, rate limits, backups, environment, and spend controls are green."
           actions={
             <div className="flex flex-wrap gap-2">
+              <form action={refreshProductionReadinessAction}>
+                <button type="submit" className={buttonStyles({ variant: 'primary', size: 'sm' })}>
+                  Refresh checks
+                </button>
+              </form>
               <Link href="/dashboard/security" className={buttonStyles({ variant: 'outline', size: 'sm' })}>
                 <LockKeyhole className="h-4 w-4" />
                 Security
@@ -225,6 +237,35 @@ export default async function ProductionOperationsPage() {
             icon={Megaphone}
           />
         </div>
+
+        <Card>
+          <CardHeader
+            title="Production settings"
+            description="Owner/admin controls for launch mode and paid ads. The server action refuses unsafe changes even if a browser sends forged form data."
+          />
+          <ProductionSettingsForm
+            settings={readiness.spendControls}
+            canSwitchToProduction={allReady([
+              ...readiness.env,
+              ...readiness.migrations,
+              ...readiness.security,
+              ...readiness.rateLimits,
+              ...readiness.providers,
+              ...readiness.backups,
+              ...readiness.monitoring,
+            ])}
+            canEnablePaidAds={
+              allReady(readiness.rateLimits) &&
+              allReady(readiness.providers) &&
+              allReady(readiness.backups) &&
+              readiness.spendControls.launch_mode === 'production' &&
+              typeof readiness.spendControls.max_daily_ad_spend === 'number' &&
+              readiness.spendControls.max_daily_ad_spend > 0 &&
+              readiness.spendControls.allowed_providers.length > 0 &&
+              readiness.spendControls.require_manual_confirmation
+            }
+          />
+        </Card>
 
         <Section title="Environment" description="Presence checks only. No values are displayed." checks={readiness.env} />
         <Section title="Supabase migrations" description="Production tables required by the launch gate." checks={readiness.migrations} />

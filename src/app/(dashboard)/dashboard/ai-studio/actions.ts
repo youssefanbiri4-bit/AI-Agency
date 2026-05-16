@@ -7,7 +7,7 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
-import { checkInMemoryRateLimit } from '@/lib/rate-limit';
+import { checkRateLimit } from '@/lib/rate-limit';
 import {
   canUseAIGeneration,
   normalizeWorkspaceRole,
@@ -179,7 +179,7 @@ async function getWorkspaceContext(redirectTo = '/dashboard/ai-studio', rateLimi
   }
 
   if (rateLimitGeneration) {
-    const limiter = checkInMemoryRateLimit({
+    const limiter = await checkRateLimit({
       key: `ai-studio:${workspaceResult.data.id}:${user.id}`,
       limit: 10,
       windowMs: 10 * 60 * 1000,

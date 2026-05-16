@@ -129,14 +129,19 @@ export function buildReleaseReport(release: ReleaseRecord, projectName?: string 
 
 export async function listReleasesForWorkspace(
   workspaceId: string,
-  client: ReleaseClient = supabase as ReleaseClient
+  client: ReleaseClient = supabase as ReleaseClient,
+  options: { limit?: number } = {}
 ): Promise<DataResult<ReleaseRecord[]>> {
   if (!isSupabaseConfigured) return emptyDataResult([], false);
-  const { data, error } = await client
+  let query = client
     .from('releases')
     .select('*')
     .eq('workspace_id', workspaceId)
     .order('updated_at', { ascending: false });
+  if (options.limit && options.limit > 0) {
+    query = query.limit(options.limit);
+  }
+  const { data, error } = await query;
   if (error) return errorDataResult([], error.message);
   return emptyDataResult(data ?? [], true);
 }

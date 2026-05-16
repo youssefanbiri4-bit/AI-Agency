@@ -261,7 +261,7 @@ async function fetchMetaPages(accessToken: string) {
   const payload = (await response.json().catch(() => null)) as MetaListResponse<MetaPageAccount> | null;
 
   if (!response.ok || payload?.error || !Array.isArray(payload?.data)) {
-    throw new Error(payload?.error?.message || 'Meta Pages could not be loaded.');
+    throw new Error('Meta publishing target could not be verified. Confirm OAuth connection, required permissions, and selected Facebook/Instagram account.');
   }
 
   return payload.data

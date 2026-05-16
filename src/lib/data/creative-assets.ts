@@ -23,6 +23,11 @@ import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
 type CreativeAssetsClient = SupabaseClient<Database>;
 
+export interface ListCreativeAssetsOptions {
+  limit?: number;
+  includeSignedUrls?: boolean;
+}
+
 export interface CreateCreativeAssetInput {
   workspaceId: string;
   userId: string;
@@ -134,7 +139,8 @@ function assignDefined<T extends keyof Database['public']['Tables']['creative_as
 export async function listCreativeAssetsForWorkspace(
   workspaceId: string,
   userId?: string,
-  client?: CreativeAssetsClient
+  client?: CreativeAssetsClient,
+  options: ListCreativeAssetsOptions = {}
 ): Promise<DataResult<CreativeAssetRecord[]>> {
   if (!isSupabaseServerConfigured) {
     return emptyDataResult([], false);
@@ -151,13 +157,20 @@ export async function listCreativeAssetsForWorkspace(
     query = query.eq('user_id', userId);
   }
 
+  if (options.limit && options.limit > 0) {
+    query = query.limit(options.limit);
+  }
+
   const { data, error } = await query;
 
   if (error) {
     return errorDataResult([], error.message);
   }
 
-  return emptyDataResult(await withSignedImageUrls(data ?? [], supabase), true);
+  return emptyDataResult(
+    options.includeSignedUrls === false ? (data ?? []) : await withSignedImageUrls(data ?? [], supabase),
+    true
+  );
 }
 
 export async function getCreativeAssetById(

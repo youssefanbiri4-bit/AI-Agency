@@ -58,6 +58,8 @@ sets:
 
 ```text
 PRODUCTION_AUDIT_PASSED=true
+PRODUCTION_AUDIT_DATE
+PRODUCTION_AUDIT_COMMIT_SHA
 ```
 
 This marker should only be set by the deployment pipeline after:
@@ -67,3 +69,14 @@ npm audit --audit-level=moderate
 ```
 
 passes for the exact build being deployed.
+
+## Monitoring Marker
+
+Full production unlock also requires:
+
+```text
+OPERATIONAL_LOG_VISIBILITY_CONFIRMED=true
+```
+
+Set it only after confirming the Vercel project has deployment visibility,
+runtime logs, build logs, and incident review access for the operator.

@@ -1,6 +1,7 @@
 import type { ApiResponse, JsonObject } from '@/types';
 import { PRIMARY_AGENT_IDS } from '@/lib/agents';
 import { reportAppError } from '@/lib/logger';
+import { setupBlockerMessage } from '@/lib/safe-messages';
 
 const PLACEHOLDER_VALUES = new Set([
   'your_n8n_production_webhook_url',
@@ -64,8 +65,12 @@ export function getN8nReadiness(): N8nReadiness {
     webhookUrl: null,
     status: 'not_connected',
     statusLabel: 'Not Connected',
-    message:
-      'n8n execution is guarded. Run Task is disabled until the server execution flag, webhook URL, and callback secret are configured.',
+      message:
+      setupBlockerMessage({
+        missing: 'TASK_EXECUTION_ENABLED, N8N_WEBHOOK_URL, or N8N_CALLBACK_SECRET',
+        reason: 'Run Task must not send work to n8n until the server execution flag, webhook URL, and callback secret are verified',
+        next: 'configure the n8n server env in Vercel, redeploy, and run a callback smoke test',
+      }),
   };
 }
 
@@ -82,7 +87,11 @@ export async function executeN8nWorkflow(
     if (!webhookUrl) {
       return {
         success: false,
-        error: 'N8N webhook URL not provided',
+        error: setupBlockerMessage({
+          missing: 'N8N_WEBHOOK_URL',
+          reason: 'task execution cannot start without a server-side n8n webhook URL',
+          next: 'add N8N_WEBHOOK_URL in Vercel and redeploy',
+        }),
       };
     }
 
@@ -100,7 +109,7 @@ export async function executeN8nWorkflow(
     if (!response.ok) {
       return {
         success: false,
-        error: `N8N workflow failed with status ${response.status}`,
+        error: 'n8n workflow request was rejected. Blocked because the automation endpoint did not accept the task. Next: check n8n execution logs and webhook configuration, then retry. / n8n رفض الطلب، راجع سجلات n8n والإعدادات.',
       };
     }
 
@@ -114,8 +123,7 @@ export async function executeN8nWorkflow(
     reportAppError('Error executing N8N workflow', error);
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : 'Failed to execute workflow',
+      error: 'n8n workflow could not be reached safely. Blocked because task execution did not complete. Next: check N8N_WEBHOOK_URL, network access, and n8n workflow status. / تعذر الوصول إلى n8n بأمان.',
     };
   }
 }

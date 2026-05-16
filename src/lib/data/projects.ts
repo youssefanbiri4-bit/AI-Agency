@@ -309,17 +309,24 @@ export function getProjectHealth(project: ProjectRecord) {
 
 export async function listProjectsForWorkspace(
   workspaceId: string,
-  client: ProjectClient = supabase as ProjectClient
+  client: ProjectClient = supabase as ProjectClient,
+  options: { limit?: number } = {}
 ): Promise<DataResult<ProjectRecord[]>> {
   if (!isSupabaseConfigured) {
     return emptyDataResult([], false);
   }
 
-  const { data, error } = await client
+  let query = client
     .from('projects')
     .select('*')
     .eq('workspace_id', workspaceId)
     .order('updated_at', { ascending: false });
+
+  if (options.limit && options.limit > 0) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return errorDataResult([], error.message);

@@ -5,10 +5,13 @@ import type { JsonObject, JsonValue } from '@/types';
 import type { ContentStudioPlatform } from '@/types/database';
 import type { Database } from '@/types/database';
 import type { StrictWorkspaceRole } from '@/lib/workspace-permissions';
+import { getGoogleAdsExecutionReadiness } from '@/lib/ads/google-ads-publishing';
 import { checkOpenAIContentReadiness } from '@/lib/ai/openai-content';
 import { listBackupRecordsForWorkspace } from '@/lib/data/backup-records';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { checkRateLimit, getRateLimitStoreMode } from '@/lib/rate-limit';
+import { setupBlockerMessage } from '@/lib/safe-messages';
 
 export type ProductionReadinessStatus = 'ready' | 'blocked' | 'warning';
 export type ProductionCheckStatus = 'ready' | 'blocked' | 'warning' | 'not_configured';
@@ -71,6 +74,33 @@ export const defaultSpendControlSettings: SpendControlSettings = {
   launch_mode: 'blocked',
 };
 
+const productionReadinessCache = new Map<
+  string,
+  { expiresAt: number; result: ProductionReadinessResult }
+>();
+
+function getProductionReadinessCacheKey(workspaceId: string, userId: string) {
+  return `${workspaceId}:${userId}`;
+}
+
+export function clearProductionReadinessCache(workspaceId?: string, userId?: string) {
+  if (!workspaceId) {
+    productionReadinessCache.clear();
+    return;
+  }
+
+  if (userId) {
+    productionReadinessCache.delete(getProductionReadinessCacheKey(workspaceId, userId));
+    return;
+  }
+
+  for (const key of productionReadinessCache.keys()) {
+    if (key.startsWith(`${workspaceId}:`)) {
+      productionReadinessCache.delete(key);
+    }
+  }
+}
+
 const requiredEnvNames = [
   'OPENAI_API_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
@@ -103,7 +133,13 @@ function checkEnv(name: string): ProductionCheck {
     key: `env:${name}`,
     label: name,
     status: present ? 'ready' : 'blocked',
-    message: present ? 'Configured server-side.' : 'Missing in the server environment.',
+    message: present
+      ? 'Configured server-side. No value is displayed.'
+      : setupBlockerMessage({
+          missing: name,
+          reason: 'this production dependency is required before the platform can safely run client work',
+          next: 'add it in Vercel server environment variables, redeploy, and rerun the production check',
+        }),
   };
 }
 
@@ -186,14 +222,18 @@ async function loadIntegrationSettings(
 }
 
 async function checkN8nCallbackEventsTable() {
-  const { client, error } = getSupabaseAdmin();
+  const { client } = getSupabaseAdmin();
 
   if (!client) {
     return {
       key: 'migration:n8n_callback_events',
       label: 'n8n_callback_events',
       status: 'blocked' as const,
-      message: error ?? 'Supabase service role is not configured.',
+      message: setupBlockerMessage({
+        missing: 'Supabase service role server configuration',
+        reason: 'the app cannot verify the n8n callback idempotency table without a server-side admin check',
+        next: 'configure Supabase server credentials in Vercel and redeploy',
+      }),
     };
   }
 
@@ -207,8 +247,67 @@ async function checkN8nCallbackEventsTable() {
     label: 'n8n callback idempotency table',
     status: selectError ? ('blocked' as const) : ('ready' as const),
     message: selectError
-      ? 'n8n_callback_events table was not reachable. Apply the Phase 2 migration.'
+      ? setupBlockerMessage({
+          missing: 'n8n_callback_events table',
+          reason: 'duplicate/replay callback protection cannot be verified',
+          next: 'apply the Phase 2 Supabase migration, then rerun the production check',
+        })
       : 'n8n callback idempotency table exists.',
+  };
+}
+
+async function checkSecurityAuditLogsTable() {
+  const { client } = getSupabaseAdmin();
+
+  if (!client) {
+    return {
+      key: 'migration:security_audit_logs',
+      label: 'security_audit_logs',
+      status: 'blocked' as const,
+      message: setupBlockerMessage({
+        missing: 'Supabase service role server configuration',
+        reason: 'the app cannot verify operational audit logging safely',
+        next: 'configure Supabase server credentials in Vercel and redeploy',
+      }),
+    };
+  }
+
+  const { error: selectError } = await client
+    .from('security_audit_logs')
+    .select('id', { count: 'exact', head: true })
+    .limit(1);
+
+  return {
+    key: 'migration:security_audit_logs',
+    label: 'Security audit logs table',
+    status: selectError ? ('blocked' as const) : ('ready' as const),
+    message: selectError
+      ? setupBlockerMessage({
+          missing: 'security_audit_logs table',
+          reason: 'production and paid-ads blocker events must be auditable',
+          next: 'apply the security audit logs migration, then rerun the production check',
+        })
+      : 'security_audit_logs table exists for operational events.',
+  };
+}
+
+function checkProductionAuditMarker(): ProductionCheck {
+  const passed = process.env.PRODUCTION_AUDIT_PASSED === 'true';
+  const hasDate = isEnvPresent('PRODUCTION_AUDIT_DATE');
+  const hasSha = isEnvPresent('PRODUCTION_AUDIT_COMMIT_SHA');
+
+  return {
+    key: 'security:npm-audit',
+    label: 'Production audit marker',
+    status: passed && hasDate && hasSha ? 'ready' : 'blocked',
+    message:
+      passed && hasDate && hasSha
+        ? 'Production audit marker is present for this release.'
+        : setupBlockerMessage({
+            missing: 'production audit marker',
+            reason: 'runtime cannot prove this exact release passed audit/build/smoke checks',
+            next: 'set PRODUCTION_AUDIT_PASSED, PRODUCTION_AUDIT_DATE, and PRODUCTION_AUDIT_COMMIT_SHA after CI passes',
+          }),
   };
 }
 
@@ -217,14 +316,18 @@ async function loadProviderConnectionStatus(
   userId: string,
   provider: PaidProvider
 ): Promise<ProductionCheck> {
-  const { client, error } = getSupabaseAdmin();
+  const { client } = getSupabaseAdmin();
 
   if (!client) {
     return {
       key: `provider:${provider}:oauth`,
       label: `${provider} OAuth`,
       status: 'blocked',
-      message: error ?? 'Supabase service role is not configured.',
+      message: setupBlockerMessage({
+        missing: 'Supabase service role server configuration',
+        reason: `${provider} OAuth state must be verified server-side without exposing tokens`,
+        next: 'configure Supabase server credentials and rerun Provider Setup',
+      }),
     };
   }
 
@@ -241,7 +344,11 @@ async function loadProviderConnectionStatus(
       key: `provider:${provider}:oauth`,
       label: `${provider} OAuth`,
       status: 'blocked',
-      message: `${provider} OAuth state could not be verified.`,
+      message: setupBlockerMessage({
+        missing: `${provider} OAuth verification`,
+        reason: 'the provider connection could not be checked safely',
+        next: 'reconnect the provider from Settings and rerun the production check',
+      }),
     };
   }
 
@@ -250,7 +357,11 @@ async function loadProviderConnectionStatus(
       key: `provider:${provider}:oauth`,
       label: `${provider} OAuth`,
       status: 'blocked',
-      message: `${provider} OAuth connection is missing.`,
+      message: setupBlockerMessage({
+        missing: `${provider} OAuth connection`,
+        reason: 'provider actions require a verified workspace connection before any send/publish action',
+        next: 'connect the provider from Settings > Provider Setup',
+      }),
     };
   }
 
@@ -262,7 +373,11 @@ async function loadProviderConnectionStatus(
       key: `provider:${provider}:oauth`,
       label: `${provider} OAuth`,
       status: 'blocked',
-      message: `${provider} OAuth token is not connected or has expired.`,
+      message: setupBlockerMessage({
+        missing: `valid ${provider} OAuth connection`,
+        reason: 'the stored provider connection is missing, expired, or revoked',
+        next: 'reconnect the provider from Settings > Provider Setup',
+      }),
     };
   }
 
@@ -284,8 +399,29 @@ async function loadProviderConnectionStatus(
       key: `provider:${provider}:target`,
       label: `${provider} target`,
       status: 'blocked',
-      message: `${provider} connection exists but required account/permission selection is incomplete.`,
+      message: setupBlockerMessage({
+        missing: `${provider} account, permission, or target selection`,
+        reason: 'provider actions need a selected ad account/page/customer/board before execution',
+        next: 'open Provider Setup, select the required account/target, and save settings',
+      }),
     };
+  }
+
+  if (provider === 'google_ads') {
+    const readiness = await getGoogleAdsExecutionReadiness({ workspaceId, userId });
+
+    if (readiness.state !== 'ready') {
+      return {
+        key: 'provider:google_ads:api-approval',
+        label: 'Google Ads API approval',
+        status: 'blocked',
+        message: setupBlockerMessage({
+          missing: 'Google Ads API approval or customer readiness',
+          reason: 'Google Ads paid actions require a valid developer token, API approval, OAuth connection, and selected customer',
+          next: 'confirm Google Ads API approval and reconnect/select the customer in Provider Setup',
+        }),
+      };
+    }
   }
 
   return {
@@ -322,7 +458,11 @@ function getProviderEnvChecks(provider: PaidProvider): ProductionCheck[] {
         key: 'provider:pinterest:env:id',
         label: name,
         status: 'blocked' as const,
-        message: 'Pinterest app/client ID is missing.',
+        message: setupBlockerMessage({
+          missing: 'PINTEREST_APP_ID or PINTEREST_CLIENT_ID',
+          reason: 'Pinterest OAuth cannot start without the app/client id',
+          next: 'add the server env in Vercel, redeploy, then reconnect Pinterest',
+        }),
       };
     }
 
@@ -332,7 +472,11 @@ function getProviderEnvChecks(provider: PaidProvider): ProductionCheck[] {
       status: isEnvPresent(name) ? ('ready' as const) : ('blocked' as const),
       message: isEnvPresent(name)
         ? `${name} is configured server-side.`
-        : `${name} is missing.`,
+        : setupBlockerMessage({
+            missing: name,
+            reason: `${provider} provider setup cannot be verified without this server env`,
+            next: 'add it in Vercel server environment variables, redeploy, and reconnect the provider if needed',
+          }),
     };
   });
 }
@@ -369,22 +513,52 @@ export async function getProductionReadiness({
   workspaceId,
   userId,
   logEvent = false,
+  cacheTtlMs = 0,
+  forceRefresh = false,
 }: {
   supabase: SupabaseClient<Database>;
   workspaceId: string;
   userId: string;
   logEvent?: boolean;
+  cacheTtlMs?: number;
+  forceRefresh?: boolean;
 }): Promise<ProductionReadinessResult> {
-  const integration = await loadIntegrationSettings(supabase, workspaceId);
+  const cacheKey = getProductionReadinessCacheKey(workspaceId, userId);
+  const cached = productionReadinessCache.get(cacheKey);
+
+  if (!forceRefresh && cacheTtlMs > 0 && cached && cached.expiresAt > Date.now()) {
+    return cached.result;
+  }
+
+  const [
+    integration,
+    backupResult,
+    n8nCallbackEventsTable,
+    securityAuditLogsTable,
+    metaConnection,
+    googleAdsConnection,
+    pinterestConnection,
+  ] = await Promise.all([
+    loadIntegrationSettings(supabase, workspaceId),
+    listBackupRecordsForWorkspace(workspaceId, supabase, 10),
+    checkN8nCallbackEventsTable(),
+    checkSecurityAuditLogsTable(),
+    loadProviderConnectionStatus(workspaceId, userId, 'meta'),
+    loadProviderConnectionStatus(workspaceId, userId, 'google_ads'),
+    loadProviderConnectionStatus(workspaceId, userId, 'pinterest'),
+  ]);
   const spendControls = normalizeSpendControlSettings(
     readObject(integration.settings)[PRODUCTION_OPERATIONS_SETTINGS_KEY]
   );
   const openAI = checkOpenAIContentReadiness();
-  const backupResult = await listBackupRecordsForWorkspace(workspaceId, supabase, 1);
   const latestBackup = backupResult.data[0] ?? null;
+  const latestSuccessfulBackup = backupResult.data.find((backup) => backup.status === 'created') ?? null;
 
   const env = requiredEnvNames.map(checkEnv);
-  const migrations = [await checkN8nCallbackEventsTable()];
+  const migrations = [
+    n8nCallbackEventsTable,
+    securityAuditLogsTable,
+  ];
   const security: ProductionCheck[] = [
     {
       key: 'security:alex-auth',
@@ -407,15 +581,7 @@ export async function getProductionReadiness({
       status: 'ready',
       message: 'Production script-src excludes unsafe-eval and inline language script was externalized.',
     },
-    {
-      key: 'security:npm-audit',
-      label: 'npm audit',
-      status: process.env.PRODUCTION_AUDIT_PASSED === 'true' ? 'ready' : 'warning',
-      message:
-        process.env.PRODUCTION_AUDIT_PASSED === 'true'
-          ? 'Production audit pass marker is set.'
-          : 'Runtime cannot prove the latest npm audit. CI/release must run npm audit and record the result.',
-    },
+    checkProductionAuditMarker(),
   ];
   const rateLimits: ProductionCheck[] = [
     {
@@ -427,18 +593,15 @@ export async function getProductionReadiness({
     {
       key: 'rate-limit:persistent',
       label: 'Persistent rate limits',
-      status:
-        process.env.RATE_LIMIT_STORE === 'upstash' &&
-        isEnvPresent('UPSTASH_REDIS_REST_URL') &&
-        isEnvPresent('UPSTASH_REDIS_REST_TOKEN')
-          ? 'ready'
-          : 'blocked',
+      status: getRateLimitStoreMode() === 'upstash' ? 'ready' : 'blocked',
       message:
-        process.env.RATE_LIMIT_STORE === 'upstash' &&
-        isEnvPresent('UPSTASH_REDIS_REST_URL') &&
-        isEnvPresent('UPSTASH_REDIS_REST_TOKEN')
+        getRateLimitStoreMode() === 'upstash'
           ? 'Upstash/Redis persistent rate limit env is configured.'
-          : 'Persistent Redis/Upstash rate limiting is not configured.',
+          : setupBlockerMessage({
+              missing: 'persistent Redis/Upstash rate limiting',
+              reason: 'serverless in-memory limits do not protect full production across instances',
+              next: 'set RATE_LIMIT_STORE=upstash with UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN',
+            }),
     },
   ];
   const providers: ProductionCheck[] = [
@@ -449,11 +612,11 @@ export async function getProductionReadiness({
       message: openAI.message,
     },
     ...getProviderEnvChecks('meta'),
-    await loadProviderConnectionStatus(workspaceId, userId, 'meta'),
+    metaConnection,
     ...getProviderEnvChecks('google_ads'),
-    await loadProviderConnectionStatus(workspaceId, userId, 'google_ads'),
+    googleAdsConnection,
     ...getProviderEnvChecks('pinterest'),
-    await loadProviderConnectionStatus(workspaceId, userId, 'pinterest'),
+    pinterestConnection,
   ];
   const paidAds: ProductionCheck[] = [
     {
@@ -462,7 +625,11 @@ export async function getProductionReadiness({
       status: spendControls.paid_ads_enabled ? 'ready' : 'blocked',
       message: spendControls.paid_ads_enabled
         ? 'Paid ads are enabled by production operations settings.'
-        : 'Paid ads are disabled by default.',
+        : setupBlockerMessage({
+            missing: 'paid_ads_enabled=true',
+            reason: 'paid ads must remain off until all production and spend-control gates are green',
+            next: 'finish blockers, then enable paid ads from Production Operations',
+          }),
     },
     {
       key: 'paid-ads:launch-mode',
@@ -471,7 +638,11 @@ export async function getProductionReadiness({
       message:
         spendControls.launch_mode === 'production'
           ? 'Launch mode is production.'
-          : `Launch mode is ${spendControls.launch_mode}.`,
+          : setupBlockerMessage({
+              missing: 'launch_mode=production',
+              reason: 'real-client and paid-ads work is blocked until the operator explicitly unlocks production mode',
+              next: 'clear all production blockers, then switch launch mode in Production Operations',
+            }),
     },
     {
       key: 'paid-ads:manual-confirmation',
@@ -479,7 +650,11 @@ export async function getProductionReadiness({
       status: spendControls.require_manual_confirmation ? 'ready' : 'blocked',
       message: spendControls.require_manual_confirmation
         ? 'Manual confirmation is required for paid ads.'
-        : 'Manual confirmation is not required.',
+        : setupBlockerMessage({
+            missing: 'require_manual_confirmation=true',
+            reason: 'paid ads require a human confirmation before any provider action',
+            next: 'enable manual confirmation in Production Operations',
+          }),
     },
     {
       key: 'paid-ads:spend-control',
@@ -493,7 +668,11 @@ export async function getProductionReadiness({
         typeof spendControls.max_daily_ad_spend === 'number' &&
         spendControls.max_daily_ad_spend > 0
           ? 'Daily spend limit exists.'
-          : 'Daily spend limit is missing.',
+          : setupBlockerMessage({
+              missing: 'max_daily_ad_spend',
+              reason: 'paid ads cannot be enabled without a daily spend control',
+              next: 'set a positive daily spend limit in Production Operations',
+            }),
     },
     {
       key: 'paid-ads:allowed-providers',
@@ -502,7 +681,11 @@ export async function getProductionReadiness({
       message:
         spendControls.allowed_providers.length > 0
           ? `Allowed providers: ${spendControls.allowed_providers.join(', ')}.`
-          : 'No paid ad providers are allowed.',
+          : setupBlockerMessage({
+              missing: 'allowed paid ad providers',
+              reason: 'paid ads need an explicit provider allowlist',
+              next: 'choose allowed providers in Production Operations after their readiness is green',
+            }),
     },
   ];
   const backups: ProductionCheck[] = [
@@ -514,11 +697,21 @@ export async function getProductionReadiness({
     },
     {
       key: 'backup:latest',
-      label: 'Latest backup',
-      status: latestBackup?.status === 'created' ? 'ready' : 'blocked',
-      message: latestBackup
-        ? `Latest backup status is ${latestBackup.status}.`
-        : 'No latest backup metadata was found.',
+      label: 'Latest successful backup',
+      status: latestSuccessfulBackup ? 'ready' : 'blocked',
+      message: latestSuccessfulBackup
+        ? 'Latest successful backup metadata exists.'
+        : latestBackup
+          ? setupBlockerMessage({
+              missing: 'latest successful backup',
+              reason: `the latest backup status is ${latestBackup.status}, so recovery readiness is not proven`,
+              next: 'run Backup Center successfully before production unlock',
+            })
+          : setupBlockerMessage({
+              missing: 'latest successful backup',
+              reason: 'production unlock requires recoverable workspace metadata',
+              next: 'open Backup Center and create a successful backup',
+            }),
     },
   ];
   const monitoring: ProductionCheck[] = [
@@ -531,14 +724,24 @@ export async function getProductionReadiness({
     {
       key: 'monitoring:audit-log',
       label: 'Operational audit logs',
-      status: 'ready',
-      message: 'security_audit_logs is used for permission and production events.',
+      status: migrations[1]?.status === 'ready' ? 'ready' : 'blocked',
+      message:
+        migrations[1]?.status === 'ready'
+          ? 'security_audit_logs is used for permission and production events.'
+          : 'security_audit_logs table is not verified.',
     },
     {
       key: 'monitoring:vercel-logs',
       label: 'Vercel log visibility',
-      status: 'warning',
-      message: 'Vercel deployment/log visibility must be confirmed in the Vercel project.',
+      status: process.env.OPERATIONAL_LOG_VISIBILITY_CONFIRMED === 'true' ? 'ready' : 'blocked',
+      message:
+        process.env.OPERATIONAL_LOG_VISIBILITY_CONFIRMED === 'true'
+          ? 'Deployment/log visibility confirmation marker is present.'
+          : setupBlockerMessage({
+              missing: 'operational log visibility confirmation',
+              reason: 'production incidents need verified access to deployment and runtime logs',
+              next: 'confirm Vercel logs/deploy visibility, then set OPERATIONAL_LOG_VISIBILITY_CONFIRMED=true',
+            }),
     },
   ];
 
@@ -616,6 +819,13 @@ export async function getProductionReadiness({
     });
   }
 
+  if (cacheTtlMs > 0) {
+    productionReadinessCache.set(cacheKey, {
+      expiresAt: Date.now() + cacheTtlMs,
+      result,
+    });
+  }
+
   return result;
 }
 
@@ -658,6 +868,15 @@ export async function preflightPaidAdsAction(input: PaidAdsPreflightInput): Prom
   const providerName = providerLabel(input.provider);
   const settings = readiness.spendControls;
   const reasons: string[] = [];
+  const limiter = await checkRateLimit({
+    key: `provider-paid-action:${input.workspaceId}:${input.userId}:${input.provider}`,
+    limit: 5,
+    windowMs: 10 * 60 * 1000,
+  });
+
+  if (!limiter.allowed) {
+    reasons.push('Provider paid action rate limit reached. عاود المحاولة من بعد.');
+  }
 
   if (input.role !== 'owner' && input.role !== 'admin') {
     reasons.push('Only owner/admin can run paid ads actions. فقط المالك أو المدير يمكنه تنفيذ إعلانات مدفوعة.');

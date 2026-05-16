@@ -165,7 +165,7 @@ async function listAccessibleCustomers(accessToken: string) {
       throw new Error(approvalPending);
     }
 
-    throw new Error(payload?.error?.message || 'Google Ads customers could not be loaded.');
+    throw new Error('Google Ads readiness could not be verified. Confirm OAuth connection, selected customer, developer token approval, and API access.');
   }
 
   return (payload?.resourceNames ?? [])

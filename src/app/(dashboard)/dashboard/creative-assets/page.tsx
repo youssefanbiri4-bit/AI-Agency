@@ -217,7 +217,8 @@ export default async function CreativeAssetsPage() {
   const assetsResult = await listCreativeAssetsForWorkspace(
     workspaceResult.data.id,
     user.id,
-    supabase
+    supabase,
+    { limit: 48 }
   );
   const readiness = checkOpenAIImageReadiness();
   const assets = assetsResult.error ? [] : assetsResult.data;

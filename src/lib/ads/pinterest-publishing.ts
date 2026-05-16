@@ -316,7 +316,7 @@ async function callPinterestApi<T>({
   };
 
   if (!response.ok || payload?.error) {
-    throw new Error(payload?.message || payload?.error || 'Pinterest API request failed.');
+    throw new Error('Pinterest action could not be completed. Confirm OAuth connection, board selection, public media URL, and Pinterest account status.');
   }
 
   return payload;

@@ -7,16 +7,12 @@ import { LanguageProvider, type Translations } from '@/i18n/context';
 import type { LanguageCode } from '@/i18n/index';
 import en from '@/i18n/locales/en.json';
 import ar from '@/i18n/locales/ar.json';
-import fr from '@/i18n/locales/fr.json';
-import es from '@/i18n/locales/es.json';
 
 const iconVersion = 'agentflow-ai-v3';
 
 const allTranslations: Partial<Record<LanguageCode, Translations>> = {
   en: en as Translations,
   ar: ar as Translations,
-  fr: fr as Translations,
-  es: es as Translations,
 };
 
 export const metadata: Metadata = {

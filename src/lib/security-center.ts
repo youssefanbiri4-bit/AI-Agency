@@ -1,7 +1,7 @@
 import 'server-only';
 
-import { access, readFile, readdir } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { access, readFile, readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
@@ -78,9 +78,44 @@ const workspaceTables = [
   'reels',
 ];
 
-const scanRoots = ['src/app', 'src/components', 'src/lib', 'src/proxy.ts'];
-const skipPathParts = new Set(['node_modules', '.next', '.git', 'dist', 'build', 'coverage']);
-const scanExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json']);
+const secretScanFiles = [
+  'src/proxy.ts',
+  'src/app/api/alex/chat/route.ts',
+  'src/app/api/cron/content-studio-scheduler/route.ts',
+  'src/app/api/dashboard/content-studio/run-scheduler/route.ts',
+  'src/app/api/n8n/callback/route.ts',
+  'src/app/api/tasks/callback/route.ts',
+  'src/app/api/tasks/execute/route.ts',
+  'src/app/(dashboard)/dashboard/assistant/actions.ts',
+  'src/app/(dashboard)/dashboard/content-studio/actions.ts',
+  'src/app/(dashboard)/dashboard/creative-assets/actions.ts',
+  'src/app/(dashboard)/dashboard/settings/actions.ts',
+  'src/lib/ads/encryption.ts',
+  'src/lib/ads/google-ads-publishing.ts',
+  'src/lib/ads/meta-publishing.ts',
+  'src/lib/ads/pinterest-publishing.ts',
+  'src/lib/n8n.ts',
+  'src/lib/production-readiness.ts',
+  'src/lib/rate-limit.ts',
+  'src/lib/security-audit-log.ts',
+  'src/lib/supabase-server.ts',
+];
+const maxScannedFileBytes = 260_000;
+const securitySummaryCacheTtlMs = 60_000;
+const securitySummaryCache = new Map<
+  string,
+  { expiresAt: number; summary: SecurityCenterSummary }
+>();
+const sourceRoot = join(/*turbopackIgnore: true*/ process.cwd(), 'src');
+const migrationsRoot = join(/*turbopackIgnore: true*/ process.cwd(), 'supabase', 'migrations');
+
+function sourcePath(relativePath: string) {
+  return join(sourceRoot, relativePath);
+}
+
+function migrationPath(fileName: string) {
+  return join(migrationsRoot, fileName);
+}
 
 function severityWeight(severity: SecuritySeverity) {
   if (severity === 'critical') return 25;
@@ -122,51 +157,25 @@ async function fileExists(path: string) {
 
 async function readIfExists(path: string) {
   try {
+    const stats = await stat(/*turbopackIgnore: true*/ path);
+    if (stats.size > maxScannedFileBytes) {
+      return '';
+    }
     return await readFile(/*turbopackIgnore: true*/ path, 'utf8');
   } catch {
     return '';
   }
 }
 
-async function walkFiles(root: string): Promise<string[]> {
-  const cwd = /*turbopackIgnore: true*/ process.cwd();
-  const absoluteRoot = join(cwd, root);
-
-  if (!(await fileExists(absoluteRoot))) return [];
-
-  const statFiles: string[] = [];
-  const entries = await readdir(absoluteRoot, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const fullPath = join(absoluteRoot, entry.name);
-    const rel = relative(cwd, fullPath);
-
-    if (entry.isDirectory()) {
-      if (skipPathParts.has(entry.name)) continue;
-      statFiles.push(...(await walkFiles(rel)));
-      continue;
-    }
-
-    const extension = entry.name.includes('.') ? `.${entry.name.split('.').pop()}` : '';
-    if (scanExtensions.has(extension)) statFiles.push(rel);
-  }
-
-  return statFiles;
-}
-
 async function listScanFiles() {
-  const files = new Set<string>();
+  const existing = await Promise.all(
+    secretScanFiles.map(async (file) => ({
+      file,
+      exists: await fileExists(sourcePath(file.replace(/^src\//, ''))),
+    }))
+  );
 
-  for (const root of scanRoots) {
-    if (root.includes('.')) {
-      if (await fileExists(join(/*turbopackIgnore: true*/ process.cwd(), root))) files.add(root);
-      continue;
-    }
-
-    for (const file of await walkFiles(root)) files.add(file);
-  }
-
-  return [...files].sort();
+  return existing.filter((entry) => entry.exists).map((entry) => entry.file);
 }
 
 async function runSecretExposureScan(): Promise<SecurityCenterSummary['secretScan']> {
@@ -192,7 +201,7 @@ async function runSecretExposureScan(): Promise<SecurityCenterSummary['secretSca
   ];
 
   for (const file of files) {
-    const source = await readIfExists(join(/*turbopackIgnore: true*/ process.cwd(), file));
+    const source = await readIfExists(sourcePath(file.replace(/^src\//, '')));
     const isClientFile = clientFilePattern.test(source);
 
     for (const risky of riskyPatterns) {
@@ -223,13 +232,12 @@ async function runSecretExposureScan(): Promise<SecurityCenterSummary['secretSca
 }
 
 async function reviewRls(): Promise<SecurityCenterSummary['rlsSummary']> {
-  const migrationsDir = join(/*turbopackIgnore: true*/ process.cwd(), 'supabase/migrations');
-  const migrationFiles = await readdir(migrationsDir).catch(() => []);
+  const migrationFiles = await readdir(migrationsRoot).catch(() => []);
   const sql = (
     await Promise.all(
       migrationFiles
         .filter((file) => file.endsWith('.sql'))
-        .map((file) => readIfExists(join(migrationsDir, file)))
+        .map((file) => readIfExists(migrationPath(file)))
     )
   ).join('\n');
   const tablesWithRls = workspaceTables.filter((table) =>
@@ -274,13 +282,19 @@ export async function buildSecurityCenterSummary({
   supabase: SupabaseClient<Database>;
   workspaceId: string;
 }): Promise<SecurityCenterSummary> {
+  const cached = securitySummaryCache.get(workspaceId);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.summary;
+  }
+
   const [proxyFile, schedulerRoute, cronRoute, assistantActions, settingsActions] =
     await Promise.all([
-      readIfExists(join(/*turbopackIgnore: true*/ process.cwd(), 'src/proxy.ts')),
-      readIfExists(join(/*turbopackIgnore: true*/ process.cwd(), 'src/app/api/dashboard/content-studio/run-scheduler/route.ts')),
-      readIfExists(join(/*turbopackIgnore: true*/ process.cwd(), 'src/app/api/cron/content-studio-scheduler/route.ts')),
-      readIfExists(join(/*turbopackIgnore: true*/ process.cwd(), 'src/app/(dashboard)/dashboard/assistant/actions.ts')),
-      readIfExists(join(/*turbopackIgnore: true*/ process.cwd(), 'src/app/(dashboard)/dashboard/settings/actions.ts')),
+      readIfExists(sourcePath('proxy.ts')),
+      readIfExists(sourcePath('app/api/dashboard/content-studio/run-scheduler/route.ts')),
+      readIfExists(sourcePath('app/api/cron/content-studio-scheduler/route.ts')),
+      readIfExists(sourcePath('app/(dashboard)/dashboard/assistant/actions.ts')),
+      readIfExists(sourcePath('app/(dashboard)/dashboard/settings/actions.ts')),
     ]);
   const [secretScan, rlsSummary, integrationSettings, projects, prompts, releases] =
     await Promise.all([
@@ -302,10 +316,10 @@ export async function buildSecurityCenterSummary({
     headers: true,
     cronSecret: cronRoute.includes('CRON_SECRET') && cronRoute.includes('timingSafeEqual'),
     manualSchedulerAuth: schedulerRoute.includes('getCurrentWorkspaceMembership') && schedulerRoute.includes('canRunScheduler'),
-    rateLimit: schedulerRoute.includes('checkInMemoryRateLimit') && assistantActions.includes('checkInMemoryRateLimit'),
+    rateLimit: schedulerRoute.includes('checkRateLimit') && assistantActions.includes('checkRateLimit'),
     assistantBoundaries: assistantActions.includes('Never publish content') && assistantActions.includes('Never output API keys'),
     uploadValidation: settingsActions.includes('THEME_BACKGROUND_ALLOWED_TYPES') && settingsActions.includes('LOGO_ALLOWED_TYPES') && settingsActions.includes('THEME_BACKGROUND_MAX_FILE_SIZE_BYTES'),
-    auditTableMigration: (await fileExists(join(/*turbopackIgnore: true*/ process.cwd(), 'supabase/migrations/20260511190000_create_security_audit_logs.sql'))),
+    auditTableMigration: await fileExists(migrationPath('20260511190000_create_security_audit_logs.sql')),
   };
 
   const issues: SecurityIssue[] = [...secretScan.findings];
@@ -400,7 +414,7 @@ export async function buildSecurityCenterSummary({
     issues.find((finding) => finding.severity === 'high')?.recommendedFix ??
     'Review needs_review cards and run npm run security:audit before deployment.';
 
-  return {
+  const summary = {
     score,
     counts,
     lastReviewDate: new Date().toISOString(),
@@ -411,6 +425,13 @@ export async function buildSecurityCenterSummary({
     secretScan,
     rlsSummary,
   };
+
+  securitySummaryCache.set(workspaceId, {
+    expiresAt: Date.now() + securitySummaryCacheTtlMs,
+    summary,
+  });
+
+  return summary;
 }
 
 export function buildSecurityReport(summary: SecurityCenterSummary) {

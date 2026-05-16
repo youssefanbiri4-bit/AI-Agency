@@ -8,6 +8,10 @@ import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
 type DepartmentId = DepartmentRecord['id'];
 type CatalogSource = 'supabase' | 'fallback';
+type AgentCatalogRecord = Pick<
+  AgentRecord,
+  'id' | 'department_id' | 'name' | 'role' | 'description' | 'capabilities' | 'example_tasks' | 'icon' | 'color'
+>;
 
 export interface AgentCatalogData {
   agents: Agent[];
@@ -33,7 +37,7 @@ export function mapDepartmentRecordToDepartment(record: DepartmentRecord): Depar
 }
 
 export function mapAgentRecordToAgent(
-  record: AgentRecord,
+  record: AgentCatalogRecord,
   departments: DepartmentRecord[]
 ): Agent {
   const department = departments.find((item) => item.id === record.department_id);
@@ -58,7 +62,7 @@ export function getDepartmentIdByName(name: Department['name']): DepartmentId {
 
 function mapAgentCatalogData(
   departments: DepartmentRecord[],
-  agents: AgentRecord[],
+  agents: AgentCatalogRecord[],
   source: CatalogSource
 ): AgentCatalogData {
   return {
@@ -99,7 +103,7 @@ export async function listAgents(
       client.from('departments').select('*').order('sort_order', { ascending: true }),
       client
         .from('agents')
-        .select('*')
+        .select('id, department_id, name, role, description, capabilities, example_tasks, icon, color')
         .eq('is_active', true)
         .order('sort_order', { ascending: true }),
     ]);
@@ -137,7 +141,7 @@ export async function listAgentCatalog(
       client.from('departments').select('*').order('sort_order', { ascending: true }),
       client
         .from('agents')
-        .select('*')
+        .select('id, department_id, name, role, description, capabilities, example_tasks, icon, color')
         .eq('is_active', true)
         .order('sort_order', { ascending: true }),
     ]);

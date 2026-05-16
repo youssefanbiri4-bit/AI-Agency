@@ -12,7 +12,7 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
-import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
+import { getContentStudioItemById, listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
 import { getBrandKitForWorkspace } from '@/lib/data/brand-kit';
 import { getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { getGoogleAdsConfigReadiness } from '@/lib/ads/google-ads';
@@ -136,11 +136,19 @@ export default async function ContentStudioPage({ searchParams }: ContentStudioP
   const workspaceId = workspaceResult.data.id;
   const membershipResult = await getCurrentWorkspaceMembership(supabase, workspaceId, user.id);
   const [itemsResult, creativeAssetsResult, brandKitResult] = await Promise.all([
-    listContentStudioItemsForWorkspace(workspaceId, supabase),
-    listCreativeAssetsForWorkspace(workspaceId, undefined, supabase),
+    listContentStudioItemsForWorkspace(workspaceId, supabase, { limit: 80 }),
+    listCreativeAssetsForWorkspace(workspaceId, undefined, supabase, { limit: 80 }),
     getBrandKitForWorkspace(supabase, workspaceId),
   ]);
-  const allItems = itemsResult.error ? [] : itemsResult.data;
+  const listedItems = itemsResult.error ? [] : itemsResult.data;
+  const selectedItemResult =
+    selectedItemId && !listedItems.some((item) => item.id === selectedItemId)
+      ? await getContentStudioItemById(workspaceId, selectedItemId, supabase)
+      : null;
+  const allItems =
+    selectedItemResult?.data && !listedItems.some((item) => item.id === selectedItemResult.data?.id)
+      ? [selectedItemResult.data, ...listedItems]
+      : listedItems;
   const selectedItem =
     allItems.find((item) => item.id === selectedItemId) ?? null;
   const activeTab = selectedItem ? getTabForContentType(selectedItem.content_type) : requestedTab;

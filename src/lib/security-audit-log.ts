@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { JsonObject } from '@/types';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 type AuditSeverity = 'info' | 'warning' | 'critical';
 
@@ -26,7 +27,10 @@ export async function logSecurityAuditEvent({
   metadata?: JsonObject;
 }) {
   try {
-    await supabase.from('security_audit_logs').insert({
+    const { client } = getSupabaseAdmin();
+    const auditClient = client ?? supabase;
+
+    await auditClient.from('security_audit_logs').insert({
       workspace_id: workspaceId,
       user_id: userId,
       event_type: eventType,

@@ -7,10 +7,11 @@ import { getTaskById, createTaskEvent, updateTaskExecutionState } from '@/lib/da
 import { getAgentById } from '@/lib/data/agents';
 import { getLatestTaskRevisionNotes } from '@/lib/data/reviews';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
-import { checkInMemoryRateLimit } from '@/lib/rate-limit';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { canRunTasks, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
 import { reportAppError } from '@/lib/logger';
 import { getN8nReadiness } from '@/lib/n8n';
+import { setupBlockerMessage } from '@/lib/safe-messages';
 import type { JsonObject } from '@/types';
 
 const EXECUTION_SEND_FAILURE_MESSAGE = 'Task could not be sent to n8n. Please retry.';
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
       return jsonError('ما عندكش صلاحية لتشغيل المهام. Task execution is restricted for your workspace role.', 403);
     }
 
-    const limiter = checkInMemoryRateLimit({
+    const limiter = await checkRateLimit({
       key: `task-execute:${workspaceId}:${user.id}`,
       limit: 10,
       windowMs: 10 * 60 * 1000,
@@ -298,6 +299,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     reportAppError('Task execution API error', error);
-    return jsonError(error instanceof Error ? error.message : 'Internal server error', 500);
+    return jsonError(setupBlockerMessage({
+      missing: 'completed task execution',
+      reason: 'the server could not safely send the task to n8n or persist the execution state',
+      next: 'check server logs, n8n readiness, and task state, then retry',
+    }), 500);
   }
 }

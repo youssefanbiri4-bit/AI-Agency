@@ -37,8 +37,7 @@ import {
   getCurrentUserWorkspace,
   getCurrentWorkspaceMembership,
 } from '@/lib/data/workspaces';
-import { getDashboardData } from '@/lib/data/dashboard';
-import { getSystemHealthSummary } from '@/lib/data/system-health';
+import { getDashboardData, type DashboardData } from '@/lib/data/dashboard';
 import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
 import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
 import { listProjectsForWorkspace } from '@/lib/data/projects';
@@ -58,6 +57,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { cn, formatDateTime, formatTimeAgo } from '@/lib/utils';
 import { DashboardSchedulerButton } from './DashboardSchedulerButton';
 import { WavingRobot } from '@/components/dashboard/WavingRobot';
+import { emptyDataResult, errorDataResult, type DataResult } from '@/lib/data/types';
+import { getAgentStats, getTaskStats } from '@/lib/stats';
 import type { ContentStudioItemWithAssets } from '@/lib/data/content-studio';
 import type {
   ContentStudioPublishAttemptRecord,
@@ -83,6 +84,8 @@ interface ProviderRow {
   status: ReadinessState;
   nextAction: string;
 }
+
+type ProviderReadiness = Awaited<ReturnType<typeof getContentStudioProviderReadiness>>;
 
 interface TodayAction {
   id: string;
@@ -113,6 +116,86 @@ const readinessBadgeStatuses: Record<ReadinessState, Parameters<typeof StatusBad
   unsupported: 'unsupported',
   error: 'error',
 };
+
+const DASHBOARD_SECTION_TIMEOUT_MS = 3500;
+const DASHBOARD_PROVIDER_TIMEOUT_MS = 2500;
+
+function buildEmptyDashboardData(): DashboardData {
+  const agents: DashboardData['agents'] = [];
+  const departments: DashboardData['departments'] = [];
+  const tasks: DashboardData['tasks'] = [];
+
+  return {
+    agents,
+    departments,
+    tasks,
+    events: [],
+    agentStats: getAgentStats(agents),
+    taskStats: getTaskStats(tasks),
+  };
+}
+
+function dashboardFallbackResult<T>(data: T, error: string | null = null): DataResult<T> {
+  return error ? errorDataResult(data, error) : emptyDataResult(data, true);
+}
+
+function timeoutMessage(sectionName: string) {
+  return `${sectionName} did not respond quickly enough. Showing a safe fallback.`;
+}
+
+async function withDashboardTimeout<T>(
+  sectionName: string,
+  promise: Promise<T>,
+  timeoutMs = DASHBOARD_SECTION_TIMEOUT_MS
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const guardedPromise = promise.catch((error: unknown) => {
+    console.warn('[dashboard] section failed', sectionName, error);
+    throw error;
+  });
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      console.warn('[dashboard] section timeout', sectionName);
+      reject(new Error(timeoutMessage(sectionName)));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([guardedPromise, timeout]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+function settledDataResult<T>(
+  result: PromiseSettledResult<DataResult<T>>,
+  fallbackData: T,
+  sectionName: string
+): DataResult<T> {
+  if (result.status === 'fulfilled') {
+    return result.value;
+  }
+
+  return dashboardFallbackResult(fallbackData, timeoutMessage(sectionName));
+}
+
+function fallbackProviderReadiness(name: string): ProviderReadiness {
+  return {
+    provider: name,
+    state: 'setup_required',
+    message: `${name} setup status is temporarily unavailable.`,
+    missing: ['Refresh provider setup status from Settings'],
+  } as ProviderReadiness;
+}
+
+function settledProviderReadiness(
+  result: PromiseSettledResult<ProviderReadiness>,
+  name: string
+) {
+  return result.status === 'fulfilled' ? result.value : fallbackProviderReadiness(name);
+}
 
 function countBy<T extends string>(values: T[]) {
   return values.reduce<Record<T, number>>((counts, value) => {
@@ -396,13 +479,74 @@ function buildTodayActions({
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
-  const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
-  const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
-  const workspaceId = workspaceResult.data?.id;
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  console.info('[dashboard] auth resolved');
+
+  const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
+  const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
+  console.info('[dashboard] workspace resolved');
+
+  const workspaceId = workspaceResult.data?.id;
   const userId = user?.id ?? '';
+  const emptyDashboardData = buildEmptyDashboardData();
+
+  const dashboardSections = await Promise.allSettled([
+    withDashboardTimeout(
+      'dashboard data',
+      getDashboardData(workspaceId, supabase)
+    ),
+    withDashboardTimeout(
+      'content catalog',
+      workspaceId
+        ? listContentStudioItemsForWorkspace(workspaceId, supabase, { limit: 24 })
+        : Promise.resolve(dashboardFallbackResult([] as ContentStudioItemWithAssets[]))
+    ),
+    withDashboardTimeout(
+      'creative assets',
+      workspaceId
+        ? listCreativeAssetsForWorkspace(workspaceId, undefined, supabase, { limit: 24, includeSignedUrls: false })
+        : Promise.resolve(dashboardFallbackResult([] as CreativeAssetRecord[]))
+    ),
+    withDashboardTimeout(
+      'publish attempts',
+      workspaceId
+        ? listRecentPublishAttempts(workspaceId).then((result) => ({
+            ...result,
+            isConfigured: true,
+          }))
+        : Promise.resolve(dashboardFallbackResult([] as ContentStudioPublishAttemptRecord[]))
+    ),
+    withDashboardTimeout(
+      'projects',
+      workspaceId
+        ? listProjectsForWorkspace(workspaceId, supabase, { limit: 12 })
+        : Promise.resolve(dashboardFallbackResult([] as ProjectRecord[]))
+    ),
+    withDashboardTimeout(
+      'releases',
+      workspaceId
+        ? listReleasesForWorkspace(workspaceId, supabase, { limit: 12 })
+        : Promise.resolve(dashboardFallbackResult([] as ReleaseRecord[]))
+    ),
+    withDashboardTimeout(
+      'membership',
+      workspaceId ? getCurrentWorkspaceMembership(supabase, workspaceId, userId) : Promise.resolve(dashboardFallbackResult(null))
+    ),
+    withDashboardTimeout(
+      'meta connection status',
+      workspaceId && userId
+        ? getMetaConnectionStatus(workspaceId, userId)
+        : Promise.resolve(dashboardFallbackResult<Awaited<ReturnType<typeof getMetaConnectionStatus>>['data'] | null>(null))
+    ),
+    withDashboardTimeout(
+      'google ads connection status',
+      workspaceId && userId
+        ? getGoogleAdsConnectionStatus(workspaceId, userId)
+        : Promise.resolve(dashboardFallbackResult<Awaited<ReturnType<typeof getGoogleAdsConnectionStatus>>['data'] | null>(null))
+    ),
+  ]);
 
   const [
     dashboardResult,
@@ -414,17 +558,19 @@ export default async function DashboardPage() {
     membershipResult,
     metaConnectionResult,
     googleAdsConnectionResult,
-  ] = await Promise.all([
-    getDashboardData(workspaceId, supabase),
-    workspaceId ? listContentStudioItemsForWorkspace(workspaceId, supabase) : Promise.resolve({ data: [], error: null, isConfigured: true }),
-    workspaceId ? listCreativeAssetsForWorkspace(workspaceId, undefined, supabase) : Promise.resolve({ data: [], error: null, isConfigured: true }),
-    workspaceId ? listRecentPublishAttempts(workspaceId) : Promise.resolve({ data: [] as ContentStudioPublishAttemptRecord[], error: null }),
-    workspaceId ? listProjectsForWorkspace(workspaceId, supabase) : Promise.resolve({ data: [] as ProjectRecord[], error: null, isConfigured: true }),
-    workspaceId ? listReleasesForWorkspace(workspaceId, supabase) : Promise.resolve({ data: [] as ReleaseRecord[], error: null, isConfigured: true }),
-    workspaceId ? getCurrentWorkspaceMembership(supabase, workspaceId, userId) : Promise.resolve({ data: null, error: null, isConfigured: true }),
-    workspaceId && userId ? getMetaConnectionStatus(workspaceId, userId) : Promise.resolve({ data: null, error: null, isConfigured: true }),
-    workspaceId && userId ? getGoogleAdsConnectionStatus(workspaceId, userId) : Promise.resolve({ data: null, error: null, isConfigured: true }),
-  ]);
+  ] = [
+    settledDataResult(dashboardSections[0] as PromiseSettledResult<DataResult<DashboardData>>, emptyDashboardData, 'dashboard data'),
+    settledDataResult(dashboardSections[1] as PromiseSettledResult<DataResult<ContentStudioItemWithAssets[]>>, [] as ContentStudioItemWithAssets[], 'content catalog'),
+    settledDataResult(dashboardSections[2] as PromiseSettledResult<DataResult<CreativeAssetRecord[]>>, [] as CreativeAssetRecord[], 'creative assets'),
+    settledDataResult(dashboardSections[3] as PromiseSettledResult<DataResult<ContentStudioPublishAttemptRecord[]>>, [] as ContentStudioPublishAttemptRecord[], 'publish attempts'),
+    settledDataResult(dashboardSections[4] as PromiseSettledResult<DataResult<ProjectRecord[]>>, [] as ProjectRecord[], 'projects'),
+    settledDataResult(dashboardSections[5] as PromiseSettledResult<DataResult<ReleaseRecord[]>>, [] as ReleaseRecord[], 'releases'),
+    settledDataResult(dashboardSections[6] as PromiseSettledResult<DataResult<Awaited<ReturnType<typeof getCurrentWorkspaceMembership>>['data']>>, null, 'membership'),
+    settledDataResult(dashboardSections[7] as PromiseSettledResult<DataResult<Awaited<ReturnType<typeof getMetaConnectionStatus>>['data'] | null>>, null, 'meta connection status'),
+    settledDataResult(dashboardSections[8] as PromiseSettledResult<DataResult<Awaited<ReturnType<typeof getGoogleAdsConnectionStatus>>['data'] | null>>, null, 'google ads connection status'),
+  ];
+
+  console.info('[dashboard] dashboard data loaded');
 
   const { tasks, events, taskStats } = dashboardResult.data;
   const contentItems = contentItemsResult.data;
@@ -449,16 +595,22 @@ export default async function DashboardPage() {
   const openAIReadiness = checkOpenAITextProviderReadiness();
   const providerReadinessEntries =
     workspaceId && userId
-      ? await Promise.all([
-          getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'facebook_post' }),
-          getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'instagram_post' }),
-          getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'google_ads_campaign_draft' }),
-          getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'pinterest_pin' }),
-          getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'linkedin_post_planner' }),
+      ? await Promise.allSettled([
+          withDashboardTimeout('facebook provider status', getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'facebook_post' }), DASHBOARD_PROVIDER_TIMEOUT_MS),
+          withDashboardTimeout('instagram provider status', getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'instagram_post' }), DASHBOARD_PROVIDER_TIMEOUT_MS),
+          withDashboardTimeout('google ads provider status', getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'google_ads_campaign_draft' }), DASHBOARD_PROVIDER_TIMEOUT_MS),
+          withDashboardTimeout('pinterest provider status', getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'pinterest_pin' }), DASHBOARD_PROVIDER_TIMEOUT_MS),
         ])
       : [];
   const [facebookReadiness, instagramReadiness, googleProviderReadiness, pinterestProviderReadiness] =
-    providerReadinessEntries;
+    providerReadinessEntries.length > 0
+      ? [
+          settledProviderReadiness(providerReadinessEntries[0], 'facebook'),
+          settledProviderReadiness(providerReadinessEntries[1], 'instagram'),
+          settledProviderReadiness(providerReadinessEntries[2], 'google_ads'),
+          settledProviderReadiness(providerReadinessEntries[3], 'pinterest'),
+        ]
+      : [];
   const metaMetadata = readObject(metaConnectionResult.data?.metadata);
   const selectedPage = safeString(metaMetadata.selected_facebook_page_name);
   const selectedInstagram = safeString(metaMetadata.selected_instagram_business_account_name);
@@ -504,10 +656,6 @@ export default async function DashboardPage() {
     },
   ];
   const activeProviders = providerRows.filter((provider) => provider.status === 'ready').length;
-  const systemHealth =
-    workspaceId && userId
-      ? await getSystemHealthSummary({ supabase, workspaceId, userId })
-      : null;
   const todayActions = buildTodayActions({ contentItems, tasks, unlinkedAssets });
   const canRunScheduler =
     membershipResult.data?.role === 'owner' || membershipResult.data?.role === 'admin';
@@ -603,20 +751,15 @@ export default async function DashboardPage() {
         </div>
         </div>
 
-        {systemHealth ? (
-          <CommandCard
-            title="System Health Snapshot"
-            description="Read-only operational diagnostics across providers, storage, scheduling, releases, and blockers."
-            action={<Link href="/dashboard/system-health" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open System Health</Link>}
-          >
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <SmallMetric label="Health score" value={`${systemHealth.score}%`} />
-              <SmallMetric label="Critical blockers" value={systemHealth.metrics.recovery.criticalBlockers} />
-              <SmallMetric label="Provider issues" value={systemHealth.providers.filter((provider) => !['ready', 'manual_only'].includes(provider.status)).length} />
-              <SmallMetric label="Needs setup" value={systemHealth.badges.needsSetup} />
-            </div>
-          </CommandCard>
-        ) : null}
+        <CommandCard
+          title="System Health Snapshot"
+          description="Detailed diagnostics run from the dedicated health page so dashboard rendering stays responsive."
+          action={<Link href="/dashboard/system-health" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open System Health</Link>}
+        >
+          <Notice tone="info" title="Detailed checks are manual">
+            Open System Health or Production Readiness for the strict operational scan.
+          </Notice>
+        </CommandCard>
 
         <CommandCard
           title="Work Shortcuts"

@@ -26,7 +26,7 @@ export default async function TasksPage({
 
   const [catalogResult, tasksResult] = await Promise.all([
     listAgentCatalog(supabase),
-    listTasks({ workspaceId }, supabase),
+    listTasks({ workspaceId, limit: 100 }, supabase),
   ]);
 
   return (

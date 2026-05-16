@@ -4,10 +4,7 @@ import {
   getActiveWorkspaceIdFromCookie,
   isSupabaseServerConfigured,
 } from '@/lib/supabase-server';
-import {
-  countUnreadNotifications,
-  listLatestNotifications,
-} from '@/lib/data/notifications';
+import { countUnreadNotifications } from '@/lib/data/notifications';
 import { getBrandingForWorkspace } from '@/lib/data/branding';
 import { getWorkspaceTheme } from '@/lib/data/theme';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
@@ -41,16 +38,7 @@ export default async function DashboardLayout({
     redirect('/onboarding');
   }
 
-  const [notificationsResult, unreadCountResult, brandingResult, themeResult] = await Promise.all([
-    listLatestNotifications(
-      {
-        workspaceId: workspaceResult.data.id,
-        userId: user.id,
-        limit: 5,
-        status: 'unread',
-      },
-      supabase
-    ),
+  const [unreadCountResult, brandingResult, themeResult] = await Promise.all([
     countUnreadNotifications(
       {
         workspaceId: workspaceResult.data.id,
@@ -83,7 +71,7 @@ export default async function DashboardLayout({
             : brandingResult.data.branding.logo_alt_text,
         },
       }}
-      initialNotifications={notificationsResult.error ? [] : notificationsResult.data}
+      initialNotifications={[]}
       initialUnreadCount={unreadCountResult.error ? 0 : unreadCountResult.data}
       theme={themeResult.data}
     >

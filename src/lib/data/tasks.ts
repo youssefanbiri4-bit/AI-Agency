@@ -8,6 +8,7 @@ export interface ListTasksOptions {
   workspaceId?: string;
   agentType?: AgentType;
   status?: TaskStatus;
+  limit?: number;
 }
 
 export interface CreateTaskDraftInput {
@@ -83,7 +84,12 @@ export async function listTasks(
     return emptyDataResult([], false);
   }
 
-  let query = client.from('tasks').select('*').order('created_at', { ascending: false });
+  let query = client
+    .from('tasks')
+    .select(
+      'id, workspace_id, user_id, agent_type, title, description, input_data, status, priority, result, n8n_execution_id, created_at, updated_at, completed_at'
+    )
+    .order('created_at', { ascending: false });
 
   if (options.workspaceId) {
     query = query.eq('workspace_id', options.workspaceId);
@@ -95,6 +101,10 @@ export async function listTasks(
 
   if (options.status) {
     query = query.eq('status', options.status);
+  }
+
+  if (options.limit && options.limit > 0) {
+    query = query.limit(options.limit);
   }
 
   const { data, error } = await query;

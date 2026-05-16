@@ -19,6 +19,10 @@ import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
 type ContentStudioClient = SupabaseClient<Database>;
 
+export interface ListContentStudioItemsOptions {
+  limit?: number;
+}
+
 export interface ContentStudioItemWithAssets extends ContentStudioItemRecord {
   asset_ids: string[];
   asset_count: number;
@@ -117,18 +121,25 @@ function mapAssets(
 
 export async function listContentStudioItemsForWorkspace(
   workspaceId: string,
-  client?: ContentStudioClient
+  client?: ContentStudioClient,
+  options: ListContentStudioItemsOptions = {}
 ): Promise<DataResult<ContentStudioItemWithAssets[]>> {
   if (!isSupabaseServerConfigured) {
     return emptyDataResult([], false);
   }
 
   const supabase = await getClient(client);
-  const { data: items, error } = await supabase
+  let query = supabase
     .from('content_studio_items')
     .select('*')
     .eq('workspace_id', workspaceId)
     .order('updated_at', { ascending: false });
+
+  if (options.limit && options.limit > 0) {
+    query = query.limit(options.limit);
+  }
+
+  const { data: items, error } = await query;
 
   if (error) {
     return errorDataResult([], error.message);

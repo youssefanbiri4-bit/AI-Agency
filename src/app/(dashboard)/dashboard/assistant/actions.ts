@@ -16,7 +16,7 @@ import { listBackupRecordsForWorkspace } from '@/lib/data/backup-records';
 import { getSystemHealthSummary } from '@/lib/data/system-health';
 import { listTasks } from '@/lib/data/tasks';
 import { generateMarketingText } from '@/lib/ai/text-provider';
-import { checkInMemoryRateLimit } from '@/lib/rate-limit';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { agentCatalog } from '@/data/agents';
 import { buildSecurityCenterSummary } from '@/lib/security-center';
 import type { ContentStudioItemWithAssets } from '@/lib/data/content-studio';
@@ -656,7 +656,7 @@ export async function askAgentFlowAssistantAction(
     };
   }
 
-  const limiter = checkInMemoryRateLimit({
+  const limiter = await checkRateLimit({
     key: `assistant:${contextResult.context.slice(0, 120)}`,
     limit: 20,
     windowMs: 60 * 1000,
