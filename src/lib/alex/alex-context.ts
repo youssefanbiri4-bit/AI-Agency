@@ -7,7 +7,6 @@ import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
 import { listProjectsForWorkspace } from '@/lib/data/projects';
 import { listReleasesForWorkspace } from '@/lib/data/releases';
 import { listBackupRecordsForWorkspace } from '@/lib/data/backup-records';
-import { buildSecurityCenterSummary } from '@/lib/security-center';
 import { checkOpenAITextProviderReadiness } from '@/lib/ai/text-provider';
 
 export interface AlexWorkspaceContext {
@@ -58,22 +57,18 @@ export async function getAlexWorkspaceContext(): Promise<AlexWorkspaceContext> {
     }
     const workspaceId = workspaceResult.data.id;
     const openAIReadiness = checkOpenAITextProviderReadiness();
-    const [tasksResult, contentResult, projectsResult, releasesResult, backupsResult, securityResult] = await Promise.all([
+    const [tasksResult, contentResult, projectsResult, releasesResult, backupsResult] = await Promise.all([
       listTasks({ workspaceId }, supabase).catch(() => ({ data: [], error: null, isConfigured: true })),
       listContentStudioItemsForWorkspace(workspaceId, supabase).catch(() => ({ data: [], error: null, isConfigured: true })),
       listProjectsForWorkspace(workspaceId, supabase).catch(() => ({ data: [], error: null, isConfigured: true })),
       listReleasesForWorkspace(workspaceId, supabase).catch(() => ({ data: [], error: null, isConfigured: true })),
       listBackupRecordsForWorkspace(workspaceId, supabase, 3).catch(() => ({ data: [], error: null, isConfigured: true })),
-      buildSecurityCenterSummary({ supabase, workspaceId })
-        .then((data) => ({ data, error: null }))
-        .catch(() => ({ data: null, error: null })),
     ]);
     const tasks = tasksResult.data ?? [];
     const contentItems = contentResult.data ?? [];
     const projects = projectsResult.data ?? [];
     const releases = releasesResult.data ?? [];
     const backups = backupsResult.data ?? [];
-    const security = securityResult.data;
     const taskByStatus = countBy(tasks.map((t) => t.status));
     const contentByStatus = countBy(contentItems.map((c) => c.status));
     const projectByStatus = countBy(projects.map((p) => p.status));
@@ -87,7 +82,6 @@ export async function getAlexWorkspaceContext(): Promise<AlexWorkspaceContext> {
       projectsResult.error,
       releasesResult.error,
       backupsResult.error,
-      securityResult.error,
     ].filter(Boolean).map((e) => trimText(e, 160));
     const dataNotice = errors.length > 0 ? errors.join('; ') : null;
     return {
@@ -97,7 +91,7 @@ export async function getAlexWorkspaceContext(): Promise<AlexWorkspaceContext> {
       providerBlockers,
       contentSummary: `Content by status: ${safeJsonCounts(contentByStatus)}. Total: ${contentItems.length}.`,
       projectsSummary: `Projects by status: ${safeJsonCounts(projectByStatus)}. Total: ${projects.length}.`,
-      securitySummary: security ? `Security score: ${security.score}%. Critical: ${security.counts.critical}. High: ${security.counts.high}.` : 'Security summary not available.',
+      securitySummary: 'Security Center and Production Operations are available from the dashboard for current launch-gate status.',
       backupSummary: backups.length > 0 ? `Latest backup: ${backups[0]?.status} at ${backups[0]?.created_at ?? 'unknown'}. Total records: ${backups.length}.` : 'No backup records found.',
       recoveryIssues,
       latestReleases: `Releases by status: ${safeJsonCounts(releaseByStatus)}. Latest: ${releases[0] ? trimText(releases[0].title, 120) : 'none'}.`,

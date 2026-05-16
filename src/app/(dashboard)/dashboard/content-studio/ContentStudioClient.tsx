@@ -2642,7 +2642,21 @@ export function ContentStudioClient({
 
                     if (!confirmed) {
                       event.preventDefault();
+                      return;
                     }
+
+                    let confirmationInput = event.currentTarget.querySelector<HTMLInputElement>(
+                      'input[name="provider_action_confirmed"]'
+                    );
+
+                    if (!confirmationInput) {
+                      confirmationInput = document.createElement('input');
+                      confirmationInput.type = 'hidden';
+                      confirmationInput.name = 'provider_action_confirmed';
+                      event.currentTarget.appendChild(confirmationInput);
+                    }
+
+                    confirmationInput.value = 'true';
                   }}
                 >
                   <Button

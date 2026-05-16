@@ -81,6 +81,7 @@
     "calendar": "Calendar",
     "recovery": "Recovery",
     "systemHealth": "System Health",
+    "production": "Production",
     "security": "Security",
     "backups": "Backups",
     "docs": "Docs",

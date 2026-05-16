@@ -1,4 +1,7 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ContentStudioPlatform, ContentStudioType } from '@/types/database';
+import type { Database } from '@/types/database';
+import type { StrictWorkspaceRole } from '@/lib/workspace-permissions';
 
 export type ProviderReadinessState =
   | 'ready'
@@ -67,4 +70,7 @@ export interface ContentStudioExecutionContext {
   headline?: string | null;
   description?: string | null;
   linkedAssets: ContentStudioExecutionAsset[];
+  role?: StrictWorkspaceRole;
+  explicitConfirmation?: boolean;
+  supabase?: SupabaseClient<Database>;
 }

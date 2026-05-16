@@ -14,6 +14,10 @@ import {
 } from '@/lib/ads/meta-paid-drafts';
 import { publishPinterestPin, getPinterestPublishingReadiness } from '@/lib/ads/pinterest-publishing';
 import { checkOpenAIContentReadiness } from '@/lib/ai/openai-content';
+import {
+  mapContentTypeToPaidProvider,
+  preflightPaidAdsAction,
+} from '@/lib/production-readiness';
 import { createCreativeAssetPublicUrl } from '@/lib/storage/creative-assets';
 import type {
   ContentStudioExecutionAsset,
@@ -189,6 +193,23 @@ function isMetaPaidAdContentType(contentType: string) {
     'facebook_carousel_ad',
     'instagram_carousel_ad',
   ].includes(contentType);
+}
+
+function paidProviderToContentStudioProvider(
+  paidProvider: NonNullable<ReturnType<typeof mapContentTypeToPaidProvider>>,
+  contentType: ContentStudioExecutionContext['contentType']
+) {
+  if (paidProvider === 'google_ads') return 'google_ads' as const;
+  if (paidProvider === 'pinterest') return 'pinterest' as const;
+  return contentType.startsWith('instagram') ? 'instagram' as const : 'facebook' as const;
+}
+
+function paidProviderActionType(
+  paidProvider: NonNullable<ReturnType<typeof mapContentTypeToPaidProvider>>
+) {
+  return paidProvider === 'meta'
+    ? 'create_paused_meta_ad_draft' as const
+    : 'create_campaign_draft' as const;
 }
 
 function buildMetaPaidDraftInput(context: ContentStudioExecutionContext): MetaPaidDraftInput {
@@ -630,6 +651,39 @@ export async function getContentStudioProviderReadiness(
 export async function executeContentStudioProviderAction(
   context: ContentStudioExecutionContext
 ): Promise<ProviderExecutionResult> {
+  const paidProvider = mapContentTypeToPaidProvider(context.contentType);
+
+  if (paidProvider) {
+    if (!context.supabase || !context.role) {
+      return {
+        provider: paidProviderToContentStudioProvider(paidProvider, context.contentType),
+        actionType: paidProviderActionType(paidProvider),
+        status: 'setup_required',
+        message:
+          'Paid ads action blocked: production preflight context is missing. بوابة الإعلانات المدفوعة غير مكتملة.',
+      };
+    }
+
+    const preflight = await preflightPaidAdsAction({
+      supabase: context.supabase,
+      workspaceId: context.workspaceId,
+      userId: context.userId,
+      role: context.role,
+      provider: paidProvider,
+      actionLabel: context.contentType,
+      explicitConfirmation: context.explicitConfirmation === true,
+    });
+
+    if (!preflight.allowed) {
+      return {
+        provider: paidProviderToContentStudioProvider(paidProvider, context.contentType),
+        actionType: paidProviderActionType(paidProvider),
+        status: 'setup_required',
+        message: preflight.message,
+      };
+    }
+  }
+
   switch (context.contentType) {
     case 'facebook_post': {
       const image = getBestLinkedImage(context.linkedAssets);

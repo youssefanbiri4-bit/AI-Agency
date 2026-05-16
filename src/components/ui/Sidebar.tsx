@@ -30,6 +30,7 @@ import {
   LockKeyhole,
   SearchCode,
   SearchCheck,
+  ShieldAlert,
   Wand2,
   Workflow,
 } from 'lucide-react';
@@ -69,6 +70,7 @@ const menuItems = [
   { icon: CalendarDays, labelKey: 'nav.calendar', href: '/dashboard/calendar' },
   { icon: LifeBuoy, labelKey: 'nav.recovery', href: '/dashboard/recovery' },
   { icon: Gauge, labelKey: 'nav.systemHealth', href: '/dashboard/system-health' },
+  { icon: ShieldAlert, labelKey: 'nav.production', href: '/dashboard/production' },
   { icon: LockKeyhole, labelKey: 'nav.security', href: '/dashboard/security' },
   { icon: DatabaseBackup, labelKey: 'nav.backups', href: '/dashboard/backups' },
   { icon: BookMarked, labelKey: 'nav.docs', href: '/dashboard/docs' },

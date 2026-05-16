@@ -1566,13 +1566,13 @@ export async function linkCreativeAssetToDraftAction(
 export async function executeContentStudioProviderActionAction(
   itemId: string,
   _state: ContentStudioActionState,
-  _formData?: FormData
+  formData?: FormData
 ): Promise<ContentStudioActionState> {
   void _state;
-  void _formData;
 
   try {
     const { supabase, user, workspace, role } = await getWorkspaceContext();
+    const explicitConfirmation = formData?.get('provider_action_confirmed') === 'true';
 
     if (!canPublishContent(role)) {
       await logSecurityAuditEvent({
@@ -1781,6 +1781,9 @@ export async function executeContentStudioProviderActionAction(
     const providerResult = await executeContentStudioProviderAction({
       workspaceId: workspace.id,
       userId: user.id,
+      supabase,
+      role,
+      explicitConfirmation,
       itemId: item.id,
       title: item.title,
       contentType: item.content_type,
