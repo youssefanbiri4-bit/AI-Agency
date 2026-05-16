@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createTaskEvent, mapTaskRecordToTask, updateTaskExecutionState } from '@/lib/data/tasks';
 import { reportAppError } from '@/lib/logger';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import {
+  markN8nCallbackEvent,
+  recordN8nCallback,
+  buildN8nCallbackKey,
+} from '@/lib/n8n-callback-idempotency';
 import type { JsonObject, JsonValue, TaskStatus } from '@/types';
 
 function jsonError(error: string, status: number) {
@@ -100,6 +105,51 @@ export async function POST(request: NextRequest) {
       ? 'failed'
       : 'needs_review';
     const result = toResultObject(payload.result, errorMessage);
+    const { executionIdentifier } = buildN8nCallbackKey({
+      sourceRoute: '/api/n8n/callback',
+      taskId: task.id,
+      status: callbackStatus,
+      payload,
+    });
+    const callbackEvent = await recordN8nCallback({
+      supabase: adminClient,
+      sourceRoute: '/api/n8n/callback',
+      taskId: task.id,
+      workspaceId: taskRecord.workspace_id,
+      status: callbackStatus,
+      payload,
+    });
+
+    if (callbackEvent.error) {
+      return jsonError('Callback could not be recorded', 500);
+    }
+
+    if (callbackEvent.duplicate) {
+      return NextResponse.json({
+        ok: true,
+        success: true,
+        duplicate: true,
+        message: 'Callback already processed',
+      });
+    }
+
+    if (task.status !== 'processing') {
+      if (callbackEvent.eventId) {
+        await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'stale_ignored');
+      }
+
+      return NextResponse.json({
+        ok: true,
+        success: true,
+        duplicate: false,
+        ignored: true,
+        message: 'Callback ignored because task is no longer processing',
+        data: {
+          task_id: task.id,
+          status: task.status,
+        },
+      });
+    }
 
     const updateResult = await updateTaskExecutionState(
       {
@@ -107,11 +157,17 @@ export async function POST(request: NextRequest) {
         workspaceId: taskRecord.workspace_id,
         status: nextStatus,
         result,
+        n8nExecutionId: executionIdentifier,
+        expectedCurrentStatus: 'processing',
       },
       adminClient
     );
 
     if (updateResult.error || !updateResult.data) {
+      if (callbackEvent.eventId) {
+        await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'failed');
+      }
+
       return jsonError(updateResult.error ?? 'Task could not be updated', 500);
     }
 
@@ -131,7 +187,15 @@ export async function POST(request: NextRequest) {
     );
 
     if (eventResult.error) {
+      if (callbackEvent.eventId) {
+        await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'failed');
+      }
+
       return jsonError(eventResult.error, 500);
+    }
+
+    if (callbackEvent.eventId) {
+      await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'processed');
     }
 
     return NextResponse.json({
@@ -143,6 +207,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     reportAppError('n8n callback webhook error', error);
-    return jsonError(error instanceof Error ? error.message : 'Internal server error', 500);
+    return jsonError('Internal server error', 500);
   }
 }

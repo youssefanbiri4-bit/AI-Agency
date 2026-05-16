@@ -1,4 +1,4 @@
-import type { AgentType, DepartmentName, JsonObject, TaskStatus } from './index';
+import type { AgentType, DepartmentName, JsonObject, JsonValue, TaskStatus } from './index';
 
 export type WorkspaceRole = 'owner' | 'admin' | 'operator' | 'editor' | 'viewer';
 export type BillingPlan = 'free' | 'starter' | 'pro' | 'agency';
@@ -191,6 +191,32 @@ export type ReleaseType =
   | 'stabilization'
   | 'security'
   | 'internal_tooling';
+export type AgentTemplateUsageActionType =
+  | 'view_template'
+  | 'use_with_alex'
+  | 'create_task'
+  | 'send_to_content_studio'
+  | 'export_n8n_plan'
+  | 'copy_prompt'
+  | 'copy_workflow_plan'
+  | 'create_workflow_draft'
+  | 'download_workflow_plan'
+  | 'create_tasks_from_workflow'
+  | 'add_template_to_workflow'
+  | 'review_workflow'
+  | 'copy_workflow_review'
+  | 'download_workflow_review'
+  | 'approval_confirmed_for_pending_tasks'
+  | 'blocked_unsafe_workflow_action'
+  | 'save_workflow_playbook'
+  | 'update_workflow_playbook'
+  | 'open_workflow_playbook'
+  | 'duplicate_workflow_playbook'
+  | 'favorite_workflow_playbook'
+  | 'delete_workflow_playbook'
+  | 'export_workflow_playbook';
+export type AgentTemplateUsageSourcePage = 'agent_library' | 'alex' | 'content_studio';
+export type AgentWorkflowPlaybookStatus = 'draft' | 'ready' | 'archived';
 
 export interface Database {
   public: {
@@ -442,6 +468,135 @@ export interface Database {
           event_type?: string;
           message?: string;
           metadata?: JsonObject;
+        };
+        Relationships: [];
+      };
+      n8n_callback_events: {
+        Row: {
+          id: string;
+          callback_key: string;
+          source_route: string;
+          task_id: string;
+          workspace_id: string;
+          callback_status: string | null;
+          execution_identifier: string | null;
+          payload_hash: string;
+          outcome: 'accepted' | 'processed' | 'duplicate' | 'stale_ignored' | 'failed';
+          metadata: JsonObject;
+          received_at: string;
+          processed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          callback_key: string;
+          source_route: string;
+          task_id: string;
+          workspace_id: string;
+          callback_status?: string | null;
+          execution_identifier?: string | null;
+          payload_hash: string;
+          outcome?: 'accepted' | 'processed' | 'duplicate' | 'stale_ignored' | 'failed';
+          metadata?: JsonObject;
+          received_at?: string;
+          processed_at?: string | null;
+        };
+        Update: {
+          outcome?: 'accepted' | 'processed' | 'duplicate' | 'stale_ignored' | 'failed';
+          metadata?: JsonObject;
+          processed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      agent_template_usage_events: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string;
+          template_id: string;
+          template_name: string;
+          template_category: string;
+          action_type: AgentTemplateUsageActionType;
+          source_page: AgentTemplateUsageSourcePage;
+          metadata: JsonObject;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id: string;
+          template_id: string;
+          template_name: string;
+          template_category: string;
+          action_type: AgentTemplateUsageActionType;
+          source_page: AgentTemplateUsageSourcePage;
+          metadata?: JsonObject;
+          created_at?: string;
+        };
+        Update: {
+          template_name?: string;
+          template_category?: string;
+          action_type?: AgentTemplateUsageActionType;
+          source_page?: AgentTemplateUsageSourcePage;
+          metadata?: JsonObject;
+        };
+        Relationships: [];
+      };
+      agent_workflow_playbooks: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string;
+          name: string;
+          description: string | null;
+          goal: string | null;
+          steps: JsonValue;
+          notes: string | null;
+          status: AgentWorkflowPlaybookStatus;
+          is_favorite: boolean;
+          last_opened_at: string | null;
+          last_used_at: string | null;
+          usage_count: number;
+          readiness_summary: JsonObject;
+          diagram: JsonObject;
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id: string;
+          name: string;
+          description?: string | null;
+          goal?: string | null;
+          steps?: JsonValue;
+          notes?: string | null;
+          status?: AgentWorkflowPlaybookStatus;
+          is_favorite?: boolean;
+          last_opened_at?: string | null;
+          last_used_at?: string | null;
+          usage_count?: number;
+          readiness_summary?: JsonObject;
+          diagram?: JsonObject;
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          goal?: string | null;
+          steps?: JsonValue;
+          notes?: string | null;
+          status?: AgentWorkflowPlaybookStatus;
+          is_favorite?: boolean;
+          last_opened_at?: string | null;
+          last_used_at?: string | null;
+          usage_count?: number;
+          readiness_summary?: JsonObject;
+          diagram?: JsonObject;
+          metadata?: JsonObject;
+          updated_at?: string;
         };
         Relationships: [];
       };
@@ -1338,6 +1493,12 @@ export type AgentRecord = Database['public']['Tables']['agents']['Row'];
 export type TaskRecord = Database['public']['Tables']['tasks']['Row'];
 export type TaskReviewRecord = Database['public']['Tables']['task_reviews']['Row'];
 export type TaskEventRecord = Database['public']['Tables']['task_events']['Row'];
+export type N8nCallbackEventRecord =
+  Database['public']['Tables']['n8n_callback_events']['Row'];
+export type AgentTemplateUsageEventRecord =
+  Database['public']['Tables']['agent_template_usage_events']['Row'];
+export type AgentWorkflowPlaybookRecord =
+  Database['public']['Tables']['agent_workflow_playbooks']['Row'];
 export type UserPreferenceRecord = Database['public']['Tables']['user_preferences']['Row'];
 export type IntegrationSettingsRecord =
   Database['public']['Tables']['integration_settings']['Row'];

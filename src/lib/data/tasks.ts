@@ -46,6 +46,8 @@ export interface UpdateTaskExecutionStateInput {
   workspaceId: string;
   status: Extract<TaskStatus, 'processing' | 'needs_review' | 'failed'>;
   result?: JsonObject | null;
+  n8nExecutionId?: string | null;
+  expectedCurrentStatus?: TaskStatus;
 }
 
 export interface MarkStaleProcessingTaskFailedInput {
@@ -241,19 +243,30 @@ export async function updateTaskExecutionState(
     update.result = input.result ?? null;
   }
 
-  const { data, error } = await client
+  if ('n8nExecutionId' in input) {
+    update.n8n_execution_id = input.n8nExecutionId ?? null;
+  }
+
+  let query = client
     .from('tasks')
     .update(update)
     .eq('id', input.taskId)
-    .eq('workspace_id', input.workspaceId)
-    .select('*')
-    .single();
+    .eq('workspace_id', input.workspaceId);
+
+  if (input.expectedCurrentStatus) {
+    query = query.eq('status', input.expectedCurrentStatus);
+  }
+
+  const result = input.expectedCurrentStatus
+    ? await query.select('*').maybeSingle()
+    : await query.select('*').single();
+  const { data, error } = result;
 
   if (error) {
     return errorDataResult(null, error.message);
   }
 
-  return emptyDataResult(mapTaskRecordToTask(data), true);
+  return emptyDataResult(data ? mapTaskRecordToTask(data) : null, true);
 }
 
 export async function markStaleProcessingTaskFailed(
