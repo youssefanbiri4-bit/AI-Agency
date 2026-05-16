@@ -24,6 +24,14 @@ const pageTitleMap: Record<string, { titleKey: string; descriptionKey: string }>
   '/dashboard/agents': { titleKey: 'topbar.pageTitles.agents.title', descriptionKey: 'topbar.pageTitles.agents.description' },
   '/dashboard/projects': { titleKey: 'topbar.pageTitles.projects.title', descriptionKey: 'topbar.pageTitles.projects.description' },
   '/dashboard/releases': { titleKey: 'topbar.pageTitles.releases.title', descriptionKey: 'topbar.pageTitles.releases.description' },
+  '/dashboard/agent-library': { titleKey: 'topbar.pageTitles.agentLibrary.title', descriptionKey: 'topbar.pageTitles.agentLibrary.description' },
+  '/dashboard/automation-blueprints': { titleKey: 'topbar.pageTitles.automationBlueprints.title', descriptionKey: 'topbar.pageTitles.automationBlueprints.description' },
+  '/dashboard/quality-review': { titleKey: 'topbar.pageTitles.qualityReview.title', descriptionKey: 'topbar.pageTitles.qualityReview.description' },
+  '/dashboard/knowledge-base': { titleKey: 'topbar.pageTitles.knowledgeBase.title', descriptionKey: 'topbar.pageTitles.knowledgeBase.description' },
+  '/dashboard/agent-library/workflows': { titleKey: 'topbar.pageTitles.workflowBuilder.title', descriptionKey: 'topbar.pageTitles.workflowBuilder.description' },
+  '/dashboard/agent-library/playbooks': { titleKey: 'topbar.pageTitles.playbooks.title', descriptionKey: 'topbar.pageTitles.playbooks.description' },
+  '/dashboard/ai-studio': { titleKey: 'topbar.pageTitles.aiStudio.title', descriptionKey: 'topbar.pageTitles.aiStudio.description' },
+  '/dashboard/alex': { titleKey: 'topbar.pageTitles.alex.title', descriptionKey: 'topbar.pageTitles.alex.description' },
   '/dashboard/prompt-library': { titleKey: 'topbar.pageTitles.promptLibrary.title', descriptionKey: 'topbar.pageTitles.promptLibrary.description' },
   '/dashboard/tasks': { titleKey: 'topbar.pageTitles.tasks.title', descriptionKey: 'topbar.pageTitles.tasks.description' },
   '/dashboard/create-task': { titleKey: 'topbar.pageTitles.createTask.title', descriptionKey: 'topbar.pageTitles.createTask.description' },
@@ -104,6 +112,18 @@ export function Topbar({
     }
     if (normalizedQuery.includes('review')) {
       router.push('/dashboard/review');
+      return;
+    }
+    if (normalizedQuery.includes('blueprint') || normalizedQuery.includes('automation') || normalizedQuery.includes('workflow plan')) {
+      router.push('/dashboard/automation-blueprints');
+      return;
+    }
+    if (normalizedQuery.includes('quality') || normalizedQuery.includes('evaluate') || normalizedQuery.includes('score')) {
+      router.push('/dashboard/quality-review');
+      return;
+    }
+    if (normalizedQuery.includes('knowledge') || normalizedQuery.includes('rag') || normalizedQuery.includes('search my')) {
+      router.push('/dashboard/knowledge-base');
       return;
     }
     if (pathname.startsWith('/dashboard/tasks') || normalizedQuery.includes('task')) {

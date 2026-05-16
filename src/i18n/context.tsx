@@ -88,3 +88,19 @@ export function useLanguage(): LanguageContextValue {
   }
   return context;
 }
+
+export function useOptionalLanguage(): LanguageContextValue {
+  const context = useContext(LanguageContext);
+  const fallbackT = useCallback((key: string, fallback?: string) => {
+    const enResolved = resolveNestedKey(en as Translations, key);
+    if (enResolved) return enResolved;
+    return fallback ?? key;
+  }, []);
+
+  return context ?? {
+    language: DEFAULT_LANGUAGE,
+    setLanguage: () => {},
+    t: fallbackT,
+    dir: getLanguageDir(DEFAULT_LANGUAGE),
+  };
+}

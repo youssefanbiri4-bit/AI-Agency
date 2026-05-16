@@ -9,13 +9,13 @@ import { Input, Label, Select, Textarea } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
 import { useActionToast } from '@/components/ui/useActionToast';
 import {
-  formatPromptCategory,
-  formatPromptTargetTool,
   promptCategories,
   promptTargetTools,
 } from '@/lib/data/prompt-library';
 import type { PromptLibraryRecord } from '@/types/database';
 import { createPromptAction, updatePromptAction, type PromptActionState } from './actions';
+import { useLanguage } from '@/i18n/context';
+import { translatePromptCategory, translatePromptTool } from './prompt-i18n';
 
 interface PromptFormProps {
   mode: 'create' | 'edit';
@@ -31,17 +31,18 @@ const initialState: PromptActionState = {
 
 export function PromptForm({ mode, prompt, onCancel }: PromptFormProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const action = mode === 'create' ? createPromptAction : updatePromptAction;
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   useActionToast({
     isPending,
     state,
-    loadingMessage: mode === 'create' ? 'Saving prompt...' : 'Updating prompt...',
-    successMessage: (currentState) =>
-      currentState.message ?? (mode === 'create' ? 'Prompt saved.' : 'Prompt updated.'),
+    loadingMessage: mode === 'create' ? t('dashboardI18n.promptLibrary.savingPrompt', 'Saving prompt...') : t('dashboardI18n.promptLibrary.updatingPrompt', 'Updating prompt...'),
+    successMessage: () =>
+      mode === 'create' ? t('dashboardI18n.promptLibrary.promptSaved', 'Prompt saved.') : t('dashboardI18n.promptLibrary.promptUpdated', 'Prompt updated.'),
     errorMessage: (currentState) =>
-      currentState.error ?? (mode === 'create' ? 'Could not save prompt.' : 'Could not update prompt.'),
+      currentState.error ?? (mode === 'create' ? t('dashboardI18n.promptLibrary.saveFailed', 'Could not save prompt.') : t('dashboardI18n.promptLibrary.updateFailed', 'Could not update prompt.')),
   });
 
   useEffect(() => {
@@ -60,61 +61,61 @@ export function PromptForm({ mode, prompt, onCancel }: PromptFormProps) {
       {prompt ? <input type="hidden" name="promptId" value={prompt.id} /> : null}
 
       {state.error && (
-        <Notice tone="danger" title={mode === 'create' ? 'Could not save prompt' : 'Could not update prompt'}>
+        <Notice tone="danger" title={mode === 'create' ? t('dashboardI18n.promptLibrary.saveFailedTitle', 'Could not save prompt') : t('dashboardI18n.promptLibrary.updateFailedTitle', 'Could not update prompt')}>
           {state.error}
         </Notice>
       )}
 
       <Card>
         <CardHeader
-          title={mode === 'create' ? 'New Prompt' : 'Edit Prompt'}
-          description="Do not store API keys, tokens, passwords, or private credentials in prompts."
+          title={mode === 'create' ? t('dashboardI18n.promptLibrary.newPrompt', 'New Prompt') : t('dashboardI18n.promptLibrary.editPrompt', 'Edit Prompt')}
+          description={t('dashboardI18n.promptLibrary.safetyText', 'Do not store API keys, tokens, passwords, or private credentials in prompts.')}
         />
         <div className="grid gap-5 lg:grid-cols-2">
           <div className="lg:col-span-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">{t('dashboardI18n.promptLibrary.formTitle', 'Title')}</Label>
             <Input id="title" name="title" defaultValue={prompt?.title ?? ''} required disabled={isPending} />
           </div>
 
           <div className="lg:col-span-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('common.description')}</Label>
             <Textarea id="description" name="description" defaultValue={prompt?.description ?? ''} rows={3} disabled={isPending} />
           </div>
 
           <div>
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="category">{t('dashboardI18n.promptLibrary.category', 'Category')}</Label>
             <Select id="category" name="category" defaultValue={prompt?.category ?? 'general'} disabled={isPending}>
               {promptCategories.map((category) => (
                 <option key={category} value={category}>
-                  {formatPromptCategory(category)}
+                  {translatePromptCategory(t, category)}
                 </option>
               ))}
             </Select>
           </div>
 
           <div>
-            <Label htmlFor="targetTool">Target tool</Label>
+            <Label htmlFor="targetTool">{t('dashboardI18n.promptLibrary.targetTool', 'Target tool')}</Label>
             <Select id="targetTool" name="targetTool" defaultValue={prompt?.target_tool ?? 'general_ai_tool'} disabled={isPending}>
               {promptTargetTools.map((tool) => (
                 <option key={tool} value={tool}>
-                  {formatPromptTargetTool(tool)}
+                  {translatePromptTool(t, tool)}
                 </option>
               ))}
             </Select>
           </div>
 
           <div>
-            <Label htmlFor="subcategory">Subcategory</Label>
+            <Label htmlFor="subcategory">{t('dashboardI18n.promptLibrary.subcategory', 'Subcategory')}</Label>
             <Input id="subcategory" name="subcategory" defaultValue={prompt?.subcategory ?? ''} disabled={isPending} />
           </div>
 
           <div>
-            <Label htmlFor="tags">Tags</Label>
-            <Input id="tags" name="tags" defaultValue={prompt?.tags.join(', ') ?? ''} disabled={isPending} placeholder="deploy, supabase, audit" />
+            <Label htmlFor="tags">{t('dashboardI18n.promptLibrary.tags', 'Tags')}</Label>
+            <Input id="tags" name="tags" defaultValue={prompt?.tags.join(', ') ?? ''} disabled={isPending} placeholder={t('dashboardI18n.promptLibrary.tagsPlaceholder', 'deploy, supabase, audit')} />
           </div>
 
           <div className="lg:col-span-2">
-            <Label htmlFor="promptText">Prompt Text</Label>
+            <Label htmlFor="promptText">{t('dashboardI18n.promptLibrary.promptText', 'Prompt Text')}</Label>
             <Textarea id="promptText" name="promptText" defaultValue={prompt?.prompt_text ?? ''} rows={10} required disabled={isPending} />
           </div>
 
@@ -126,7 +127,7 @@ export function PromptForm({ mode, prompt, onCancel }: PromptFormProps) {
               disabled={isPending}
               className="h-4 w-4 rounded border-black/20 text-[#F7CBCA] focus:ring-[#F7CBCA]"
             />
-            Favorite
+            {t('dashboardI18n.promptLibrary.favorite', 'Favorite')}
           </label>
         </div>
       </Card>
@@ -134,12 +135,12 @@ export function PromptForm({ mode, prompt, onCancel }: PromptFormProps) {
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         {onCancel && (
           <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         )}
         <Button type="submit" size="lg" disabled={isPending}>
           {isPending ? <Clock className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-          {isPending ? 'Saving...' : mode === 'create' ? 'Save Prompt' : 'Update Prompt'}
+          {isPending ? t('dashboardI18n.promptLibrary.saving', 'Saving...') : mode === 'create' ? t('dashboardI18n.promptLibrary.savePrompt', 'Save Prompt') : t('dashboardI18n.promptLibrary.updatePrompt', 'Update Prompt')}
         </Button>
       </div>
     </form>

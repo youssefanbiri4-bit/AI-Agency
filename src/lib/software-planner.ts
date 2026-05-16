@@ -239,7 +239,7 @@ function buildTechStack(input: SoftwarePlannerInput) {
     ['Database', cleanText(input.databasePreference, 'Supabase Postgres'), 'Use RLS and workspace scoping if multi-tenant.'],
     ['Auth', cleanText(input.authRequirement, 'Supabase Auth or equivalent'), 'Validate user and workspace on every protected action.'],
     ['Storage', cleanText(input.storageRequirement, 'Supabase Storage if uploads are needed'), 'Validate MIME/type/size.'],
-    ['AI Providers', cleanText(input.aiRequirement, 'Optional OpenAI/NVIDIA via server-side abstraction'), 'Never expose keys in client.'],
+    ['AI Provider', cleanText(input.aiRequirement, 'Optional OpenAI via server-side abstraction'), 'Never expose keys in client.'],
     ['Deployment', cleanText(input.deploymentTarget, 'Vercel'), 'Run lint/typecheck/build before production.'],
     ['Styling/UI', 'Tailwind CSS with reusable dashboard components', 'Keep dashboard dense, readable, and responsive.'],
   ].map((cells) => ({ cells }));
@@ -567,6 +567,6 @@ export async function generateSoftwarePlan(input: SoftwarePlannerInput, project:
 
   return {
     ok: true as const,
-    plan: buildFallbackSoftwarePlan(hydrated, cleanText(result.text), `${result.providerUsed}${result.fallbackUsed ? ' fallback' : ''}`),
+    plan: buildFallbackSoftwarePlan(hydrated, cleanText(result.text), result.providerUsed),
   };
 }

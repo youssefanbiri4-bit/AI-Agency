@@ -153,6 +153,14 @@ export default async function SystemHealthPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <SystemHealthCopyButton reportText={summary.reportText} />
+              <Link href="/dashboard/alex?template=provider-health-report-agent" className={buttonStyles({ variant: 'primary', size: 'sm' })}>
+                <Bot className="h-4 w-4" />
+                Summarize with Provider Health Report Agent
+              </Link>
+              <Link href="/dashboard/alex?template=deployment-review-agent" className={buttonStyles({ variant: 'outline', size: 'sm' })}>
+                <Rocket className="h-4 w-4" />
+                Deployment Review Agent
+              </Link>
               <Link href="/dashboard/settings#provider-setup-wizard" className={buttonStyles({ variant: 'outline', size: 'sm' })}>
                 Open Provider Setup
               </Link>

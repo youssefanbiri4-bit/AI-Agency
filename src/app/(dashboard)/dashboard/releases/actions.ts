@@ -6,6 +6,7 @@ import { createSupabaseServerClient, getActiveWorkspaceIdFromCookie } from '@/li
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { getProjectById } from '@/lib/data/projects';
 import { createRelease, releaseStatuses, releaseTypes, updateRelease, type ReleaseInput } from '@/lib/data/releases';
+import { canManageReleases, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
 import type { ReleaseStatus, ReleaseType } from '@/types/database';
 
 export interface ReleaseFormState {
@@ -92,7 +93,15 @@ async function getReleaseContext() {
   if (!workspaceResult.data) redirect('/onboarding');
   const membershipResult = await getCurrentWorkspaceMembership(supabase, workspaceResult.data.id, user.id);
   if (membershipResult.error) return { error: membershipResult.error, supabase, user, workspace: workspaceResult.data };
-  if (!membershipResult.data) return { error: 'Workspace membership is required to manage releases.', supabase, user, workspace: workspaceResult.data };
+  const role = normalizeWorkspaceRole(membershipResult.data?.role, workspaceResult.data, user.id);
+  if (!membershipResult.data || !canManageReleases(role)) {
+    return {
+      error: 'ما عندكش صلاحية لتدبير الإصدارات. Releases are restricted to workspace owners and admins.',
+      supabase,
+      user,
+      workspace: workspaceResult.data,
+    };
+  }
   return { error: null, supabase, user, workspace: workspaceResult.data };
 }
 

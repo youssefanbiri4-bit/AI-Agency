@@ -738,7 +738,7 @@ export default function SettingsPage() {
                 </div>
                 <p className="mt-2 text-sm leading-6 text-black/52">
                   Active provider: {providerReadiness?.aiTextProvider.activeProvider ?? 'openai'}.
-                  {' '}OpenAI remains supported, and `auto` can fall back to OpenAI when NVIDIA is unavailable.
+                  {' '}OpenAI is the only AI text provider for assistant and generation features.
                 </p>
               </div>
 
@@ -762,39 +762,6 @@ export default function SettingsPage() {
                   {providerReadiness?.aiTextProvider.openaiMessage ??
                     'OpenAI text readiness is being checked server-side.'}
                 </p>
-              </div>
-
-              <div className="muted-panel p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-black/70">
-                    <Sparkles className="h-4 w-4 text-[#76B900]" />
-                    {t('page.settings.providersCard.nvidiaStatus')}
-                  </span>
-                  <StatusBadge
-                    status={
-                      providerReadiness?.aiTextProvider.nvidiaStatus === 'ready'
-                        ? 'Ready'
-                        : 'Setup Required'
-                    }
-                    type="system"
-                    size="sm"
-                  />
-                </div>
-                <p className="mt-2 text-sm leading-6 text-black/52">
-                  {providerReadiness?.aiTextProvider.nvidiaMessage ??
-                    'NVIDIA text readiness is being checked server-side.'}
-                </p>
-                <dl className="mt-3 grid gap-2 text-xs font-bold text-black/50 sm:grid-cols-2">
-                  <div>AI Text Provider: {providerReadiness?.aiTextProvider.activeProvider ?? 'unknown'}</div>
-                  <div>Key: {providerReadiness?.aiTextProvider.nvidiaKeyStatus ?? 'unknown'}</div>
-                  <div>Base URL: {providerReadiness?.aiTextProvider.nvidiaBaseUrlStatus ?? 'unknown'}</div>
-                  <div>Model: {providerReadiness?.aiTextProvider.nvidiaModel ?? 'unknown'}</div>
-                  <div>Test path: {providerReadiness?.aiTextProvider.nvidiaLastTestPath ?? 'unknown'}</div>
-                  <div>Last test: {providerReadiness?.aiTextProvider.nvidiaLastTestStatus ?? 'not_run'}</div>
-                  <div>Status code: {providerReadiness?.aiTextProvider.nvidiaLastTestStatusCode ?? 'none'}</div>
-                  <div>Category: {providerReadiness?.aiTextProvider.nvidiaLastTestCategory ?? 'none'}</div>
-                  <div className="sm:col-span-2">Safe provider message: {providerReadiness?.aiTextProvider.nvidiaLastTestMessage ?? 'none'}</div>
-                </dl>
               </div>
 
               <Notice tone="warning" title="AI text generation availability">

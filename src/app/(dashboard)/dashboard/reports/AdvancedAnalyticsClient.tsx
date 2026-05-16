@@ -344,7 +344,6 @@ function providerKey(provider: string) {
   if (normalized.includes('scheduler')) return 'Scheduler';
   if (normalized.includes('github')) return 'GitHub';
   if (normalized.includes('openai')) return 'OpenAI';
-  if (normalized.includes('nvidia')) return 'NVIDIA';
   return label(provider);
 }
 

@@ -2,13 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import {
-  createSupabaseServerClient,
-  getActiveWorkspaceIdFromCookie,
-} from '@/lib/supabase-server';
-import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { createTask } from '@/lib/data/tasks';
 import { createNotification } from '@/lib/data/notifications';
+import { canCreateTasks, getWorkspaceAccessContext } from '@/lib/workspace-permissions';
 import type { AgentType } from '@/types';
 import type { TaskPriority } from '@/types/database';
 
@@ -51,20 +47,24 @@ export async function createTaskAction(
     return { error: 'Task description must be at least 5 characters.' };
   }
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const access = await getWorkspaceAccessContext();
 
-  if (!user) {
+  if (!access.data && access.error === 'Authentication is required.') {
     redirect('/auth/login?redirectTo=/dashboard/create-task');
   }
 
-  const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
-  const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
-
-  if (!workspaceResult.data) {
+  if (!access.data && access.error === 'Active workspace is required.') {
     redirect('/onboarding');
+  }
+
+  if (!access.data) {
+    return { error: access.error };
+  }
+
+  const { supabase, user, workspace, role } = access.data;
+
+  if (!canCreateTasks(role)) {
+    return { error: 'ما عندكش صلاحية لإنشاء المهام. Task creation is restricted for your workspace role.' };
   }
 
   const { data: agent, error: agentError } = await supabase
@@ -84,7 +84,7 @@ export async function createTaskAction(
 
   const taskResult = await createTask(
     {
-      workspaceId: workspaceResult.data.id,
+      workspaceId: workspace.id,
       userId: user.id,
       agentType,
       title,
@@ -103,7 +103,7 @@ export async function createTaskAction(
   try {
     await createNotification(
       {
-        workspaceId: workspaceResult.data.id,
+        workspaceId: workspace.id,
         userId: user.id,
         type: 'task_created',
         severity: 'info',

@@ -60,6 +60,7 @@ export interface GenerateImageWithOpenAIInput {
   prompt: string;
   negativePrompt?: string | null;
   aspectRatio?: CreativeAssetAspectRatio | null;
+  model?: string | null;
   userId?: string;
 }
 
@@ -304,9 +305,9 @@ export async function generateImageWithOpenAI(
   input: GenerateImageWithOpenAIInput
 ): Promise<GenerateImageWithOpenAIResult> {
   const readiness = checkOpenAIImageReadiness();
-  const model = readiness.model;
+  const model = input.model?.trim() || readiness.model;
   const size = normalizeSize(input.aspectRatio);
-  const quality = readiness.quality;
+  const quality = normalizeQuality(model);
   const apiKey = readOpenAIKey();
 
   if (!readiness.isReady || !apiKey) {

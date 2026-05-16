@@ -41,8 +41,8 @@ export interface RecoveryIssue {
   id: string;
   itemId: string | null;
   title: string;
-  platform: ContentStudioPlatform | 'openai' | 'nvidia' | 'scheduler' | 'media';
-  provider: 'OpenAI' | 'NVIDIA' | 'Meta' | 'Google Ads' | 'Pinterest' | 'LinkedIn' | 'Scheduler' | 'Media';
+  platform: ContentStudioPlatform | 'openai' | 'scheduler' | 'media';
+  provider: 'OpenAI' | 'Meta' | 'Google Ads' | 'Pinterest' | 'LinkedIn' | 'Scheduler' | 'Media';
   contentType: string;
   status: string;
   category: RecoveryIssueCategory;
@@ -99,7 +99,6 @@ const platformFilters: Array<{ value: PlatformFilter; label: string }> = [
 const providerFilters: Array<{ value: ProviderFilter; label: string }> = [
   { value: 'all', label: 'All providers' },
   { value: 'OpenAI', label: 'OpenAI' },
-  { value: 'NVIDIA', label: 'NVIDIA' },
   { value: 'Meta', label: 'Meta' },
   { value: 'Google Ads', label: 'Google Ads' },
   { value: 'Pinterest', label: 'Pinterest' },

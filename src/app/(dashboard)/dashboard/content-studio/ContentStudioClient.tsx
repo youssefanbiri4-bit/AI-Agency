@@ -7,6 +7,7 @@ import {
   CalendarClock,
   CalendarDays,
   Copy,
+  FileCheck2,
   FileText,
   Filter,
   Image as ImageIcon,
@@ -14,6 +15,7 @@ import {
   Pin,
   Play,
   Plus,
+  SearchCheck,
   Send,
   Sparkles,
   Unlink2,
@@ -28,6 +30,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { toast } from '@/components/ui/toast';
 import { useActionToast } from '@/components/ui/useActionToast';
 import { formatDateTime } from '@/lib/utils';
+import type { AgentTemplate } from '@/lib/agent-library/templates';
 import {
   campaignTemplateCategories,
   campaignTemplates,
@@ -63,6 +66,13 @@ import {
   type ContentStudioTab,
 } from './shared';
 import { CampaignPlanner } from './CampaignPlanner';
+import { trackTemplateUsageAction } from '@/app/(dashboard)/dashboard/agent-library/usage-actions';
+import { useLanguage } from '@/i18n/context';
+import {
+  translateContentStudioStatus,
+  translateContentStudioType,
+  translateTemplateCategory,
+} from '@/i18n/dashboard-labels';
 
 interface ContentStudioClientProps {
   items: ContentStudioItemView[];
@@ -79,6 +89,8 @@ interface ContentStudioClientProps {
   selectedItemProviderReadiness?: ProviderReadinessResult | null;
   brandKit: BrandKit;
   brandKitExists: boolean;
+  agentTemplate?: AgentTemplate | null;
+  templateNotFound?: boolean;
 }
 
 const initialActionState: ContentStudioActionState = {
@@ -140,6 +152,77 @@ function defaultHashtagLines(value: string | null | undefined) {
     .map((entry) => entry.trim())
     .filter(Boolean)
     .join('\n') ?? '';
+}
+
+function inferTemplateContentType(template: AgentTemplate | null | undefined): ContentStudioType {
+  const haystack = template
+    ? [
+        template.name,
+        template.category,
+        template.description,
+        template.recommended_for.join(' '),
+        template.inputs.join(' '),
+        template.outputs.join(' '),
+        template.suggested_prompt,
+      ].join(' ').toLowerCase()
+    : '';
+
+  if (template?.id === 'ad-copy-agent') return 'google_ads_campaign_draft';
+  if (template?.id === 'creative-brief-agent') return 'instagram_post';
+  if (haystack.includes('google ads') || haystack.includes('search ad')) return 'google_ads_campaign_draft';
+  if (haystack.includes('linkedin')) return 'linkedin_post_planner';
+  if (haystack.includes('pinterest')) return 'pinterest_pin';
+  if (haystack.includes('facebook')) return 'facebook_post';
+  if (haystack.includes('reel') || haystack.includes('tiktok') || haystack.includes('short')) return 'instagram_reel';
+  if (haystack.includes('ad copy') || haystack.includes('ads') || haystack.includes('campaign')) return 'facebook_feed_ad';
+
+  return 'instagram_post';
+}
+
+function buildTemplatePrefill(template: AgentTemplate | null | undefined) {
+  if (!template) return null;
+
+  const outputType = inferTemplateContentType(template);
+  const list = (title: string, values: string[]) => `${title}\n${values.map((value) => `- ${value}`).join('\n')}`;
+  const brief = [
+    `Source template: ${template.name}`,
+    `Category: ${template.category}`,
+    '',
+    template.description,
+    '',
+    list('Inputs to gather', template.inputs),
+    '',
+    list('Expected outputs', template.outputs),
+    '',
+    list('Review checklist', template.review_checklist),
+    '',
+    'Safety note',
+    'Prefilled only. Nothing has been generated, published, scheduled, or sent to providers.',
+  ].join('\n');
+
+  return {
+    contentType: outputType,
+    outputLabel: contentStudioTypeOptions.find((option) => option.value === outputType)?.label ?? 'Creative Brief',
+    title: `${template.name} Draft`,
+    objective: template.description,
+    prompt: [
+      template.suggested_prompt,
+      '',
+      'Use this only as editable draft direction. Do not publish, schedule, or create live ads automatically.',
+    ].join('\n'),
+    creativeBrief: brief,
+    platformPackage: brief,
+    adCopy: template.category === 'Sales & Operations' || outputType.includes('ad') || outputType === 'google_ads_campaign_draft'
+      ? template.suggested_prompt
+      : '',
+    caption: outputType === 'linkedin_post_planner' || outputType === 'instagram_post' || outputType === 'instagram_reel' || outputType === 'facebook_post' || outputType === 'pinterest_pin'
+      ? template.suggested_prompt
+      : '',
+    script: outputType === 'instagram_reel' ? template.suggested_prompt : '',
+    keywords: template.category === 'Content & Growth' || outputType === 'google_ads_campaign_draft'
+      ? template.inputs.join('\n')
+      : '',
+  };
 }
 
 function isCreativeVideoAsset(asset: CreativeAssetRecord) {
@@ -627,7 +710,10 @@ export function ContentStudioClient({
   selectedItemProviderReadiness,
   brandKit,
   brandKitExists,
+  agentTemplate,
+  templateNotFound = false,
 }: ContentStudioClientProps) {
+  const { t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -659,6 +745,18 @@ export function ContentStudioClient({
     providerAction,
     initialActionState
   );
+  const templatePrefill = useMemo(() => buildTemplatePrefill(agentTemplate), [agentTemplate]);
+
+  useEffect(() => {
+    if (!agentTemplate) return;
+
+    void trackTemplateUsageAction({
+      templateId: agentTemplate.id,
+      actionType: 'view_template',
+      sourcePage: 'content_studio',
+      metadata: { surface: 'template_prefill' },
+    });
+  }, [agentTemplate]);
   const scheduleToastMethod =
     selectedItem?.content_type === 'linkedin_post_planner'
       ? toast.warning
@@ -666,7 +764,7 @@ export function ContentStudioClient({
         ? toast.info
         : toast.warning;
   const [draftType, setDraftType] = useState<ContentStudioType>(
-    selectedItem?.content_type ?? initialDraftType ?? defaultTypeForTab(activeTab)
+    selectedItem?.content_type ?? initialDraftType ?? templatePrefill?.contentType ?? defaultTypeForTab(activeTab)
   );
   const [assetSelection, setAssetSelection] = useState<{
     itemId: string | null;
@@ -1064,6 +1162,33 @@ export function ContentStudioClient({
     }
   }
 
+  function readTemplateDefault(name: string) {
+    if (selectedItem || !templatePrefill) return '';
+
+    switch (name) {
+      case 'title':
+        return templatePrefill.title;
+      case 'objective':
+        return templatePrefill.objective;
+      case 'prompt':
+        return templatePrefill.prompt;
+      case 'caption':
+        return templatePrefill.caption;
+      case 'script':
+        return templatePrefill.script;
+      case 'ad_copy':
+        return templatePrefill.adCopy;
+      case 'creative_brief':
+        return templatePrefill.creativeBrief;
+      case 'platform_package':
+        return templatePrefill.platformPackage;
+      case 'keywords':
+        return templatePrefill.keywords;
+      default:
+        return '';
+    }
+  }
+
   function buildPlatformPackage(label: string, fieldNames: string[]) {
     const assetNames = getSelectedAssetNames();
     const lines = [
@@ -1121,6 +1246,18 @@ export function ContentStudioClient({
     }
   }
 
+  function openQualityReview() {
+    const reviewType = selectedType === 'google_ads_campaign_draft' || selectedType.includes('ad') ? 'ad_copy' : 'marketing_content';
+    const reviewPlatform =
+      selectedPlatformKey === 'google_ads'
+        ? 'google_ads'
+        : selectedPlatformKey === 'instagram' || selectedPlatformKey === 'facebook' || selectedPlatformKey === 'linkedin'
+          ? selectedPlatformKey
+          : 'generic';
+    const packageContent = buildPlatformPackage('Content Studio Draft', selectedStudio.visibleFields).slice(0, 6000);
+    router.push(`/dashboard/quality-review?type=${reviewType}&platform=${reviewPlatform}&content=${encodeURIComponent(packageContent)}`);
+  }
+
   async function handleGenerate(kind: string) {
     if (!selectedItem) {
       toast.warning('Save this draft first.', {
@@ -1151,10 +1288,7 @@ export function ContentStudioClient({
         toast.update(loadingToastId, {
           tone: 'error',
           title: result.error ?? 'Generation failed.',
-          description:
-            result.error === 'NVIDIA API key is missing.'
-              ? 'AI provider setup required.'
-              : 'Please review the draft fields and try again.',
+          description: 'Please review OpenAI setup, quota, and the draft fields, then try again.',
         });
         return;
       }
@@ -1173,9 +1307,7 @@ export function ContentStudioClient({
       toast.update(loadingToastId, {
         tone: 'success',
         title: result.message ?? 'Generated successfully.',
-        description: result.fallbackUsed
-          ? 'OpenAI quota issue. Trying NVIDIA fallback... NVIDIA fallback generated successfully.'
-          : 'Review it in the field, then click Update Content Item to persist it.',
+        description: 'Review it in the field, then click Update Content Item to persist it.',
       });
     } catch (error) {
       toast.update(loadingToastId, {
@@ -1190,10 +1322,43 @@ export function ContentStudioClient({
 
   return (
     <div className="space-y-6">
+      {templateNotFound ? (
+        <Notice tone="warning" title={t('dashboardI18n.contentStudio.templateNotFound')}>
+          {t('dashboardI18n.contentStudio.templateNotFoundDescription')}
+        </Notice>
+      ) : null}
+
+      {agentTemplate && templatePrefill ? (
+        <Card className="border-sky-200 bg-sky-50/70 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex min-w-0 gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-700 ring-1 ring-sky-100">
+                <FileCheck2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-sky-700">{t('dashboardI18n.contentStudio.templateContext')}</p>
+                <h2 className="mt-1 text-lg font-black leading-snug text-slate-950">{agentTemplate.name}</h2>
+                <p className="mt-1 text-sm font-bold text-slate-500">{translateTemplateCategory(t, agentTemplate.category)}</p>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{agentTemplate.description}</p>
+              </div>
+            </div>
+            <div className="grid gap-2 rounded-2xl border border-white/80 bg-white/80 p-3 text-sm lg:w-72">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.1em] text-slate-400">{t('dashboardI18n.contentStudio.suggestedOutputType')}</p>
+                <p className="mt-1 font-bold text-slate-800">{translateContentStudioType(t, templatePrefill.contentType)}</p>
+              </div>
+              <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold leading-5 text-emerald-700">
+                {t('dashboardI18n.contentStudio.prefillNotice')}
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader
-          title="Platform Workspace"
-          description="Choose one platform to see only its draft fields, readiness checks, copy actions, and provider-safe execution."
+          title={t('dashboardI18n.contentStudio.platformWorkspace')}
+          description={t('dashboardI18n.contentStudio.platformWorkspaceDescription')}
           action={<Pin className="h-5 w-5 text-[#F7CBCA]" />}
         />
         <div className="dashboard-card-grid">
@@ -1216,7 +1381,7 @@ export function ContentStudioClient({
                   size: 'sm',
                 })}
               >
-                {platformStudioConfig[option.value].title}
+                  {t(`action.${option.value === 'google_ads' ? 'googleAdsStudio' : option.value === 'linkedin' ? 'linkedinPlanner' : `${option.value}Studio`}`, platformStudioConfig[option.value].title)}
               </Link>
             ))}
         </div>
@@ -1226,13 +1391,13 @@ export function ContentStudioClient({
       <div className="space-y-6">
         <div key={selectedItem?.id ?? 'new-item'} className="space-y-6">
           {(saveState.error || taskState.error) && (
-            <Notice tone="danger" title="Content Studio action failed">
+            <Notice tone="danger" title={t('dashboardI18n.contentStudio.actionFailed')}>
               {saveState.error || taskState.error}
             </Notice>
           )}
 
           {saveState.message && !saveState.error && (
-            <Notice tone="success" title="Content item saved">
+            <Notice tone="success" title={t('dashboardI18n.contentStudio.itemSaved')}>
               {saveState.message}
             </Notice>
           )}
@@ -1245,20 +1410,20 @@ export function ContentStudioClient({
                   href={`/dashboard/tasks/${taskState.taskId}`}
                   className="ms-2 inline-flex font-bold text-[#F7CBCA] hover:text-black"
                 >
-                  Open task
+                  {t('dashboardI18n.contentStudio.openTask')}
                 </Link>
               ) : null}
             </Notice>
           )}
 
           {providerState.error && (
-            <Notice tone="warning" title="Provider action update">
+            <Notice tone="warning" title={t('dashboardI18n.contentStudio.providerActionUpdate')}>
               {providerState.error}
             </Notice>
           )}
 
           {providerState.message && !providerState.error && providerState.outcome === 'success' && (
-            <Notice tone="success" title="Provider action completed">
+            <Notice tone="success" title={t('dashboardI18n.contentStudio.providerActionCompleted')}>
               {providerState.message}
             </Notice>
           )}
@@ -1271,7 +1436,7 @@ export function ContentStudioClient({
                 </div>
                 <div className="min-w-0">
                   <h2 className="font-semibold text-black">
-                    {selectedItem ? `Edit in ${selectedStudio.title}` : selectedStudio.title}
+                    {selectedItem ? `${t('common.edit')} ${t(`action.${selectedPlatformKey === 'google_ads' ? 'googleAdsStudio' : selectedPlatformKey === 'linkedin' ? 'linkedinPlanner' : `${selectedPlatformKey}Studio`}`, selectedStudio.title)}` : t(`action.${selectedPlatformKey === 'google_ads' ? 'googleAdsStudio' : selectedPlatformKey === 'linkedin' ? 'linkedinPlanner' : `${selectedPlatformKey}Studio`}`, selectedStudio.title)}
                   </h2>
                   <p className="mt-1 text-sm leading-6 text-black/62">
                     {selectedStudio.summary} Draft here, then use the platform-specific actions below.
@@ -1281,7 +1446,7 @@ export function ContentStudioClient({
               <div className="flex flex-wrap items-center gap-2">
                 <Link href="/dashboard/calendar" className={buttonStyles({ variant: 'outline', size: 'sm' })}>
                   <CalendarDays className="h-4 w-4" />
-                  View Calendar
+                  {t('dashboardI18n.contentStudio.viewCalendar')}
                 </Link>
                 {selectedItem ? (
                   <StatusBadge status={selectedItem.status} type="task" size="sm" />
@@ -1294,7 +1459,7 @@ export function ContentStudioClient({
 
           <Card className="border-[#F7CBCA]/12 bg-white/90">
             <CardHeader
-              title="Brand Context"
+              title={t('dashboardI18n.contentStudio.brandContext')}
               description={
                 brandKitExists
                   ? 'Brand Kit applied to empty draft defaults and AI generation prompts.'
@@ -1304,25 +1469,25 @@ export function ContentStudioClient({
             />
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="muted-panel p-3">
-                <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">Brand</p>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">{t('dashboardI18n.contentStudio.brand')}</p>
                 <p className="mt-1 text-sm font-semibold text-black">{brandKit.brandName}</p>
               </div>
               <div className="muted-panel p-3">
-                <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">Tone</p>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">{t('dashboardI18n.contentStudio.tone')}</p>
                 <p className="mt-1 text-sm font-semibold text-black">
-                  {brandKit.toneOfVoice ?? 'Not set'}
+                  {brandKit.toneOfVoice ?? t('dashboardI18n.common.notSet')}
                 </p>
               </div>
               <div className="muted-panel p-3">
-                <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">Default CTA</p>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">{t('dashboardI18n.contentStudio.defaultCta')}</p>
                 <p className="mt-1 text-sm font-semibold text-black">
-                  {brandKit.defaultCta ?? 'Not set'}
+                  {brandKit.defaultCta ?? t('dashboardI18n.common.notSet')}
                 </p>
               </div>
               <div className="muted-panel p-3">
-                <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">Hashtags</p>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">{t('dashboardI18n.contentStudio.hashtags')}</p>
                 <p className="mt-1 line-clamp-2 text-sm font-semibold text-black">
-                  {brandKit.defaultHashtags ?? 'Not set'}
+                  {brandKit.defaultHashtags ?? t('dashboardI18n.common.notSet')}
                 </p>
               </div>
             </div>
@@ -1370,7 +1535,7 @@ export function ContentStudioClient({
                       </div>
                       <p className="mt-2 text-sm leading-6 text-black/62">{template.goal}</p>
                       <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black/36">
-                        Best for
+                        {t('dashboardI18n.contentStudio.bestFor')}
                       </p>
                       <p className="mt-1 text-sm leading-6 text-black/58">{template.bestFor}</p>
                     </div>
@@ -1382,7 +1547,7 @@ export function ContentStudioClient({
                       disabled={savePending || isGenerating}
                     >
                       <Sparkles className="h-4 w-4" />
-                      Use Template
+                      {t('dashboardI18n.contentStudio.useTemplate')}
                     </Button>
                   </div>
 
@@ -1396,7 +1561,7 @@ export function ContentStudioClient({
 
                   <div className="mt-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-black/36">
-                      Fields included
+                      {t('dashboardI18n.contentStudio.fieldsIncluded')}
                     </p>
                     <p className="mt-1 text-sm leading-6 text-black/58">
                       {template.fieldsIncluded.join(', ')}
@@ -1421,14 +1586,14 @@ export function ContentStudioClient({
 
             <Card>
               <CardHeader
-                title="Campaign Basics"
+                title={t('dashboardI18n.contentStudio.campaignBasics')}
                 description="Set the campaign foundation, platform, objective, destination, schedule, and status in one place."
                 action={<Megaphone className="h-5 w-5 text-[#F7CBCA]" />}
               />
 
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <Label htmlFor="title">Campaign Name</Label>
+                  <Label htmlFor="title">{t('dashboardI18n.contentStudio.campaignName')}</Label>
                   <Input
                     id="title"
                     name="title"
@@ -1436,13 +1601,13 @@ export function ContentStudioClient({
                     maxLength={200}
                     required
                     disabled={savePending || isGenerating}
-                    defaultValue={selectedItem?.title ?? ''}
+                    defaultValue={selectedItem?.title ?? readTemplateDefault('title')}
                     placeholder="Spring launch carousel concept"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="content_type">Platform / Type</Label>
+                  <Label htmlFor="content_type">{t('dashboardI18n.contentStudio.platformType')}</Label>
                   {selectedItem ? (
                     <input type="hidden" name="content_type" value={selectedType} />
                   ) : null}
@@ -1455,19 +1620,19 @@ export function ContentStudioClient({
                   >
                     {availableTypeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        {translateContentStudioType(t, option.value)}
                       </option>
                     ))}
                   </Select>
                   {selectedItem ? (
                     <p className="mt-2 text-xs text-black/44">
-                      Platform/type stays fixed after creation for this foundation.
+                      {t('dashboardI18n.contentStudio.fixedType', 'Platform/type stays fixed after creation for this foundation.')}
                     </p>
                   ) : null}
                 </div>
 
                 <div>
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">{t('dashboardI18n.contentStudio.status')}</Label>
                   <Select
                     id="status"
                     name="status"
@@ -1476,7 +1641,7 @@ export function ContentStudioClient({
                   >
                     {contentStudioStatusOptions.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        {translateContentStudioStatus(t, option.value)}
                       </option>
                     ))}
                   </Select>
@@ -1488,7 +1653,7 @@ export function ContentStudioClient({
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label htmlFor="objective">Objective</Label>
+                  <Label htmlFor="objective">{t('dashboardI18n.contentStudio.objective')}</Label>
                   <Textarea
                     id="objective"
                     name="objective"
@@ -1496,14 +1661,16 @@ export function ContentStudioClient({
                     disabled={savePending || isGenerating}
                     defaultValue={
                       selectedItem?.objective ??
+                      (readTemplateDefault('objective') ||
                       defaultBrandValue(brandKit.campaignDefaults.defaultObjective)
+                      )
                     }
                     placeholder="Drive qualified traffic, increase saves, or prepare a draft campaign concept"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="target_audience">Target Audience</Label>
+                  <Label htmlFor="target_audience">{t('dashboardI18n.contentStudio.targetAudience')}</Label>
                   <Textarea
                     id="target_audience"
                     name="target_audience"
@@ -1519,7 +1686,7 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('offer') ? (
                   <div>
-                    <Label htmlFor="offer">Budget Notes / Value Proposition</Label>
+                    <Label htmlFor="offer">{t('dashboardI18n.contentStudio.budgetValue')}</Label>
                     <Textarea
                       id="offer"
                       name="offer"
@@ -1536,7 +1703,7 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('destination_url') ? (
                   <div className="md:col-span-2">
-                    <Label htmlFor="destination_url">Destination URL</Label>
+                    <Label htmlFor="destination_url">{t('dashboardI18n.contentStudio.destinationUrl')}</Label>
                     <Input
                       id="destination_url"
                       name="destination_url"
@@ -1621,7 +1788,7 @@ export function ContentStudioClient({
                 ) : null}
 
                 <div className="md:col-span-2">
-                  <Label htmlFor="prompt">Prompt / Direction</Label>
+                  <Label htmlFor="prompt">{t('dashboardI18n.contentStudio.promptDirection')}</Label>
                   <Textarea
                     id="prompt"
                     name="prompt"
@@ -1629,16 +1796,18 @@ export function ContentStudioClient({
                     disabled={savePending || isGenerating}
                     defaultValue={
                       selectedItem?.prompt ??
+                      (readTemplateDefault('prompt') ||
                       (!selectedItem
                         ? defaultBrandValue(brandKit.campaignDefaults.defaultPostingStyle)
                         : '')
+                      )
                     }
                     placeholder="Audience, hook, product angle, offer framing, constraints, and references"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label htmlFor="schedule_at">Planned Schedule Time</Label>
+                  <Label htmlFor="schedule_at">{t('dashboardI18n.contentStudio.plannedSchedule', 'Planned Schedule Time')}</Label>
                   <Input
                     id="schedule_at"
                     name="schedule_at"
@@ -1647,7 +1816,7 @@ export function ContentStudioClient({
                     defaultValue={formatDatetimeLocal(selectedItem?.schedule_at)}
                   />
                   <p className="mt-2 text-xs text-black/44">
-                    Scheduled items are only processed when provider readiness allows it. Google Ads stays paused-only, and manual-only providers will never be marked published.
+                    {t('dashboardI18n.contentStudio.scheduleGuard', 'Scheduled items are only processed when provider readiness allows it. Google Ads stays paused-only, and manual-only providers will never be marked published.')}
                   </p>
                 </div>
               </div>
@@ -1655,7 +1824,7 @@ export function ContentStudioClient({
 
             <Card>
               <CardHeader
-                title="Creative & Message"
+                title={t('dashboardI18n.contentStudio.creativeMessage', 'Creative & Message')}
                 description="Build the ad/package copy, structured campaign fields, and production notes for every channel."
                 action={<Wand2 className="h-5 w-5 text-[#F7CBCA]" />}
               />
@@ -1683,7 +1852,7 @@ export function ContentStudioClient({
               {selectedItem ? (
                 <div className="mb-5 space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/38">
-                    Existing field content is preserved. New AI generations are appended below a divider for review before saving.
+                    {t('dashboardI18n.contentStudio.existingContentPreserved', 'Existing field content is preserved. New AI generations are appended below a divider for review before saving.')}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {selectedStudio.copyActions.map((action) => (
@@ -1704,6 +1873,14 @@ export function ContentStudioClient({
                         {action.label}
                       </Button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={openQualityReview}
+                      className={buttonStyles({ variant: 'outline', size: 'sm', className: 'w-full justify-start' })}
+                    >
+                      <SearchCheck className="h-4 w-4" />
+                      Review Quality
+                    </button>
                   </div>
                 </div>
               ) : null}
@@ -1711,7 +1888,7 @@ export function ContentStudioClient({
               <div className="grid gap-5 md:grid-cols-2">
                 {visibleFieldSet.has('hook') ? (
                 <div>
-                  <Label htmlFor="hook">Hook</Label>
+                  <Label htmlFor="hook">{t('dashboardI18n.contentStudio.hook', 'Hook')}</Label>
                   <Textarea
                     id="hook"
                     name="hook"
@@ -1725,7 +1902,7 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('primary_text') ? (
                 <div>
-                  <Label htmlFor="primary_text">Primary Text</Label>
+                  <Label htmlFor="primary_text">{t('dashboardI18n.contentStudio.primaryText', 'Primary Text')}</Label>
                   <Textarea
                     id="primary_text"
                     name="primary_text"
@@ -1739,13 +1916,13 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('ad_copy') ? (
                 <div>
-                  <Label htmlFor="ad_copy">Ad Copy</Label>
+                  <Label htmlFor="ad_copy">{t('dashboardI18n.contentStudio.adCopy', 'Ad Copy')}</Label>
                   <Textarea
                     id="ad_copy"
                     name="ad_copy"
                     rows={5}
                     disabled={savePending || isGenerating}
-                    defaultValue={selectedItem?.ad_copy ?? ''}
+                    defaultValue={selectedItem?.ad_copy ?? readTemplateDefault('ad_copy')}
                     placeholder="Primary copy, angle notes, testing notes, and variations"
                   />
                 </div>
@@ -1754,14 +1931,14 @@ export function ContentStudioClient({
                 {visibleFieldSet.has('caption') ? (
                 <div>
                   <Label htmlFor="caption">
-                    {selectedType === 'linkedin_post_planner' ? 'LinkedIn Post Body' : selectedType === 'pinterest_pin' ? 'Pin Description' : 'Caption'}
+                    {selectedType === 'linkedin_post_planner' ? t('dashboardI18n.contentStudio.linkedinPostBody', 'LinkedIn Post Body') : selectedType === 'pinterest_pin' ? t('dashboardI18n.contentStudio.pinDescription', 'Pin Description') : t('dashboardI18n.contentStudio.caption', 'Caption')}
                   </Label>
                   <Textarea
                     id="caption"
                     name="caption"
                     rows={5}
                     disabled={savePending || isGenerating}
-                    defaultValue={selectedItem?.caption ?? ''}
+                    defaultValue={selectedItem?.caption ?? readTemplateDefault('caption')}
                     placeholder="Post caption, reel caption, or copy-ready LinkedIn text"
                   />
                 </div>
@@ -1769,13 +1946,13 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('script') ? (
                 <div>
-                  <Label htmlFor="script">Script for Reels</Label>
+                  <Label htmlFor="script">{t('dashboardI18n.contentStudio.scriptForReels', 'Script for Reels')}</Label>
                   <Textarea
                     id="script"
                     name="script"
                     rows={5}
                     disabled={savePending || isGenerating}
-                    defaultValue={selectedItem?.script ?? ''}
+                    defaultValue={selectedItem?.script ?? readTemplateDefault('script')}
                     placeholder="Working script, structured talking points, or short-form flow"
                   />
                 </div>
@@ -1783,7 +1960,7 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('headlines') ? (
                 <div>
-                  <Label htmlFor="headlines">{selectedType === 'pinterest_pin' ? 'Pin Title' : 'Headlines'}</Label>
+                  <Label htmlFor="headlines">{selectedType === 'pinterest_pin' ? t('dashboardI18n.contentStudio.pinTitle', 'Pin Title') : t('dashboardI18n.contentStudio.headlines', 'Headlines')}</Label>
                   <Textarea
                     id="headlines"
                     name="headlines"
@@ -1797,7 +1974,7 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('descriptions') ? (
                 <div>
-                  <Label htmlFor="descriptions">{selectedType === 'pinterest_pin' ? 'Pin Description' : 'Descriptions'}</Label>
+                  <Label htmlFor="descriptions">{selectedType === 'pinterest_pin' ? t('dashboardI18n.contentStudio.pinDescription', 'Pin Description') : t('dashboardI18n.contentStudio.descriptions', 'Descriptions')}</Label>
                   <Textarea
                     id="descriptions"
                     name="descriptions"
@@ -1811,7 +1988,7 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('cta') ? (
                 <div>
-                  <Label htmlFor="cta">CTA</Label>
+                  <Label htmlFor="cta">{t('dashboardI18n.contentStudio.cta', 'CTA')}</Label>
                   <Textarea
                     id="cta"
                     name="cta"
@@ -1828,7 +2005,7 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('hashtags') ? (
                 <div>
-                  <Label htmlFor="hashtags">Hashtags</Label>
+                  <Label htmlFor="hashtags">{t('dashboardI18n.contentStudio.hashtags')}</Label>
                   <Textarea
                     id="hashtags"
                     name="hashtags"
@@ -1845,13 +2022,13 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('keywords') ? (
                 <div>
-                  <Label htmlFor="keywords">Keywords</Label>
+                  <Label htmlFor="keywords">{t('dashboardI18n.contentStudio.keywords', 'Keywords')}</Label>
                   <Textarea
                     id="keywords"
                     name="keywords"
                     rows={5}
                     disabled={savePending || isGenerating}
-                    defaultValue={readCampaignList(selectedItem, 'keywords')}
+                    defaultValue={readCampaignList(selectedItem, 'keywords') || readTemplateDefault('keywords')}
                     placeholder="Search keyword ideas, one per line"
                   />
                 </div>
@@ -1859,7 +2036,7 @@ export function ContentStudioClient({
 
                 {visibleFieldSet.has('creative_brief') ? (
                 <div>
-                  <Label htmlFor="creative_brief">Creative Brief</Label>
+                  <Label htmlFor="creative_brief">{t('dashboardI18n.contentStudio.creativeBrief', 'Creative Brief')}</Label>
                   <Textarea
                     id="creative_brief"
                     name="creative_brief"
@@ -1867,7 +2044,9 @@ export function ContentStudioClient({
                     disabled={savePending || isGenerating}
                     defaultValue={
                       selectedItem?.creative_brief ??
+                      (readTemplateDefault('creative_brief') ||
                       (!selectedItem ? defaultBrandValue(brandDefaultCreativeDirection) : '')
+                      )
                     }
                     placeholder="Concept, visual direction, audience insight, and production notes"
                   />
@@ -1924,7 +2103,7 @@ export function ContentStudioClient({
                     name="platform_package"
                     rows={6}
                     disabled={savePending || isGenerating}
-                    defaultValue={readCampaignString(selectedItem, 'platform_package')}
+                    defaultValue={readCampaignString(selectedItem, 'platform_package') || readTemplateDefault('platform_package')}
                     placeholder="Optional AI-generated or manually assembled platform package notes"
                   />
                 </div>
@@ -1933,26 +2112,26 @@ export function ContentStudioClient({
             </Card>
 
             {selectedItem?.content_type === 'linkedin_post_planner' ? (
-              <Notice tone="info" title="Manual LinkedIn planner only">
-                Use the copy-ready actions here to move LinkedIn draft text into your manual posting workflow. No LinkedIn API or automatic publishing is enabled.
+              <Notice tone="info" title={t('dashboardI18n.contentStudio.manualLinkedinTitle', 'Manual LinkedIn planner only')}>
+                {t('dashboardI18n.contentStudio.manualLinkedinDescription', 'Use the copy-ready actions here to move LinkedIn draft text into your manual posting workflow. No LinkedIn API or automatic publishing is enabled.')}
               </Notice>
             ) : null}
 
             <Card>
               <CardHeader
-                title="Creative Assets"
-                description="Link existing creative assets, see what is attached, and route to Creative Assets when provider-ready media is still missing."
+                title={t('dashboardI18n.contentStudio.creativeAssets')}
+                description={t('dashboardI18n.contentStudio.creativeAssetsDescription', 'Link existing creative assets, see what is attached, and route to Creative Assets when provider-ready media is still missing.')}
                 action={<ImageIcon className="h-5 w-5 text-[#F7CBCA]" />}
               />
 
               <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-black/58">
                 <span className="basis-full text-black/62">{selectedStudio.assetGuidance}</span>
                 <span>
-                  Linked asset count: <strong className="text-black">{selectedAssetNames.length}</strong>
+                  {t('dashboardI18n.contentStudio.linkedAssetCount', 'Linked asset count')}: <strong className="text-black">{selectedAssetNames.length}</strong>
                 </span>
                 <span>
-                  Asset names:{' '}
-                  <strong className="text-black">{selectedAssetNames.join(', ') || 'None linked yet'}</strong>
+                  {t('dashboardI18n.contentStudio.assetNames', 'Asset names')}:{' '}
+                  <strong className="text-black">{selectedAssetNames.join(', ') || t('dashboardI18n.contentStudio.noneLinkedYet', 'None linked yet')}</strong>
                 </span>
                 <Link href="/dashboard/creative-assets" className={buttonStyles({ variant: 'outline', size: 'sm' })}>
                   Creative Assets
@@ -1964,8 +2143,8 @@ export function ContentStudioClient({
                 'instagram_reel',
                 'pinterest_pin',
               ].includes(selectedType) && selectedAssetNames.length === 0 ? (
-                <Notice tone="warning" title="Provider-ready media is still required">
-                  This content type needs a suitable linked asset before a real provider action can succeed.
+                <Notice tone="warning" title={t('dashboardI18n.contentStudio.providerMediaRequired', 'Provider-ready media is still required')}>
+                  {t('dashboardI18n.contentStudio.providerMediaRequiredDescription', 'This content type needs a suitable linked asset before a real provider action can succeed.')}
                 </Notice>
               ) : null}
 
@@ -2004,8 +2183,8 @@ export function ContentStudioClient({
               ) : null}
 
               {assetOptions.length === 0 ? (
-                <Notice tone="warning" title="No matching creative assets yet">
-                  Create assets in Creative Assets first, then link them here.
+                <Notice tone="warning" title={t('dashboardI18n.contentStudio.noMatchingAssets', 'No matching creative assets yet')}>
+                  {t('dashboardI18n.contentStudio.noMatchingAssetsDescription', 'Create assets in Creative Assets first, then link them here.')}
                 </Notice>
               ) : (
                 <div className="grid gap-3">
@@ -2069,7 +2248,7 @@ export function ContentStudioClient({
                             {asset.title}
                           </label>
                           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-black/48">
-                            <span>{formatContentStudioPlatformLabel(asset.platform)}</span>
+                            <span>{formatContentStudioPlatformLabel(asset.platform, t)}</span>
                             <span>{asset.asset_type.replace(/_/g, ' ')}</span>
                             {isVideo ? <span>video asset</span> : null}
                             <span>{asset.status.replace(/_/g, ' ')}</span>
@@ -2104,7 +2283,7 @@ export function ContentStudioClient({
                               }
                             >
                               <Unlink2 className="h-4 w-4" />
-                              {removingAssetId === asset.id ? 'Removing...' : 'Remove from Draft'}
+                              {removingAssetId === asset.id ? t('dashboardI18n.contentStudio.removing') : t('dashboardI18n.contentStudio.removeFromDraft')}
                             </Button>
                           ) : null}
                         </div>
@@ -2131,7 +2310,7 @@ export function ContentStudioClient({
                   className={buttonStyles({ variant: 'outline' })}
                 >
                   <Plus className="h-4 w-4" />
-                  New Draft
+                  {t('dashboardI18n.contentStudio.newDraft')}
                 </Link>
               ) : null}
               <Button
@@ -2141,17 +2320,17 @@ export function ContentStudioClient({
               >
                 <Plus className="h-4 w-4" />
                 {savePending
-                  ? 'Saving...'
+                  ? t('dashboardI18n.contentStudio.saving')
                   : selectedItem
-                    ? 'Update Content Item'
-                    : 'Create Content Item'}
+                    ? t('dashboardI18n.contentStudio.updateContentItem')
+                    : t('dashboardI18n.contentStudio.createContentItem')}
               </Button>
             </div>
           </form>
 
           <Card>
             <CardHeader
-              title={`${selectedStudio.title} Readiness`}
+              title={`${t(`action.${selectedPlatformKey === 'google_ads' ? 'googleAdsStudio' : selectedPlatformKey === 'linkedin' ? 'linkedinPlanner' : `${selectedPlatformKey}Studio`}`, selectedStudio.title)} ${t('dashboardI18n.contentStudio.readiness', 'Readiness')}`}
               description="This workspace shows the setup, asset, URL, provider, and manual-only checks that apply to the selected platform."
               action={<Send className="h-5 w-5 text-[#F7CBCA]" />}
             />
@@ -2169,7 +2348,7 @@ export function ContentStudioClient({
                 >
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-semibold text-black">
-                      {formatContentStudioPlatformLabel(providerKey as ContentStudioPlatform)}
+                      {formatContentStudioPlatformLabel(providerKey as ContentStudioPlatform, t)}
                     </p>
                     <StatusBadge status={readiness.state} type="system" size="sm" />
                   </div>
@@ -2182,15 +2361,15 @@ export function ContentStudioClient({
                 </div>
               ))}
               <div className="rounded-lg border border-black/8 bg-white px-4 py-4 shadow-sm">
-                <p className="font-semibold text-black">Action Type</p>
+                <p className="font-semibold text-black">{t('dashboardI18n.contentStudio.actionType', 'Action Type')}</p>
                 <p className="mt-2 text-sm leading-6 text-black/58">
                   {selectedType === 'google_ads_campaign_draft'
-                    ? 'paused ad draft'
+                    ? t('dashboardI18n.contentStudio.pausedAdDraft', 'paused ad draft')
                     : selectedType === 'linkedin_post_planner'
-                      ? 'manual-only'
+                      ? t('dashboardI18n.contentStudio.manualOnly', 'manual-only')
                       : isMetaAdContentType(selectedType)
-                        ? 'paused ad draft'
-                        : 'organic publish'}
+                        ? t('dashboardI18n.contentStudio.pausedAdDraft', 'paused ad draft')
+                        : t('dashboardI18n.contentStudio.organicPublish', 'organic publish')}
                 </p>
               </div>
             </div>
@@ -2199,7 +2378,7 @@ export function ContentStudioClient({
           {selectedItem ? (
             <Card>
               <CardHeader
-                title="AI Task Actions"
+                title={t('dashboardI18n.contentStudio.aiTaskActions', 'AI Task Actions')}
                 description="Create normal task records linked to this content item. Existing task execution, callback, and webhook behavior remain untouched."
                 action={<FileText className="h-5 w-5 text-[#F7CBCA]" />}
               />
@@ -2216,7 +2395,7 @@ export function ContentStudioClient({
                     className="justify-start"
                   >
                     <Sparkles className="h-4 w-4" />
-                    Create {option.label} Task
+                    {t('action.createTask')} {option.label}
                   </Button>
                 ))}
               </form>
@@ -2226,7 +2405,7 @@ export function ContentStudioClient({
           {selectedItem ? (
             <Card>
               <CardHeader
-                title="Execution Actions"
+                title={t('dashboardI18n.contentStudio.executionActions', 'Execution Actions')}
                 description="These actions now either execute the real provider call or explain exactly what setup is still missing."
                 action={<Send className="h-5 w-5 text-[#F7CBCA]" />}
               />
@@ -2449,18 +2628,16 @@ export function ContentStudioClient({
                   }
                 >
                   <CalendarClock className="h-4 w-4" />
-                  Schedule
+                  {t('dashboardI18n.contentStudio.schedule')}
                 </Button>
                 {selectedItem.content_type !== 'linkedin_post_planner' ? (
                 <form
                   action={providerFormAction}
                   onSubmit={(event) => {
-                    if (!isMetaAdContentType(selectedItem.content_type)) {
-                      return;
-                    }
-
                     const confirmed = window.confirm(
-                      'This will create a PAUSED Meta campaign/ad draft. It will not spend money until you activate it manually in Meta Ads Manager.'
+                      isMetaAdContentType(selectedItem.content_type)
+                        ? 'This will create a PAUSED Meta campaign/ad draft. It will not spend money until you activate it manually in Meta Ads Manager. / سيتم إنشاء مسودة متوقفة فقط.'
+                        : 'Send this content to the configured provider now? / واش ترسل هذا المحتوى للمزوّد دابا؟'
                     );
 
                     if (!confirmed) {
@@ -2501,8 +2678,8 @@ export function ContentStudioClient({
                 >
                   <Copy className="h-4 w-4" />
                   {selectedItem.content_type === 'linkedin_post_planner'
-                    ? 'Copy LinkedIn Package'
-                    : 'Copy-ready Handoff'}
+                    ? t('dashboardI18n.contentStudio.copyLinkedinPackage')
+                    : t('dashboardI18n.contentStudio.copyReadyHandoff')}
                 </Button>
               </div>
 
@@ -2523,7 +2700,7 @@ export function ContentStudioClient({
 
       <Card className="border-[#F7CBCA]/12 bg-[#F1F7F7]">
         <CardHeader
-          title="Content Library is separate"
+          title={t('dashboardI18n.contentStudio.contentLibrarySeparate', 'Content Library is separate')}
           description="Use this studio for platform-specific creation and editing. Manage saved drafts, filters, provider status, assets, and planned times in the dedicated library."
           action={<FileText className="h-5 w-5 text-[#F7CBCA]" />}
         />
@@ -2533,7 +2710,7 @@ export function ContentStudioClient({
           </p>
           <Link href="/dashboard/content-library" className={buttonStyles({ variant: 'secondary' })}>
             <FileText className="h-4 w-4" />
-            Open Content Library
+            {t('dashboardI18n.contentStudio.openContentLibrary')}
           </Link>
         </div>
       </Card>

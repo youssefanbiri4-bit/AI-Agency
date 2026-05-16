@@ -116,6 +116,50 @@ export async function uploadCreativeAssetImage({
   };
 }
 
+export async function uploadCreativeAssetVideo({
+  client,
+  workspaceId,
+  assetId,
+  fileBuffer,
+  contentType = 'video/mp4',
+}: {
+  client: SupabaseClient<Database>;
+  workspaceId: string;
+  assetId: string;
+  fileBuffer: Buffer;
+  contentType?: string;
+}) {
+  const extension =
+    contentType === 'video/webm'
+      ? 'webm'
+      : contentType === 'video/quicktime'
+        ? 'mov'
+        : 'mp4';
+  const storagePath = `${workspaceId}/${assetId}/videos/generated-${Date.now()}.${extension}`;
+
+  const { error } = await client.storage
+    .from(CREATIVE_ASSETS_BUCKET)
+    .upload(storagePath, fileBuffer, {
+      cacheControl: '31536000',
+      contentType,
+      upsert: true,
+    });
+
+  if (error) {
+    return {
+      publicUrl: null,
+      storagePath: null,
+      error: error.message,
+    };
+  }
+
+  return {
+    publicUrl: createCreativeAssetPublicUrl(storagePath),
+    storagePath,
+    error: null,
+  };
+}
+
 export async function deleteCreativeAssetStorageObject(
   client: SupabaseClient<Database>,
   storagePath: string | null

@@ -4,6 +4,11 @@ import type {
   ContentStudioStatus,
   ContentStudioType,
 } from '@/types/database';
+import {
+  translateContentStudioPlatform,
+  translateContentStudioStatus,
+  translateContentStudioType,
+} from '@/i18n/dashboard-labels';
 
 export type ContentStudioTab =
   | 'all'
@@ -169,13 +174,16 @@ export function getTabForContentType(contentType: ContentStudioType): ContentStu
   return getContentStudioTypeOption(contentType)?.tab ?? 'all';
 }
 
-export function formatContentStudioTypeLabel(contentType: ContentStudioType) {
+export function formatContentStudioTypeLabel(contentType: ContentStudioType, t?: (key: string, fallback?: string) => string) {
+  if (t) return translateContentStudioType(t, contentType);
   return getContentStudioTypeOption(contentType)?.label ?? contentType;
 }
 
 export function formatContentStudioPlatformLabel(
-  platform: ContentStudioPlatform | 'general'
+  platform: ContentStudioPlatform | 'general',
+  t?: (key: string, fallback?: string) => string
 ) {
+  if (t) return translateContentStudioPlatform(t, platform);
   switch (platform) {
     case 'facebook':
       return 'Facebook';
@@ -194,7 +202,8 @@ export function formatContentStudioPlatformLabel(
   }
 }
 
-export function formatContentStudioStatusLabel(status: ContentStudioStatus) {
+export function formatContentStudioStatusLabel(status: ContentStudioStatus, t?: (key: string, fallback?: string) => string) {
+  if (t) return translateContentStudioStatus(t, status);
   return contentStudioStatusOptions.find((option) => option.value === status)?.label ?? status;
 }
 

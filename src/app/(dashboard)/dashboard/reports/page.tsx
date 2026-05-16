@@ -4,6 +4,7 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
+  Bot,
   CalendarClock,
   CheckCircle2,
   ClipboardList,
@@ -33,13 +34,13 @@ import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
 import { listTasks } from '@/lib/data/tasks';
 import { listProjectsForWorkspace } from '@/lib/data/projects';
 import { listReleasesForWorkspace } from '@/lib/data/releases';
+import { getAgentTemplateById, type AgentTemplate } from '@/lib/agent-library/templates';
 import { getMetaConnectionStatus, getGoogleAdsConnectionStatus } from '@/lib/data/ad-connections';
 import { getGoogleAdsConfigReadiness } from '@/lib/ads/google-ads';
 import { getPinterestConfigReadiness } from '@/lib/ads/pinterest';
 import { getContentStudioProviderReadiness } from '@/lib/content-studio/provider-actions';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
 import {
-  checkNvidiaTextProviderReadiness,
   checkOpenAITextProviderReadiness,
 } from '@/lib/ai/text-provider';
 import { buttonStyles } from '@/components/ui/Button';
@@ -81,6 +82,39 @@ type ReadinessState =
   | 'manual_only'
   | 'unsupported'
   | 'error';
+
+const reportAgentIds = [
+  'campaign-report-agent',
+  'task-performance-agent',
+  'content-performance-agent',
+  'provider-health-report-agent',
+  'workflow-usage-report-agent',
+] as const;
+
+function formatReportAgentPrompt(template: AgentTemplate) {
+  return [
+    `# ${template.name}`,
+    '',
+    `Category: ${template.category}`,
+    `Execution mode: ${template.execution_mode}`,
+    `Safety level: ${template.safety_level}`,
+    '',
+    '## Purpose',
+    template.description,
+    '',
+    '## Inputs',
+    template.inputs.map((input) => `- ${input}`).join('\n'),
+    '',
+    '## Outputs',
+    template.outputs.map((output) => `- ${output}`).join('\n'),
+    '',
+    '## Suggested Prompt',
+    template.suggested_prompt,
+    '',
+    '## Review Checklist',
+    template.review_checklist.map((item) => `- ${item}`).join('\n'),
+  ].join('\n');
+}
 
 interface ProviderStatusRow {
   name: string;
@@ -619,7 +653,6 @@ export default async function ReportsPage() {
   const pinterestReadiness = getPinterestConfigReadiness();
   const schedulerReadiness = getContentStudioSchedulerReadiness();
   const openAIReadiness = checkOpenAITextProviderReadiness();
-  const nvidiaReadiness = checkNvidiaTextProviderReadiness();
 
   const [
     generatedReportsResult,
@@ -772,12 +805,6 @@ export default async function ReportsPage() {
       nextAction: openAIReadiness.message,
     },
     {
-      name: 'NVIDIA',
-      status: getReadinessState(nvidiaReadiness),
-      missing: nvidiaReadiness.isReady ? [] : ['NVIDIA_API_KEY'],
-      nextAction: nvidiaReadiness.message,
-    },
-    {
       name: 'Meta / Instagram / Facebook',
       status: getReadinessState(facebookReadiness ?? instagramReadiness ?? {}),
       missing: [
@@ -832,7 +859,6 @@ export default async function ReportsPage() {
   const timelineAttempts = mapAttemptTimeline(publishAttempts, contentItems);
   const activeProviders = providerStatuses.filter((provider) => provider.status === 'ready').length;
   const setupChecklist = [
-    setupItem('NVIDIA_API_KEY', nvidiaReadiness.isReady, nvidiaReadiness.message),
     setupItem('META_APP_ID', Boolean(process.env.META_APP_ID?.trim()), 'Required for Meta OAuth.'),
     setupItem('META_APP_SECRET', Boolean(process.env.META_APP_SECRET?.trim()), 'Required server-side for Meta OAuth.'),
     setupItem('META_REDIRECT_URI', Boolean(process.env.META_REDIRECT_URI?.trim()), 'Required for Meta OAuth callbacks.'),
@@ -1117,6 +1143,9 @@ export default async function ReportsPage() {
     ['pinterest', 'Pinterest', contentItems.filter((item) => item.platform === 'pinterest').length],
     ['linkedin', 'LinkedIn', contentItems.filter((item) => item.platform === 'linkedin').length],
   ];
+  const reportAgentTemplates = reportAgentIds
+    .map((id) => getAgentTemplateById(id))
+    .filter((template): template is AgentTemplate => Boolean(template));
 
   return (
     <div className="-mx-4 -my-6 min-h-screen bg-background px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
@@ -1166,6 +1195,57 @@ export default async function ReportsPage() {
             <ReportsMetricCard key={metric.label} metric={metric} />
           ))}
         </div>
+
+        <ReportsCard
+          title="AI Report Agents"
+          description="Read-only report templates for summarizing activity, blockers, and safe next actions before you decide what to do."
+          action={<Link href="/dashboard/agent-library?category=Reports%20%26%20Analytics" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Agent Library</Link>}
+        >
+          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-5">
+            {reportAgentTemplates.map((template) => {
+              const taskDescription = `Create a draft-only internal report using the ${template.name}. Keep it read-only, analysis-only, and review-first.`;
+
+              return (
+                <article key={template.id} className="flex min-w-0 flex-col rounded-2xl border border-black/7 bg-[#F1F7F7]/64 p-4">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-[#5D6B6B]">{template.name}</p>
+                      <p className="mt-2 line-clamp-4 text-xs font-semibold leading-5 text-black/58">{template.description}</p>
+                    </div>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-[#F7CBCA] shadow-sm">
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-black">
+                    <span className="rounded-full border border-[#D5E5E5] bg-white px-2.5 py-1 text-[#5D6B6B]">Draft only</span>
+                    <span className="rounded-full border border-[#D5E5E5] bg-white px-2.5 py-1 text-[#5D6B6B]">Read only</span>
+                  </div>
+                  <div className="mt-auto flex flex-wrap gap-2 pt-4">
+                    <Link href={`/dashboard/alex?template=${template.id}`} className={buttonStyles({ variant: 'primary', size: 'sm' })}>
+                      <Bot className="h-4 w-4" />
+                      Use with Alex
+                    </Link>
+                    <CopyOperationalReportButton reportText={formatReportAgentPrompt(template)} label="Copy Prompt" />
+                    <Link
+                      href={`/dashboard/create-task?title=${encodeURIComponent(template.name)}&description=${encodeURIComponent(taskDescription)}`}
+                      className={buttonStyles({ variant: 'outline', size: 'sm' })}
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      Create Report Task
+                    </Link>
+                    <Link href={`/dashboard/knowledge-base?query=${encodeURIComponent(template.name)}`} className={buttonStyles({ variant: 'ghost', size: 'sm' })}>
+                      <Database className="h-4 w-4" />
+                      Knowledge Base
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <p className="mt-4 text-xs font-semibold leading-5 text-black/50">
+            These agents prepare summaries only. They do not publish, schedule, contact clients, change providers, or run n8n.
+          </p>
+        </ReportsCard>
 
         <AdvancedAnalyticsClient data={advancedAnalyticsData} />
 

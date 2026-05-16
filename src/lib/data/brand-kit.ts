@@ -92,12 +92,7 @@ export function normalizeBrandKit(value: unknown): BrandKit {
     },
     aiPreferences: {
       ...defaultBrandKit.aiPreferences,
-      providerMode:
-        aiPreferences.providerMode === 'openai' ||
-        aiPreferences.providerMode === 'nvidia' ||
-        aiPreferences.providerMode === 'auto'
-          ? aiPreferences.providerMode
-          : defaultBrandKit.aiPreferences.providerMode,
+      providerMode: 'openai',
       defaultLanguage:
         aiPreferences.defaultLanguage === 'arabic' ||
         aiPreferences.defaultLanguage === 'english' ||

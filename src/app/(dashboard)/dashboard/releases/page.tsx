@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, BarChart3, FolderKanban, Rocket } from 'lucide-react';
+import { ArrowLeft, BarChart3, FileText, FolderKanban, Rocket, ShieldCheck } from 'lucide-react';
 import { createSupabaseServerClient, getActiveWorkspaceIdFromCookie } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { listProjectsForWorkspace } from '@/lib/data/projects';
@@ -34,6 +34,8 @@ export default async function ReleasesPage() {
             <Link href="/dashboard" className={buttonStyles({ variant: 'outline' })}><ArrowLeft className="h-4 w-4" />Dashboard</Link>
             <Link href="/dashboard/projects" className={buttonStyles({ variant: 'outline' })}><FolderKanban className="h-4 w-4" />Open Projects</Link>
             <Link href="/dashboard/reports" className={buttonStyles({ variant: 'outline' })}><BarChart3 className="h-4 w-4" />Open Reports</Link>
+            <Link href="/dashboard/alex?template=release-notes-agent" className={buttonStyles({ variant: 'outline' })}><FileText className="h-4 w-4" />Release Notes Agent</Link>
+            <Link href="/dashboard/alex?template=deployment-review-agent" className={buttonStyles({ variant: 'outline' })}><ShieldCheck className="h-4 w-4" />Deployment Review Agent</Link>
             <a href="#new-release" className={buttonStyles()}><Rocket className="h-4 w-4" />New Release</a>
           </>
         }

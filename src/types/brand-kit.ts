@@ -1,6 +1,6 @@
 import type { JsonObject } from './index';
 
-export type BrandAIProviderMode = 'openai' | 'nvidia' | 'auto';
+export type BrandAIProviderMode = 'openai';
 export type BrandDefaultLanguage = 'arabic' | 'english' | 'french' | 'mixed';
 export type BrandContentLength = 'short' | 'medium' | 'detailed';
 export type BrandEmojiUsage = 'none' | 'minimal' | 'normal';
@@ -103,7 +103,7 @@ export const defaultBrandKit: BrandKit = {
     defaultDisclaimer: null,
   },
   aiPreferences: {
-    providerMode: 'auto',
+    providerMode: 'openai',
     defaultLanguage: 'english',
     contentLength: 'medium',
     emojiUsage: 'minimal',

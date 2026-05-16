@@ -68,6 +68,11 @@
     "softwarePlanner": "Planificador de software",
     "releases": "Versiones",
     "promptLibrary": "Biblioteca de instrucciones",
+    "industryPacks": "Packs de industria",
+    "automationBlueprints": "Blueprints de automatización",
+    "qualityReview": "Revisión de calidad",
+    "knowledgeBase": "Base de conocimiento",
+    "aiStudio": "Estudio IA",
     "tasks": "Tareas",
     "campaigns": "Campañas",
     "reelsStudio": "Estudio Reels",
@@ -96,37 +101,162 @@
     "signedInUser": "Usuario conectado",
     "language": "Idioma",
     "pageTitles": {
-      "dashboard": { "title": "Panel de control", "description": "Resumen de configuración y preparación de datos" },
-      "agents": { "title": "Agentes", "description": "Gestionar el catálogo de agentes IA" },
-      "agentDetails": { "title": "Detalles del agente", "description": "Revisar capacidades e integración" },
-      "projects": { "title": "Proyectos", "description": "Organizar proyectos, versiones y notas" },
-      "projectDetails": { "title": "Detalles del proyecto", "description": "Revisar contexto y preparación" },
-      "releases": { "title": "Versiones", "description": "Seguir fases, despliegues y verificaciones" },
-      "releaseDetails": { "title": "Detalles de versión", "description": "Revisar controles y preparación" },
-      "promptLibrary": { "title": "Biblioteca de instrucciones", "description": "Guardar y reutilizar instrucciones" },
-      "promptDetails": { "title": "Detalles de instrucción", "description": "Copiar y editar instrucciones" },
-      "tasks": { "title": "Tareas", "description": "Seguir estado y preparación de tareas" },
-      "taskDetails": { "title": "Detalles de tarea", "description": "Inspeccionar entradas, estado y salidas" },
-      "createTask": { "title": "Crear tarea", "description": "Preparar solicitudes de trabajo estructuradas" },
-      "campaigns": { "title": "Campañas", "description": "Planificar campañas y analizar rendimiento" },
-      "reels": { "title": "Estudio Reels", "description": "Planificar y gestionar Reels de Instagram" },
-      "reelDetails": { "title": "Detalles del Reel", "description": "Editar contenido y controles de publicación" },
-      "creativeAssets": { "title": "Activos creativos", "description": "Gestionar instrucciones, imágenes y activos" },
-      "creativeAssetDetails": { "title": "Detalles del activo", "description": "Revisar detalles del activo creativo" },
-      "contentStudio": { "title": "Estudio de contenido y anuncios", "description": "Crear borradores multicanal seguros" },
-      "contentLibrary": { "title": "Biblioteca de contenido", "description": "Gestionar borradores y activos" },
-      "calendar": { "title": "Calendario", "description": "Planificar contenido en el calendario" },
-      "recovery": { "title": "Recuperación", "description": "Revisar elementos fallidos y bloqueados" },
-      "review": { "title": "Revisiones", "description": "Área de revisión de calidad" },
-      "reports": { "title": "Informes", "description": "Espacio de trabajo de informes" },
-      "notifications": { "title": "Notificaciones", "description": "Actualizaciones y alertas" },
-      "settings": { "title": "Ajustes", "description": "Gestionar cuenta e integración" },
-      "systemHealth": { "title": "Salud del sistema", "description": "Monitorear proveedores y almacenamiento" },
-      "security": { "title": "Centro de seguridad", "description": "Revisar autenticación y aislamiento" },
-      "backups": { "title": "Centro de copias", "description": "Crear exportaciones seguras" },
-      "safePatchPlanner": { "title": "Planificador de parches seguros", "description": "Planificar cambios de código seguros" },
-      "softwarePlanner": { "title": "Planificador de software", "description": "Convertir ideas en planes de arquitectura" },
-      "docs": { "title": "Documentación", "description": "Documentación y guías internas" }
+      "dashboard": {
+        "title": "Panel de control",
+        "description": "Resumen de configuración y preparación de datos"
+      },
+      "agents": {
+        "title": "Agentes",
+        "description": "Gestionar el catálogo de agentes IA"
+      },
+      "agentDetails": {
+        "title": "Detalles del agente",
+        "description": "Revisar capacidades e integración"
+      },
+      "projects": {
+        "title": "Proyectos",
+        "description": "Organizar proyectos, versiones y notas"
+      },
+      "projectDetails": {
+        "title": "Detalles del proyecto",
+        "description": "Revisar contexto y preparación"
+      },
+      "releases": {
+        "title": "Versiones",
+        "description": "Seguir fases, despliegues y verificaciones"
+      },
+      "releaseDetails": {
+        "title": "Detalles de versión",
+        "description": "Revisar controles y preparación"
+      },
+      "promptLibrary": {
+        "title": "Biblioteca de instrucciones",
+        "description": "Guardar y reutilizar instrucciones"
+      },
+      "promptDetails": {
+        "title": "Detalles de instrucción",
+        "description": "Copiar y editar instrucciones"
+      },
+      "tasks": {
+        "title": "Tareas",
+        "description": "Seguir estado y preparación de tareas"
+      },
+      "taskDetails": {
+        "title": "Detalles de tarea",
+        "description": "Inspeccionar entradas, estado y salidas"
+      },
+      "createTask": {
+        "title": "Crear tarea",
+        "description": "Preparar solicitudes de trabajo estructuradas"
+      },
+      "agentLibrary": {
+        "title": "Biblioteca de agentes",
+        "description": "Explorar y usar plantillas de agentes"
+      },
+      "automationBlueprints": {
+        "title": "Blueprints de automatización",
+        "description": "Planificar flujos reutilizables sin ejecución en vivo"
+      },
+      "qualityReview": {
+        "title": "Revisión de calidad",
+        "description": "Puntuar borradores antes de usarlos"
+      },
+      "knowledgeBase": {
+        "title": "Base de conocimiento",
+        "description": "Buscar conocimiento interno seguro"
+      },
+      "aiStudio": {
+        "title": "Estudio IA",
+        "description": "Generar imágenes y videos de OpenAI de forma segura"
+      },
+      "campaigns": {
+        "title": "Campañas",
+        "description": "Planificar campañas y analizar rendimiento"
+      },
+      "reels": {
+        "title": "Estudio Reels",
+        "description": "Planificar y gestionar Reels de Instagram"
+      },
+      "reelDetails": {
+        "title": "Detalles del Reel",
+        "description": "Editar contenido y controles de publicación"
+      },
+      "creativeAssets": {
+        "title": "Activos creativos",
+        "description": "Gestionar instrucciones, imágenes y activos"
+      },
+      "creativeAssetDetails": {
+        "title": "Detalles del activo",
+        "description": "Revisar detalles del activo creativo"
+      },
+      "contentStudio": {
+        "title": "Estudio de contenido y anuncios",
+        "description": "Crear borradores multicanal seguros"
+      },
+      "contentLibrary": {
+        "title": "Biblioteca de contenido",
+        "description": "Gestionar borradores y activos"
+      },
+      "calendar": {
+        "title": "Calendario",
+        "description": "Planificar contenido en el calendario"
+      },
+      "recovery": {
+        "title": "Recuperación",
+        "description": "Revisar elementos fallidos y bloqueados"
+      },
+      "review": {
+        "title": "Revisiones",
+        "description": "Área de revisión de calidad"
+      },
+      "reports": {
+        "title": "Informes",
+        "description": "Espacio de trabajo de informes"
+      },
+      "notifications": {
+        "title": "Notificaciones",
+        "description": "Actualizaciones y alertas"
+      },
+      "settings": {
+        "title": "Ajustes",
+        "description": "Gestionar cuenta e integración"
+      },
+      "systemHealth": {
+        "title": "Salud del sistema",
+        "description": "Monitorear proveedores y almacenamiento"
+      },
+      "security": {
+        "title": "Centro de seguridad",
+        "description": "Revisar autenticación y aislamiento"
+      },
+      "backups": {
+        "title": "Centro de copias",
+        "description": "Crear exportaciones seguras"
+      },
+      "safePatchPlanner": {
+        "title": "Planificador de parches seguros",
+        "description": "Planificar cambios de código seguros"
+      },
+      "softwarePlanner": {
+        "title": "Planificador de software",
+        "description": "Convertir ideas en planes de arquitectura"
+      },
+      "docs": {
+        "title": "Documentación",
+        "description": "Documentación y guías internas"
+      },
+      "alex": {
+        "title": "Asistente Alex",
+        "description": "Planifica con seguridad con el asistente del espacio de trabajo"
+      },
+      "workflowBuilder": {
+        "title": "Constructor de workflows",
+        "description": "Crea borradores seguros desde plantillas de agentes"
+      },
+      "playbooks": {
+        "title": "Playbooks guardados",
+        "description": "Reutiliza borradores de workflow y estados de preparación"
+      }
     }
   },
   "status": {
@@ -167,7 +297,8 @@
     "needsSetup": "Requiere configuración",
     "retryable": "Reintentable",
     "passed": "Aprobado",
-    "absent": "Ausente"
+    "absent": "Ausente",
+    "cancelled": "Cancelado"
   },
   "action": {
     "createTask": "Crear tarea",
@@ -233,7 +364,8 @@
     "pinterestStudio": "Estudio Pinterest",
     "linkedinPlanner": "Planificador LinkedIn",
     "contentCalendar": "Calendario de contenido",
-    "providerSetup": "Configuración de proveedor"
+    "providerSetup": "Configuración de proveedor",
+    "newTask": "Nueva tarea"
   },
   "page": {
     "dashboard": {
@@ -287,14 +419,12 @@
       "allCaughtUp": "Todo está al día",
       "newCampaignPrompt": "Cree una campaña o revise la configuración.",
       "openai": "OpenAI",
-      "nvidia": "NVIDIA",
       "meta": "Meta / Instagram / Facebook",
       "googleAds": "Google Ads",
       "pinterest": "Pinterest",
       "linkedin": "LinkedIn",
       "scheduler": "Planificador",
       "addApiKeyQuota": "Añada clave API y confirme cuota.",
-      "addNvidiaKey": "Añada NVIDIA_API_KEY si es necesario.",
       "reviewMetaPage": "Revise la página, cuenta de Instagram y cuenta de anuncios.",
       "connectMeta": "Conecte Meta y seleccione objetivos.",
       "confirmGoogleAds": "Confirme ID de cliente y aprobación del token.",
@@ -353,8 +483,7 @@
         "aiImageProvider": "Generación de imágenes IA",
         "setupDescription": "Configura proveedores IA junto con Meta, Google Ads, Pinterest y LinkedIn.",
         "openaiStatus": "Clave API OpenAI",
-        "nvidiaStatus": "NVIDIA NIM",
-        "openaiBillingNotice": "Si se supera la cuota de OpenAI, el modo automático puede usar NVIDIA NIM."
+        "openaiBillingNotice": "Si se supera la cuota de OpenAI, la generación usa solo OpenAI."
       },
       "appearanceCard": {
         "title": "Apariencia y tema",
@@ -657,6 +786,7 @@
       "description": "Convierta una idea en plan de arquitectura y tareas.",
       "dashboard": "Panel de control",
       "projects": "Proyectos",
+      "agentLibrary": "Biblioteca de agentes",
       "promptLibrary": "Biblioteca de instrucciones",
       "projectContextUnavailable": "Contexto no disponible",
       "planningOnly": "Solo planificación",
@@ -791,7 +921,6 @@
       "linkedin": "LinkedIn",
       "media": "Medios",
       "openai": "OpenAI",
-      "nvidia": "NVIDIA",
       "scheduler": "Planificador",
       "fixSteps": {
         "waitGoogleAds": "Espere la aprobación del token de Google Ads.",
@@ -813,7 +942,6 @@
         "linkImageAsset": "Vincule un activo de imagen público.",
         "useUploadedImage": "Use una imagen cargada.",
         "addOpenAiQuota": "Añada cuota de OpenAI.",
-        "addNvidiaKey": "Añada clave NVIDIA.",
         "configureScheduler": "Configure Vercel Cron.",
         "addOpenAiKey": "Añada OPENAI_API_KEY en Vercel."
       }
@@ -923,7 +1051,28 @@
     "calendar": {
       "dataUnavailable": "Datos de calendario no disponibles",
       "planningOnly": "Calendario solo de planificación",
-      "planningOnlyMessage": "Los elementos planificados son visibles sin garantizar publicación."
+      "planningOnlyMessage": "Los elementos planificados son visibles sin garantizar publicación.",
+      "today": "Hoy",
+      "searchItems": "Buscar elementos",
+      "all": "Todo",
+      "content": "Contenido",
+      "releases": "Lanzamientos",
+      "reels": "Reels",
+      "anyStatus": "Cualquier estado",
+      "scheduledCount": "Programados",
+      "draftCount": "Borradores",
+      "publishedCount": "Publicados",
+      "failedCount": "Fallidos",
+      "clear": "Limpiar",
+      "itemsOnThisDay": "Elementos de este día",
+      "item": "elemento",
+      "items": "elementos",
+      "noScheduledItems": "No hay elementos programados este día",
+      "openContentStudio": "Abrir Content Studio",
+      "previousMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente",
+      "noCalendarItems": "No hay elementos de calendario",
+      "noCalendarItemsDesc": "Programa contenido desde Content Studio para verlo aquí."
     },
     "docs": {
       "title": "Documentación",
@@ -950,24 +1099,31 @@
       "title": "Página no encontrada",
       "description": "La página solicitada no existe.",
       "returnHome": "Volver al panel"
+    },
+    "tasks": {
+      "createToBegin": "Crea una tarea para empezar",
+      "realWorkspaceTasks": "Tareas reales del espacio de trabajo",
+      "filtersTitle": "Filtros de tareas",
+      "filtersDescription": "Encuentra trabajo por agente, departamento, estado o descripción.",
+      "searchPlaceholder": "Buscar tareas por título o descripción",
+      "realTaskRecords": "registros de tareas reales"
     }
   },
   "provider": {
     "openai": "OpenAI",
-    "nvidia": "NVIDIA",
     "meta": "Meta / Instagram / Facebook",
     "googleAds": "Google Ads",
     "pinterest": "Pinterest",
     "linkedin": "LinkedIn",
     "scheduler": "Planificador",
-    "openaiApiKey": "Clave API OpenAI",
-    "nvidiaNim": "NVIDIA NIM"
+    "openaiApiKey": "Clave API OpenAI"
   },
   "form": {
     "search": "Buscar",
     "platform": "Plataforma",
     "status": "Estado",
-    "contentType": "Tipo de contenido"
+    "contentType": "Tipo de contenido",
+    "allAgents": "Todos los agentes"
   },
   "language": {
     "switchTo": "Cambiar idioma",
@@ -993,5 +1149,881 @@
     "twitter": "Twitter",
     "linkedin": "LinkedIn",
     "github": "GitHub"
+  },
+  "mappings": {
+    "agentLibrary": {
+      "category": {
+        "all": "All",
+        "researchStrategy": "Research & Strategy",
+        "contentGrowth": "Content & Growth",
+        "salesOperations": "Sales & Operations",
+        "reportsAnalytics": "Reports & Analytics",
+        "alexAssistantSkills": "Alex Assistant Skills",
+        "developerCodeAgents": "Developer/Code Agents",
+        "n8nWorkflowIdeas": "n8n Workflow Ideas"
+      },
+      "safety": {
+        "safe": "Safe",
+        "requiresReview": "Review first",
+        "readonly": "Read only"
+      },
+      "executionMode": {
+        "autonomous": "Autonomous draft",
+        "supervised": "Supervised",
+        "manual": "Manual plan",
+        "draftOnly": "Solo borrador"
+      }
+    },
+    "priority": {
+      "low": "Low",
+      "normal": "Medium",
+      "high": "High"
+    },
+    "platform": {
+      "facebook": "Facebook",
+      "instagram": "Instagram",
+      "googleAds": "Google Ads",
+      "pinterest": "Pinterest",
+      "linkedin": "LinkedIn",
+      "general": "General"
+    },
+    "contentType": {
+      "facebookPost": "Facebook Post",
+      "instagramPost": "Instagram Post",
+      "facebookReel": "Facebook Reel",
+      "instagramReel": "Instagram Reel",
+      "googleAdsCampaignDraft": "Google Ads Campaign Draft",
+      "facebookFeedAd": "Facebook Feed Ad Draft",
+      "instagramFeedAd": "Instagram Feed Ad Draft",
+      "facebookReelAd": "Facebook Reel Ad Draft",
+      "instagramReelAd": "Instagram Reel Ad Draft",
+      "facebookStoryAd": "Facebook Story Ad Draft",
+      "instagramStoryAd": "Instagram Story Ad Draft",
+      "facebookCarouselAd": "Facebook Carousel Ad Draft",
+      "instagramCarouselAd": "Instagram Carousel Ad Draft",
+      "pinterestPin": "Pinterest Pin",
+      "linkedinPostPlanner": "LinkedIn Post Planner"
+    }
+  },
+  "dashboardI18n": {
+    "common": {
+      "notSet": "Not set",
+      "none": "None",
+      "never": "Never",
+      "showing": "Showing",
+      "of": "of",
+      "templates": "templates",
+      "steps": "steps",
+      "copied": "Copied successfully",
+      "copyFailed": "Could not copy",
+      "notProvided": "Not provided"
+    },
+    "aiStudio": {
+      "eyebrow": "Estudio IA",
+      "title": "Generar visuales y videos de campaña",
+      "description": "Escribe un prompt, genera, revisa y guarda resultados de OpenAI como activos creativos reutilizables. No se publica, programa ni envía nada a n8n.",
+      "imageGeneration": "Generación de imagen",
+      "videoGeneration": "Generación de video",
+      "assetTitle": "Título del activo",
+      "prompt": "Prompt",
+      "promptPlaceholder": "Describe la escena, producto, audiencia, estilo, iluminación, composición y objetivo...",
+      "negativePrompt": "Prompt negativo",
+      "negativePlaceholder": "Opcional: desorden, texto roto, marcas de agua, baja calidad...",
+      "model": "Modelo",
+      "stylePreset": "Estilo",
+      "aspectRatio": "Relación de aspecto",
+      "duration": "Duración",
+      "orientation": "Orientación",
+      "generateImage": "Generar imagen",
+      "generateVideo": "Generar video",
+      "preview": "Vista previa",
+      "emptyPreviewTitle": "Tu generación aparecerá aquí",
+      "emptyPreviewDescription": "Usa el panel izquierdo para generar una imagen o iniciar un video de OpenAI.",
+      "reusePrompt": "Reutilizar prompt",
+      "copyPrompt": "Copiar prompt",
+      "openCreativeAsset": "Abrir activo creativo",
+      "refreshStatus": "Actualizar estado",
+      "recentGenerations": "Generaciones recientes",
+      "noHistory": "Aún no hay generaciones en este modo.",
+      "promptTooShort": "Añade primero un prompt más detallado.",
+      "generationFailed": "La generación falló.",
+      "generated": "Generado correctamente.",
+      "refreshFailed": "No se pudo actualizar el video.",
+      "statusRefreshed": "Estado actualizado.",
+      "promptReused": "Prompt cargado en el estudio.",
+      "promptCopied": "Prompt copiado.",
+      "copyFailed": "No se pudo copiar."
+    },
+    "agentLibrary": {
+      "eyebrow": "Internal templates",
+      "title": "Agent Library",
+      "description": "A calm library of safe internal agent blueprints for research, growth, operations, Alex skills, code work, and n8n workflow planning.",
+      "openWorkflowBuilder": "Open Workflow Builder",
+      "savedPlaybooks": "Saved Playbooks",
+      "dashboard": "Dashboard",
+      "searchSr": "Search agent templates",
+      "searchPlaceholder": "Search by name, use case, input, or output...",
+      "noTemplatesTitle": "No templates found",
+      "noTemplatesDescription": "Try a broader keyword or choose another category.",
+      "templateCountSingular": "template",
+      "templateCountPlural": "templates",
+      "inputs": "Inputs",
+      "outputs": "Outputs",
+      "suggestedPrompt": "Suggested prompt",
+      "reviewChecklist": "Review checklist",
+      "sourceInspiration": "Source inspiration",
+      "copyPrompt": "Copy Prompt",
+      "hidePlan": "Hide Plan",
+      "viewPlan": "View Plan",
+      "useWithAlex": "Use with Alex",
+      "sendToContentStudio": "Send to Content Studio",
+      "createTask": "Create Task",
+      "addToWorkflow": "Add to Workflow",
+      "exportN8nPlan": "Export n8n Workflow Plan",
+      "templateAnalytics": "Template analytics",
+      "usageSignals": "Usage signals",
+      "analyticsNotice": "Usage analytics only tracks template actions. It does not store secrets, provider responses, or private chat content.",
+      "totalActions": "total actions",
+      "noUsage": "No usage yet. Copy a prompt, send a template to Alex, create a draft task, or export an n8n plan to start building safe local analytics.",
+      "mostUsed": "Most used templates",
+      "recentlyUsed": "Recently used",
+      "noData": "No data yet.",
+      "topCategories": "Top categories",
+      "noCategoryData": "No category data yet.",
+      "actionCounts": "Action counts",
+      "recommendedNext": "Recommended next templates",
+      "recommendedNextDescription": "Deterministic suggestions based on local template usage only. No OpenAI calls are used for analytics.",
+      "usedWithAlex": "Used with Alex",
+      "tasksCreated": "Tasks created",
+      "sentToContentStudio": "Sent to Content Studio",
+      "n8nPlansExported": "n8n plans exported",
+      "promptsCopied": "Prompts copied"
+    },
+    "templateTask": {
+      "createDraftTask": "Create draft task",
+      "draftNotice": "This creates a pending Supabase task only. It will not run n8n or execute anything.",
+      "taskCreated": "Task created successfully",
+      "taskPending": "The task is pending and ready for manual review.",
+      "openTask": "Open Task",
+      "viewTasks": "View Tasks",
+      "taskTitle": "Task title",
+      "priority": "Priority",
+      "goalNotes": "Goal / notes",
+      "goalPlaceholder": "Add context, goal, client notes, or constraints. Do not paste secrets.",
+      "taskPreview": "Task preview",
+      "template": "Template",
+      "category": "Category",
+      "description": "Description",
+      "storedAs": "Stored as",
+      "storedAsDraft": "Pending draft task, execution_mode: draft_only",
+      "createPendingTask": "Create Pending Task",
+      "couldNotCreate": "Could not create task",
+      "reviewAndTry": "Please review the template and try again.",
+      "createdFromTemplate": "Created from an AgentFlow Agent Library template.",
+      "draftOnly": "Draft-only pending task. No execution will be triggered automatically.",
+      "userContext": "User context"
+    },
+    "workflowPlan": {
+      "blueprint": "n8n workflow blueprint",
+      "referenceExport": "Reference-only export for manual n8n setup.",
+      "close": "Close workflow plan",
+      "safetyNotice": "This is a planning/export feature only. It does not run n8n, publish content, create ads, spend money, or change any webhook.",
+      "purpose": "Purpose",
+      "trigger": "Trigger",
+      "suggestedNodes": "Suggested n8n Nodes",
+      "flow": "Step-by-Step Flow",
+      "callbackPayload": "Callback Payload Example",
+      "requiredInputs": "Required Inputs",
+      "expectedOutputs": "Expected Outputs",
+      "safetyRules": "Safety Rules",
+      "testingChecklist": "Testing Checklist",
+      "copyPlan": "Copy Plan",
+      "downloadMd": "Download .md",
+      "downloadJson": "Download .json",
+      "copied": "Workflow plan copied successfully",
+      "copyFailed": "Could not copy workflow plan"
+    },
+    "alex": {
+      "title": "Alex Assistant",
+      "description": "Personal agency assistant for calm planning and safe decisions.",
+      "thinking": "Alex is thinking through your workspace...",
+      "regenerate": "Regenerate last answer",
+      "messageAlex": "Message Alex",
+      "placeholder": "Ask Alex what to plan, review, or fix next...",
+      "missingKeyPlaceholder": "OpenAI API key is missing",
+      "safetyNotice": "Do not paste API keys, tokens, passwords, or private credentials.",
+      "selectedTemplate": "Selected template",
+      "suggestedPrompt": "Suggested prompt",
+      "useDraft": "Use as draft message",
+      "createTaskFromTemplate": "Create Task from this Template",
+      "sendToContentStudio": "Send to Content Studio",
+      "exportN8nPlan": "Export n8n Workflow Plan",
+      "goodStartingPoints": "Good starting points",
+      "workspaceContext": "Workspace context",
+      "workspaceNotice": "Alex can guide and draft. It will not publish, spend, delete, run n8n, or write to GitHub without approval.",
+      "agentLibrary": "Agent Library",
+      "smartRecommendations": "Smart Recommendations",
+      "recommendationNotice": "Recommendations are based on template metadata and safe usage counts only. They do not store private chat content or secrets.",
+      "selected": "Selected",
+      "nextBest": "Next best",
+      "useTemplate": "Use Template",
+      "createTask": "Create Task",
+      "contentStudio": "Content Studio",
+      "exportPlan": "Export Plan",
+      "reviewWorkflow": "Review this Workflow",
+      "safeWorkflow": "Safe workflow",
+      "openAIReady": "OpenAI ready",
+      "setupRequired": "Setup required",
+      "clearChat": "Clear chat",
+      "copyAlexAnswer": "Copy Alex answer",
+      "copyMessage": "Copy message",
+      "you": "You",
+      "hello": "Hello, I am Alex. Ask me about your tasks, projects, providers, content plans, or what needs attention next.",
+      "loadedTemplate": "I loaded the selected template. I can help you adapt it safely before you create a task or draft.",
+      "chatCleared": "Chat cleared. What should we work on next?",
+      "unavailable": "Alex is unavailable right now.",
+      "connectionError": "Connection error. Please try again or check System Health.",
+      "toolSafetyNotice": "Las herramientas de Alex pueden leer resúmenes seguros del espacio de trabajo y preparar borradores. No ejecutan n8n, no publican, no gastan dinero, no eliminan datos, no envían emails ni cambian proveedores.",
+      "toolsUsedTitle": "Alex usó contexto seguro del espacio de trabajo",
+      "toolsSafetyShort": "No se mostraron secretos ni logs sin procesar, y no se ejecutó n8n, publicación, gasto, eliminación, envío de email, escritura en GitHub ni cambio de proveedor.",
+      "draftActionTitle": "Borrador de acción preparado",
+      "confirmCreatePendingTask": "Confirmar creación de tarea pendiente",
+      "copyDraft": "Copiar borrador",
+      "draftCancelled": "Borrador cancelado. No se realizó ninguna acción."
+    },
+    "industryPacks": {
+      "eyebrow": "Solo planificación",
+      "title": "Packs de industria",
+      "description": "Inicia campañas, workflows, prompts, ideas de AI Studio y playbooks con packs reutilizables por industria.",
+      "openAlex": "Abrir Alex",
+      "workflowBuilder": "Constructor de workflow",
+      "search": "Buscar packs",
+      "searchPlaceholder": "Buscar industria, prompt, workflow...",
+      "categoryFilter": "Filtro de categoría",
+      "allCategories": "Todas las categorías",
+      "safetyNotice": "Todos los packs son solo de planificación. No ejecutan n8n, no publican, no programan, no crean anuncios, no gastan dinero, no envían emails, no eliminan datos, no escriben en GitHub ni cambian proveedores.",
+      "emptyTitle": "No se encontraron packs",
+      "emptyDescription": "Prueba una búsqueda más amplia o elige todas las categorías.",
+      "agents": "Agentes",
+      "prompts": "Prompts",
+      "workflows": "Workflows",
+      "viewDetails": "Ver detalles",
+      "useWithAlex": "Usar con Alex",
+      "recommendedAgents": "Agentes recomendados",
+      "workflowDiagram": "Diagrama de workflow",
+      "promptIdeas": "Ideas de prompts",
+      "integrations": "Integraciones seguras",
+      "openWorkflowBuilder": "Abrir constructor de workflow",
+      "openPromptLibrary": "Abrir en Prompt Library",
+      "openAiStudio": "Abrir en AI Studio",
+      "openContentStudio": "Abrir en Content Studio",
+      "reviewPack": "Revisar salida del pack",
+      "createTasksSoon": "Crear tareas pendientes - próximamente",
+      "savePlaybookSoon": "Guardar como playbook - próximamente",
+      "integrationNote": "Los enlaces abren solo superficies seguras de planificación. Prompt Library, AI Studio y Content Studio no guardan, generan, publican ni programan automáticamente desde esta página.",
+      "aiIdeas": "Ideas de AI Studio",
+      "contentIdeas": "Ideas de Content Studio",
+      "automationBlueprints": "Blueprints de automatización",
+      "qualityChecklist": "Checklist de calidad",
+      "safeNextActions": "Siguientes acciones seguras",
+      "copyPack": "Copiar resumen del pack",
+      "copyPrompts": "Copiar ideas de prompts",
+      "copyWorkflow": "Copiar workflow",
+      "downloadMarkdown": "Descargar Markdown"
+    },
+    "contentStudio": {
+      "templateNotFound": "Template not found",
+      "templateNotFoundDescription": "Template not found. You can still create content manually.",
+      "templateContext": "Template context",
+      "suggestedOutputType": "Suggested output type",
+      "prefillNotice": "Prefilled only. Nothing has been generated, published, or scheduled.",
+      "platformWorkspace": "Platform Workspace",
+      "platformWorkspaceDescription": "Choose one platform to see only its draft fields, readiness checks, copy actions, and provider-safe execution.",
+      "actionFailed": "Content Studio action failed",
+      "itemSaved": "Content item saved",
+      "openTask": "Open task",
+      "providerActionUpdate": "Provider action update",
+      "providerActionCompleted": "Provider action completed",
+      "viewCalendar": "View Calendar",
+      "brandContext": "Brand Context",
+      "brand": "Brand",
+      "tone": "Tone",
+      "defaultCta": "Default CTA",
+      "hashtags": "Hashtags",
+      "bestFor": "Best for",
+      "useTemplate": "Use Template",
+      "fieldsIncluded": "Fields included",
+      "campaignName": "Campaign Name",
+      "platformType": "Platform / Type",
+      "status": "Status",
+      "objective": "Objective",
+      "targetAudience": "Target Audience",
+      "budgetValue": "Budget Notes / Value Proposition",
+      "destinationUrl": "Destination URL",
+      "promptDirection": "Prompt / Direction",
+      "creativeAssets": "Creative Assets",
+      "removeFromDraft": "Remove from Draft",
+      "removing": "Removing...",
+      "newDraft": "New Draft",
+      "saving": "Saving...",
+      "updateContentItem": "Update Content Item",
+      "createContentItem": "Create Content Item",
+      "schedule": "Schedule",
+      "copyReadyHandoff": "Copy-ready Handoff",
+      "copyLinkedinPackage": "Copy LinkedIn Package",
+      "openContentLibrary": "Open Content Library"
+    }
+  },
+  "agentLibrary": {
+    "templates": {
+      "market-research-agent": {
+        "name": "Agente de investigación de mercado",
+        "source_inspiration": "Inspirado en casos de uso de agentes IA para investigación de mercado, análisis de audiencia e investigación competitiva.",
+        "description": "Analiza un producto, nicho, audiencia, contexto de mercado, puntos de dolor, oportunidades y dirección de campaña para preparar una base clara de investigación antes de estrategia, contenido o anuncios.",
+        "recommended_for": [
+          "Alex",
+          "Reportes",
+          "Campañas",
+          "Constructor de workflows",
+          "Tareas",
+          "Playbooks",
+          "Content Studio"
+        ],
+        "inputs": [
+          "Nombre del producto o servicio",
+          "Industria o nicho",
+          "Mercado objetivo",
+          "Audiencia objetivo",
+          "Objetivo de campaña",
+          "Problema principal a resolver",
+          "Oferta existente",
+          "Competidores si se conocen",
+          "Región o país",
+          "Idioma",
+          "Notas o supuestos disponibles"
+        ],
+        "outputs": [
+          "Resumen de mercado",
+          "Visión general de audiencia objetivo",
+          "Puntos de dolor del cliente",
+          "Deseos del cliente",
+          "Oportunidades de mercado",
+          "Notas de competidores",
+          "Ideas de posicionamiento",
+          "Ángulos de contenido",
+          "Recomendaciones de campaña",
+          "Brechas de investigación",
+          "Checklist de revisión"
+        ],
+        "suggested_prompt": "Actúa como un agente senior de investigación de mercado para una agencia de IA.\n\nAnaliza el producto, nicho, audiencia, mercado, oferta, competidores, región y objetivo de campaña proporcionados.\n\nDevuelve el resultado con esta estructura:\n\n1. Resumen de mercado\n2. Visión general de audiencia objetivo\n3. Puntos de dolor del cliente\n4. Deseos del cliente\n5. Oportunidades de mercado\n6. Notas de competidores\n7. Ideas de posicionamiento\n8. Ángulos de contenido\n9. Recomendaciones de campaña\n10. Brechas de investigación\n11. Checklist final de revisión\n\nMantén la investigación práctica, clara y útil para construir una estrategia de marketing, plan de contenido o workflow de campaña.\nSi la investigación web en vivo no está disponible, indica claramente que el resultado se basa solo en el contexto proporcionado y debe verificarse antes de decisiones empresariales importantes.\nNo publiques, no programes, no ejecutes n8n, no crees anuncios en vivo, no gastes dinero, no navegues externamente sin aprobación ni ejecutes ninguna acción externa.",
+        "review_checklist": [
+          "El resumen de mercado está claro.",
+          "La audiencia objetivo es específica.",
+          "Los puntos de dolor del cliente son realistas.",
+          "Los deseos del cliente son útiles para el mensaje.",
+          "Las oportunidades son prácticas.",
+          "Las notas de competidores están claramente separadas de los supuestos.",
+          "Las ideas de posicionamiento pueden apoyar una estrategia de marketing.",
+          "Los ángulos de contenido son relevantes.",
+          "Las brechas de investigación están claramente listadas.",
+          "El resultado puede usarse antes de estrategia, contenido o anuncios.",
+          "No se activa publicación, programación, gasto, ejecución de n8n, navegación externa ni acción de proveedor."
+        ]
+      },
+      "competitor-analysis-agent": {
+        "name": "Agente de análisis de competidores",
+        "source_inspiration": "Inspirado en casos de uso de agentes IA para investigación competitiva, inteligencia de mercado y análisis de posicionamiento.",
+        "description": "Analiza competidores conocidos, su posicionamiento, ofertas, ángulos de contenido, fortalezas, debilidades, mensajes y oportunidades para ayudar a crear campañas y estrategias más fuertes.",
+        "recommended_for": [
+          "Alex",
+          "Reportes",
+          "Campañas",
+          "Constructor de workflows",
+          "Tareas",
+          "Playbooks",
+          "Content Studio"
+        ],
+        "inputs": [
+          "Nombre del producto o servicio",
+          "Industria o nicho",
+          "Audiencia objetivo",
+          "Nombres o enlaces de competidores si están disponibles",
+          "Región o país",
+          "Objetivo de campaña",
+          "Oferta principal",
+          "Plataforma a analizar",
+          "Notas conocidas de competidores",
+          "Idioma",
+          "Criterios de comparación"
+        ],
+        "outputs": [
+          "Visión general de competidores",
+          "Comparación de posicionamiento",
+          "Fortalezas y debilidades",
+          "Comparación de ofertas",
+          "Análisis de mensajes",
+          "Análisis de ángulos de contenido",
+          "Notas de redes sociales o plataforma",
+          "Notas de precio o percepción de valor",
+          "Brechas de mercado",
+          "Oportunidades de diferenciación",
+          "Recomendaciones estratégicas",
+          "Checklist de revisión"
+        ],
+        "suggested_prompt": "Actúa como un agente senior de análisis de competidores para una agencia de IA.\n\nAnaliza los competidores, producto, nicho, audiencia objetivo, plataforma, región, oferta y objetivo de campaña proporcionados.\n\nDevuelve el resultado con esta estructura:\n\n1. Visión general de competidores\n2. Comparación de posicionamiento\n3. Fortalezas y debilidades\n4. Comparación de ofertas\n5. Análisis de mensajes\n6. Análisis de ángulos de contenido\n7. Notas de redes sociales o plataforma\n8. Notas de precio o percepción de valor\n9. Brechas de mercado\n10. Oportunidades de diferenciación\n11. Recomendaciones estratégicas\n12. Checklist final de revisión\n\nMantén el análisis práctico, claro y útil para estrategia de marketing, planificación de contenido y decisiones de campaña.\nSi la investigación web en vivo no está disponible, indica claramente que el análisis se basa solo en las notas de competidores proporcionadas y debe verificarse antes de decisiones empresariales importantes.\nNo hagas scraping de sitios web, no publiques, no programes, no ejecutes n8n, no crees anuncios en vivo, no gastes dinero, no navegues externamente sin aprobación ni ejecutes ninguna acción externa.",
+        "review_checklist": [
+          "Los competidores están claramente identificados.",
+          "Las diferencias de posicionamiento están explicadas.",
+          "Las fortalezas y debilidades son prácticas.",
+          "La comparación de ofertas es útil.",
+          "El análisis de mensajes está claro.",
+          "Los ángulos de contenido son relevantes.",
+          "Las brechas de mercado son realistas.",
+          "Las oportunidades de diferenciación son accionables.",
+          "Las recomendaciones pueden apoyar estrategia de marketing y planificación de contenido.",
+          "Los supuestos están claramente separados de los hechos verificados.",
+          "No se activa scraping, publicación, programación, gasto, ejecución de n8n, navegación externa ni acción de proveedor."
+        ]
+      },
+      "daily-planning-agent": {
+        "name": "Agente de planificación diaria",
+        "source_inspiration": "Inspirado en casos de uso de planificación diaria, asistentes de productividad, priorización de tareas y asistentes de operaciones IA.",
+        "description": "Crea un plan de acción diario claro para el operador de la agencia organizando tareas, prioridades, bloqueos, seguimientos, trabajo de contenido, workflows y próximas acciones seguras.",
+        "recommended_for": [
+          "Alex",
+          "Dashboard",
+          "Tareas",
+          "Calendario",
+          "Reportes",
+          "Constructor de workflows",
+          "Playbooks",
+          "System Health"
+        ],
+        "inputs": [
+          "Fecha de hoy",
+          "Tareas actuales",
+          "Tareas pendientes",
+          "Trabajo de alta prioridad",
+          "Proyectos en curso",
+          "Bloqueos",
+          "Problemas de proveedores",
+          "Objetivos de contenido o campaña",
+          "Reuniones o recordatorios",
+          "Tiempo disponible",
+          "Notas personales",
+          "Idioma preferido"
+        ],
+        "outputs": [
+          "Resumen diario",
+          "Prioridades principales",
+          "Plan por bloques de tiempo",
+          "Orden de tareas",
+          "Bloqueos a resolver",
+          "Acciones seguras sugeridas",
+          "Recordatorios de seguimiento",
+          "Foco de contenido/campaña",
+          "Foco de workflow",
+          "Checklist de fin del día",
+          "Checklist de revisión"
+        ],
+        "suggested_prompt": "Actúa como mi agente personal de planificación diaria para mi dashboard de agencia de IA.\n\nCrea un plan diario claro usando las tareas, proyectos, bloqueos, objetivos de campaña, problemas de proveedores, notas de calendario y tiempo disponible proporcionados.\n\nDevuelve el resultado con esta estructura:\n\n1. Resumen diario\n2. Top 3 prioridades\n3. Orden recomendado de tareas\n4. Plan por bloques de tiempo\n5. Bloqueos a resolver\n6. Foco de contenido o campaña\n7. Foco de workflow / automatización\n8. Recordatorios de seguimiento\n9. Próximas acciones seguras\n10. Checklist de fin del día\n11. Checklist final de revisión\n\nMantén el plan práctico, lo bastante corto para seguirlo, y enfocado en acciones seguras del operador.\nNo ejecutes n8n, no ejecutes tareas, no publiques, no programes, no crees anuncios en vivo, no gastes dinero, no borres datos ni realices ninguna acción externa automáticamente.",
+        "review_checklist": [
+          "Las prioridades diarias están claras.",
+          "El orden de tareas es realista.",
+          "Los bloqueos están claramente identificados.",
+          "El plan separa el trabajo urgente del opcional.",
+          "El plan incluye solo próximas acciones seguras.",
+          "Los problemas de proveedores aparecen como bloqueos, no se corrigen automáticamente.",
+          "Las tareas de contenido y workflow están organizadas.",
+          "El plan es fácil de seguir durante el día.",
+          "No se activa ejecución de n8n, publicación, programación, gasto, eliminación ni acción externa de proveedor."
+        ]
+      },
+      "workflow-review-agent": {
+        "name": "Agente de revisión de workflow",
+        "source_inspiration": "Inspirado en casos de uso de validación de workflow, revisión multiagente, puertas de aprobación, puntuación de readiness y revisión segura de automatizaciones.",
+        "description": "Revisa workflows de AgentFlow antes de crear tareas, enviar a Content Studio, exportar planes n8n o guardar playbooks. Comprueba entradas faltantes, pasos duplicados, acciones riesgosas, bloqueos de proveedores, aprobaciones requeridas, puntuación de readiness y próximas acciones seguras.",
+        "recommended_for": [
+          "Alex",
+          "Constructor de workflows",
+          "Revisión de workflow",
+          "Diagramas visuales de workflow",
+          "Playbooks guardados",
+          "Tareas",
+          "Planes de workflow n8n",
+          "Reportes",
+          "System Health"
+        ],
+        "inputs": [
+          "Nombre del workflow",
+          "Objetivo del workflow",
+          "Templates seleccionados",
+          "Pasos del workflow",
+          "Orden de pasos",
+          "Entradas requeridas",
+          "Salidas esperadas",
+          "Notas del usuario",
+          "Requisitos de proveedor",
+          "Requisitos de aprobación",
+          "Restricciones de seguridad",
+          "Modo de ejecución",
+          "Contexto faltante si se conoce"
+        ],
+        "outputs": [
+          "Resumen de revisión de workflow",
+          "Puntuación de readiness",
+          "Estado general",
+          "Entradas faltantes",
+          "Pasos duplicados o débiles",
+          "Advertencias de riesgo",
+          "Bloqueos de proveedores",
+          "Aprobaciones requeridas",
+          "Correcciones recomendadas",
+          "Próximas acciones seguras",
+          "Readiness de creación de tareas",
+          "Readiness de planificación n8n",
+          "Checklist final de revisión"
+        ],
+        "suggested_prompt": "Actúa como un agente senior de revisión de workflows para mi dashboard de agencia AgentFlow AI.\n\nRevisa el nombre del workflow, objetivo, templates seleccionados, pasos, entradas requeridas, salidas esperadas, requisitos del proveedor, requisitos de aprobación, notas del usuario y restricciones de seguridad proporcionados.\n\nDevuelve el resultado con esta estructura:\n\n1. Resumen de revisión de workflow\n2. Estado general\n3. Puntuación de readiness\n4. Entradas faltantes\n5. Pasos duplicados o débiles\n6. Advertencias de riesgo\n7. Bloqueos de proveedores\n8. Aprobaciones requeridas\n9. Correcciones recomendadas\n10. Próximas acciones seguras\n11. Readiness de creación de tareas\n12. Readiness de planificación n8n\n13. Checklist final de revisión\n\nUsa estos estados:\n- ready\n- needs_inputs\n- review_required\n- blocked\n\nMantén la revisión práctica, clara y enfocada en seguridad.\nNo ejecutes n8n, no crees workflows, no cambies webhooks, no ejecutes tareas, no publiques, no programes, no crees anuncios en vivo, no gastes dinero, no borres datos, no hagas escrituras en GitHub ni ejecutes ninguna acción externa.",
+        "review_checklist": [
+          "El objetivo del workflow está claro.",
+          "Los templates seleccionados coinciden con el objetivo del workflow.",
+          "El orden de pasos es lógico.",
+          "Las entradas faltantes están listadas claramente.",
+          "Los pasos duplicados o débiles se detectan.",
+          "Las advertencias de riesgo están explicadas.",
+          "Los bloqueos de proveedores aparecen como bloqueos, no se corrigen automáticamente.",
+          "Las aprobaciones requeridas están claras.",
+          "Las correcciones recomendadas son prácticas.",
+          "Las próximas acciones seguras no ejecutan nada automáticamente.",
+          "La readiness de creación de tareas solo significa creación de tareas pendientes.",
+          "La readiness de planificación n8n solo significa readiness de blueprint/export.",
+          "No se activa ejecución de n8n, publicación, programación, gasto, eliminación, escritura GitHub, cambio de webhook ni acción externa de proveedor."
+        ]
+      },
+      "n8n-workflow-planner-agent": {
+        "name": "Agente planificador de workflows n8n",
+        "source_inspiration": "Inspirado en casos de uso de planificación de automatizaciones, orquestación de webhooks, tool-calling, diseño de callbacks y workflows de agentes IA.",
+        "description": "Crea un blueprint seguro de workflow n8n a partir de una idea de automatización, incluyendo trigger, nodos, validación de payload, preparación de prompt, normalización de resultados, estructura de callback, manejo de errores y checklist de pruebas.",
+        "recommended_for": [
+          "Alex",
+          "Constructor de workflows",
+          "Planes de workflow n8n",
+          "Tareas",
+          "Playbooks",
+          "System Health",
+          "Herramientas de desarrollador"
+        ],
+        "inputs": [
+          "Objetivo del workflow",
+          "Tipo de trigger",
+          "Payload de entrada",
+          "Campos de datos requeridos",
+          "Contexto de tarea AgentFlow",
+          "Salida esperada",
+          "Requisitos de callback",
+          "Requisitos de proveedor",
+          "Necesidades de manejo de errores",
+          "Requisitos de aprobación",
+          "Entorno de pruebas",
+          "Notas o restricciones"
+        ],
+        "outputs": [
+          "Visión general del workflow",
+          "Trigger recomendado",
+          "Nodos n8n sugeridos",
+          "Workflow paso a paso",
+          "Mapeo de datos",
+          "Plan de validación de payload",
+          "Plan de preparación de prompt",
+          "Plan de normalización de resultados",
+          "Ejemplo de payload de callback",
+          "Plan de manejo de errores",
+          "Checklist de pruebas",
+          "Reglas de seguridad",
+          "Notas de despliegue"
+        ],
+        "suggested_prompt": "Actúa como un planificador senior de workflows n8n para mi dashboard de agencia AgentFlow AI.\n\nCrea un blueprint seguro de workflow n8n usando el objetivo del workflow, trigger, payload de entrada, salida esperada, requisitos del proveedor, requisitos de callback y restricciones de seguridad proporcionados.\n\nDevuelve el resultado con esta estructura:\n\n1. Visión general del workflow\n2. Trigger recomendado\n3. Entradas requeridas\n4. Nodos n8n sugeridos\n5. Workflow paso a paso\n6. Mapeo de datos\n7. Plan de validación de payload\n8. Plan de preparación de prompt\n9. Plan de normalización de resultados\n10. Ejemplo de payload de callback\n11. Plan de manejo de errores\n12. Checklist de pruebas\n13. Reglas de seguridad\n14. Notas de despliegue\n15. Checklist final de revisión\n\nUsa solo placeholders para secretos, credenciales, URLs de webhook y variables de entorno.\nNo ejecutes n8n, no crees workflows mediante API, no cambies webhooks, no publiques, no programes, no crees anuncios en vivo, no gastes dinero, no borres datos ni ejecutes ninguna acción externa.",
+        "review_checklist": [
+          "El objetivo del workflow está claro.",
+          "El trigger es apropiado.",
+          "Las entradas requeridas están listadas.",
+          "Los nodos sugeridos son realistas para n8n.",
+          "El mapeo de datos es comprensible.",
+          "La validación de payload está incluida.",
+          "El ejemplo de payload de callback es seguro y no contiene secretos.",
+          "El manejo de errores está incluido.",
+          "La checklist de pruebas es práctica.",
+          "Las reglas de seguridad son explícitas.",
+          "El plan está claramente marcado como solo borrador.",
+          "No se activa ejecución de n8n, cambio de webhook, publicación, programación, gasto, eliminación ni acción externa de proveedor."
+        ]
+      },
+      "code-review-agent": {
+        "name": "Agente de revisión de código",
+        "source_inspiration": "Inspirado en casos de uso de revisión de código, debugging, análisis de calidad de software, revisión de pull requests y asistentes de desarrollo IA.",
+        "description": "Revisa cambios de código, archivos, funcionalidades o planes de implementación para identificar bugs, problemas de TypeScript, riesgos de seguridad, problemas de rendimiento, UX, pruebas faltantes y recomendaciones de mejora seguras.",
+        "recommended_for": [
+          "Alex",
+          "Safe Patch Planner",
+          "Propuestas de corrección de código",
+          "Reportes",
+          "Constructor de workflows",
+          "Tareas",
+          "Playbooks",
+          "Herramientas de desarrollador"
+        ],
+        "inputs": [
+          "Descripción de funcionalidad o bug",
+          "Archivos modificados",
+          "Snippet de código o diff",
+          "Comportamiento esperado",
+          "Comportamiento actual",
+          "Mensaje de error si está disponible",
+          "Contexto de framework o stack",
+          "Preocupaciones de seguridad",
+          "Preocupaciones de rendimiento",
+          "Notas de pruebas",
+          "Destino de despliegue",
+          "Alcance de revisión"
+        ],
+        "outputs": [
+          "Resumen de revisión de código",
+          "Problemas encontrados",
+          "Nivel de riesgo",
+          "Archivos afectados",
+          "Preocupaciones de TypeScript o lint",
+          "Notas de seguridad",
+          "Notas de rendimiento",
+          "Notas de UX",
+          "Correcciones sugeridas",
+          "Checklist de pruebas",
+          "Checklist de despliegue",
+          "Checklist final de revisión"
+        ],
+        "suggested_prompt": "Actúa como un agente senior de revisión de código para mi proyecto AgentFlow AI.\n\nRevisa la funcionalidad, snippet de código, archivos modificados, diff, descripción del bug, comportamiento esperado, comportamiento actual, mensaje de error, contexto del stack y notas de pruebas proporcionadas.\n\nDevuelve el resultado con esta estructura:\n\n1. Resumen de revisión de código\n2. Archivos o áreas revisadas\n3. Problemas encontrados\n4. Nivel de riesgo\n5. Preocupaciones TypeScript / Lint\n6. Notas de seguridad\n7. Notas de rendimiento\n8. Notas UX / Producto\n9. Correcciones sugeridas\n10. Checklist de pruebas\n11. Checklist de despliegue\n12. Checklist final de revisión\n\nMantén la revisión práctica, específica y segura.\nNo modifiques archivos, no hagas commits, no hagas push de código, no abras pull requests, no ejecutes n8n, no publiques, no programes, no crees anuncios en vivo, no gastes dinero, no borres datos ni ejecutes ninguna acción externa.",
+        "review_checklist": [
+          "El alcance revisado está claro.",
+          "Los problemas son específicos y accionables.",
+          "El nivel de riesgo está explicado.",
+          "Los archivos o áreas afectadas están listados.",
+          "Las preocupaciones de TypeScript y lint están revisadas.",
+          "Los riesgos de seguridad están claramente separados de bugs normales.",
+          "Las preocupaciones de rendimiento se incluyen si son relevantes.",
+          "Las correcciones sugeridas son seguras y prácticas.",
+          "La checklist de pruebas está incluida.",
+          "La checklist de despliegue está incluida.",
+          "No se activa escritura en GitHub, modificación de archivos, ejecución de n8n, publicación, programación, gasto, eliminación ni acción externa de proveedor."
+        ]
+      },
+      "marketing-strategy-agent": {
+        "name": "Agente de estrategia de marketing",
+        "source_inspiration": "Inspirado en casos de uso de agentes IA generadores de estrategia de marketing.",
+        "description": "Construye una estrategia práctica de campaña de marketing a partir de un producto, audiencia, plataforma, oferta y objetivo.",
+        "recommended_for": [
+          "Alex",
+          "Content Studio",
+          "Campañas",
+          "Constructor de workflows",
+          "Tareas",
+          "Playbooks"
+        ],
+        "inputs": [
+          "Nombre del producto o servicio",
+          "Audiencia objetivo",
+          "Objetivo de campaña",
+          "Plataforma",
+          "Tono de marca",
+          "Oferta",
+          "Idioma",
+          "Principal dolor del cliente"
+        ],
+        "outputs": [
+          "Estrategia de campaña",
+          "Insight de audiencia",
+          "Ángulo de campaña",
+          "Pilares de mensaje",
+          "Ideas de contenido",
+          "Dirección de copy de anuncios",
+          "Sugerencias de CTA",
+          "Recomendación de funnel",
+          "Checklist de revisión"
+        ],
+        "suggested_prompt": "Actúa como un agente senior de estrategia de marketing para una agencia de IA.\n\nConstruye una estrategia de campaña clara usando el producto, audiencia, plataforma, oferta y objetivo proporcionados.\n\nDevuelve el resultado con esta estructura:\n\n1. Resumen de campaña\n2. Audiencia objetivo\n3. Principales dolores\n4. Ángulo de campaña\n5. Pilares de mensaje\n6. Ideas de contenido\n7. Dirección de copy de anuncios\n8. Sugerencias de CTA\n9. Recomendación de funnel\n10. Checklist de revisión\n\nMantén la estrategia práctica, clara y lista para usar dentro de un workflow de contenido y anuncios.\nNo publiques, no gastes dinero, no programes, no ejecutes n8n, no crees anuncios en vivo ni ejecutes ninguna acción externa.",
+        "review_checklist": [
+          "La audiencia objetivo está claramente definida.",
+          "El objetivo de campaña es específico.",
+          "Los principales dolores están incluidos.",
+          "El ángulo de campaña es práctico.",
+          "Los pilares de mensaje son claros.",
+          "Las ideas de contenido coinciden con la plataforma seleccionada.",
+          "Las sugerencias de CTA son relevantes.",
+          "La estrategia puede usarse dentro de Content Studio.",
+          "El resultado está listo para revisión antes de cualquier ejecución.",
+          "No se activa publicación, gasto, programación, ejecución de n8n ni acción externa de proveedor."
+        ]
+      },
+      "instagram-content-agent": {
+        "name": "Agente de contenido de Instagram",
+        "source_inspiration": "Inspirado en casos de uso de agentes IA para generar posts de Instagram y contenido de redes sociales.",
+        "description": "Crea ideas de contenido para Instagram, guiones de reels, captions, hooks, CTAs, hashtags y variaciones a partir de un producto, objetivo de campaña, audiencia y tono de marca.",
+        "recommended_for": [
+          "Alex",
+          "Content Studio",
+          "Campañas",
+          "Constructor de workflows",
+          "Recursos creativos",
+          "Tareas",
+          "Playbooks"
+        ],
+        "inputs": [
+          "Nombre del producto o servicio",
+          "Audiencia objetivo",
+          "Objetivo de campaña",
+          "Tipo de contenido",
+          "Tono de marca",
+          "Idioma",
+          "Oferta",
+          "Estilo visual",
+          "Mensaje principal",
+          "Plataforma: Instagram"
+        ],
+        "outputs": [
+          "Ideas de posts de Instagram",
+          "Hooks de reels",
+          "Guion de reel",
+          "Opciones de caption",
+          "Sugerencias de CTA",
+          "Sets de hashtags",
+          "Ideas de stories",
+          "Estructura de carrusel",
+          "Notas de dirección creativa",
+          "Checklist de revisión"
+        ],
+        "suggested_prompt": "Actúa como un agente senior de contenido de Instagram para una agencia de IA.\n\nCrea contenido de Instagram de alta calidad para el producto, audiencia, objetivo de campaña, tono de marca, oferta e idioma proporcionados.\n\nDevuelve el resultado con esta estructura:\n\n1. Resumen de estrategia de contenido\n2. 5 ideas de posts de Instagram\n3. 3 hooks de reels\n4. Guion de reel\n5. 3 opciones de caption\n6. Sugerencias de CTA\n7. Sets de hashtags\n8. Ideas de stories\n9. Estructura de carrusel\n10. Notas de dirección creativa\n11. Checklist de revisión\n\nMantén el contenido claro, atractivo, amigable para la plataforma y listo para revisar dentro de Content Studio.\nNo publiques, no programes, no ejecutes n8n, no crees anuncios en vivo, no gastes dinero ni ejecutes ninguna acción externa.",
+        "review_checklist": [
+          "El contenido coincide con el objetivo de campaña.",
+          "La audiencia objetivo está clara.",
+          "Los hooks son fuertes y captan la atención.",
+          "Las captions son legibles y adecuadas para la plataforma.",
+          "El CTA es claro y relevante.",
+          "Los hashtags no son excesivos ni spammy.",
+          "El guion de reel es práctico y fácil de producir.",
+          "La dirección creativa es útil para diseño o video.",
+          "El contenido puede enviarse a Content Studio de forma segura.",
+          "No se activa publicación, programación, gasto, ejecución de n8n ni acción externa de proveedor."
+        ]
+      },
+      "ad-copy-agent": {
+        "name": "Agente de copy publicitario",
+        "source_inspiration": "Inspirado en casos de uso de agentes IA para generación de copy publicitario, mensajes de campaña y anuncios pagos.",
+        "description": "Crea variaciones persuasivas de copy publicitario para Meta, Google Ads, LinkedIn, TikTok u otras plataformas usando objetivo de campaña, audiencia, oferta, tono y detalles del producto.",
+        "recommended_for": [
+          "Alex",
+          "Content Studio",
+          "Campañas",
+          "Constructor de workflows",
+          "Borradores de Google Ads",
+          "Borradores de Meta Ads",
+          "Tareas",
+          "Playbooks"
+        ],
+        "inputs": [
+          "Nombre del producto o servicio",
+          "Audiencia objetivo",
+          "Objetivo de campaña",
+          "Plataforma",
+          "Oferta",
+          "Tono de marca",
+          "Idioma",
+          "Principal punto de dolor",
+          "Beneficio clave",
+          "CTA",
+          "Límite de caracteres si hace falta"
+        ],
+        "outputs": [
+          "Variaciones principales de copy publicitario",
+          "Variaciones cortas de copy publicitario",
+          "Titulares",
+          "Descripciones",
+          "Opciones de CTA",
+          "Opciones de hook",
+          "Notas de copy por plataforma",
+          "Ángulos de prueba A/B",
+          "Checklist de cumplimiento",
+          "Checklist de revisión"
+        ],
+        "suggested_prompt": "Actúa como un agente senior de copywriting para anuncios pagos en una agencia de IA.\n\nCrea copy publicitario de alta conversión para el producto, audiencia, plataforma, objetivo de campaña, oferta, tono e idioma proporcionados.\n\nDevuelve el resultado con esta estructura:\n\n1. Resumen del mensaje de campaña\n2. 5 variaciones principales de copy publicitario\n3. 5 variaciones cortas de copy publicitario\n4. 10 opciones de titulares\n5. 5 opciones de descripciones\n6. Opciones de CTA\n7. Opciones de hook\n8. Ángulos de prueba A/B\n9. Notas específicas de la plataforma\n10. Revisión de cumplimiento y seguridad\n11. Checklist final de revisión\n\nMantén el copy claro, persuasivo, amigable para la plataforma y listo para revisar dentro de Content Studio.\nNo publiques anuncios, no crees campañas en vivo, no programes, no ejecutes n8n, no gastes dinero ni ejecutes ninguna acción externa.",
+        "review_checklist": [
+          "El copy publicitario coincide con el objetivo de campaña.",
+          "La audiencia objetivo está clara.",
+          "La oferta es fácil de entender.",
+          "El beneficio clave es visible.",
+          "Los titulares son cortos y persuasivos.",
+          "Los CTA son claros y relevantes.",
+          "El copy está adaptado a la plataforma seleccionada.",
+          "No incluye afirmaciones exageradas o engañosas.",
+          "El resultado puede revisarse antes de enviarse a cualquier plataforma publicitaria.",
+          "No se activa publicación, programación, gasto, ejecución de n8n ni acción externa de proveedor."
+        ]
+      },
+      "creative-brief-agent": {
+        "name": "Agente de brief creativo",
+        "source_inspiration": "Inspirado en casos de uso de agentes IA para generar briefs creativos, planificar diseño de campañas y dirigir creatividad.",
+        "description": "Convierte una idea de campaña, producto, audiencia, plataforma y mensaje de marketing en un brief creativo claro para visuales, anuncios, posts sociales, reels, landing pages y recursos creativos.",
+        "recommended_for": [
+          "Alex",
+          "Recursos creativos",
+          "Content Studio",
+          "Campañas",
+          "Constructor de workflows",
+          "Tareas",
+          "Playbooks"
+        ],
+        "inputs": [
+          "Nombre del producto o servicio",
+          "Objetivo de campaña",
+          "Audiencia objetivo",
+          "Plataforma",
+          "Tono de marca",
+          "Mensaje principal",
+          "Oferta",
+          "Estilo visual",
+          "Colores o paleta de marca",
+          "Formato",
+          "CTA",
+          "Idioma",
+          "Referencias de diseño si están disponibles"
+        ],
+        "outputs": [
+          "Resumen del brief creativo",
+          "Concepto visual",
+          "Mensaje clave",
+          "Dirección de layout",
+          "Dirección de imagen o video",
+          "Elementos de diseño",
+          "Guía de color y estilo",
+          "Notas de ubicación del copy",
+          "Notas de ubicación del CTA",
+          "Recomendaciones de formatos de recursos",
+          "Checklist para diseñador",
+          "Checklist de revisión"
+        ],
+        "suggested_prompt": "Actúa como un agente senior de brief creativo para una agencia de IA.\n\nCrea un brief creativo claro y práctico usando el producto, audiencia, objetivo de campaña, plataforma, tono de marca, estilo visual, oferta y mensaje principal proporcionados.\n\nDevuelve el resultado con esta estructura:\n\n1. Resumen del brief creativo\n2. Objetivo de campaña\n3. Audiencia objetivo\n4. Mensaje clave\n5. Concepto visual\n6. Dirección de layout\n7. Dirección de imagen o video\n8. Elementos de diseño\n9. Guía de color y estilo\n10. Notas de ubicación del copy\n11. Notas de ubicación del CTA\n12. Formatos de recursos recomendados\n13. Checklist para diseñador\n14. Checklist final de revisión\n\nMantén el brief claro, útil para diseñadores y listo para usar dentro de Creative Assets o Content Studio.\nNo publiques, no programes, no ejecutes n8n, no crees anuncios en vivo, no gastes dinero ni ejecutes ninguna acción externa.",
+        "review_checklist": [
+          "El objetivo creativo está claro.",
+          "La audiencia objetivo está definida.",
+          "El mensaje clave es fácil de entender.",
+          "El concepto visual coincide con el tono de marca.",
+          "La dirección de layout es práctica.",
+          "La dirección de imagen o video es específica.",
+          "La ubicación del CTA está clara.",
+          "Los formatos de recursos son adecuados para la plataforma seleccionada.",
+          "El brief es útil para un diseñador o generador de recursos creativos.",
+          "El resultado puede revisarse antes de cualquier publicación o generación.",
+          "No se activa publicación, programación, gasto, ejecución de n8n ni acción externa de proveedor."
+        ]
+      }
+    }
   }
 }

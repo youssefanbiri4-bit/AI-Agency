@@ -72,7 +72,7 @@ export const internalDocs: InternalDoc[] = [
     steps: [
       'افتح Dashboard لمراجعة Today’s Actions والاختصارات الأساسية.',
       'افتح System Health وتأكد من عدم وجود Critical أو setup_required يمنع العمل.',
-      'افتح Provider Setup Wizard وتحقق من OpenAI أو NVIDIA، ثم Meta أو Google Ads أو Pinterest حسب القناة.',
+      'افتح Provider Setup Wizard وتحقق من OpenAI أو OpenAI، ثم Meta أو Google Ads أو Pinterest حسب القناة.',
       'أنشئ أول Creative Asset أو ارفع صورة/فيديو إذا كانت الميزة مفعلة في مشروعك.',
       'افتح Content & Ads Studio وأنشئ Draft جديدا للمنصة المناسبة.',
       'استخدم Brand Kit لتوحيد النبرة، العرض، الجمهور، الألوان، CTA والهاشتاغات.',
@@ -343,7 +343,7 @@ export const internalDocs: InternalDoc[] = [
     intro: 'Provider Setup Wizard يعرض جاهزية الخدمات الخارجية بلغة تشغيلية واضحة. سترى هل الإعداد موجود أو ناقص أو ينتظر موافقة، لكن لن ترى أي قيمة سرية أو token أو API key.',
     steps: [
       'افتح Settings ثم Provider Setup Wizard.',
-      'راجع OpenAI وNVIDIA لتوليد النصوص أو الصور حسب إعداد المشروع.',
+      'راجع OpenAI وOpenAI لتوليد النصوص أو الصور حسب إعداد المشروع.',
       'راجع Meta / Instagram / Facebook: OAuth، الصلاحيات، Page، Instagram Business Account.',
       'راجع Google Ads: env vars، OAuth، customer ID، developer token approval.',
       'راجع Pinterest: app/client ID، secret، redirect، OAuth، board.',
@@ -938,7 +938,7 @@ export const internalDocs: InternalDoc[] = [
       'ابدأ من Workspace لمراجعة الحساب ومساحة العمل.',
       'حدث Brand Kit قبل توليد محتوى جديد.',
       'استخدم Appearance & Theme لتعديل الشكل ثم Reset to Default عند الحاجة.',
-      'راجع Providers لمعرفة OpenAI وNVIDIA وMeta وGoogle Ads وPinterest وGitHub وScheduler وSupabase Storage.',
+      'راجع Providers لمعرفة OpenAI وOpenAI وMeta وGoogle Ads وPinterest وGitHub وScheduler وSupabase Storage.',
       'افتح Publishing & Scheduling لفهم cron status وجاهزية الجدولة.',
       'راجع Roles & Permissions قبل إعطاء أي صلاحية حساسة.',
       'استخدم Security وBackups وBilling كروابط إدارة هادئة ومحمية.',

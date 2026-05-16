@@ -67,6 +67,18 @@ export function canManageProviders(role: StrictWorkspaceRole) {
   return role === 'owner' || role === 'admin';
 }
 
+export function canCreateTasks(role: StrictWorkspaceRole) {
+  return role === 'owner' || role === 'admin' || role === 'operator' || role === 'editor';
+}
+
+export function canRunTasks(role: StrictWorkspaceRole) {
+  return role === 'owner' || role === 'admin' || role === 'operator';
+}
+
+export function canReviewTasks(role: StrictWorkspaceRole) {
+  return role === 'owner' || role === 'admin' || role === 'operator' || role === 'editor';
+}
+
 export function canPublishContent(role: StrictWorkspaceRole) {
   return role === 'owner' || role === 'admin' || role === 'operator';
 }
@@ -89,6 +101,18 @@ export function canManageRoles(role: StrictWorkspaceRole) {
 
 export function canEditContent(role: StrictWorkspaceRole) {
   return role === 'owner' || role === 'admin' || role === 'operator' || role === 'editor';
+}
+
+export function canDeleteContent(role: StrictWorkspaceRole) {
+  return role === 'owner' || role === 'admin';
+}
+
+export function canUseAIGeneration(role: StrictWorkspaceRole) {
+  return role === 'owner' || role === 'admin' || role === 'operator' || role === 'editor';
+}
+
+export function canManageReleases(role: StrictWorkspaceRole) {
+  return role === 'owner' || role === 'admin';
 }
 
 export function canViewReports(role: StrictWorkspaceRole) {

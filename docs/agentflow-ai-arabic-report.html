@@ -142,7 +142,7 @@
       <div class="meta-card"><strong>خط عربي مقترح:</strong><br />Cairo أو Tajawal أو Noto Sans Arabic</div>
     </div>
     <h3>التقنيات الأساسية</h3>
-    <p>Next.js، TypeScript، Supabase، Vercel، n8n، OpenAI، NVIDIA NIM، Meta، Google Ads، Pinterest.</p>
+    <p>Next.js، TypeScript، Supabase، Vercel، n8n، OpenAI، OpenAI، Meta، Google Ads، Pinterest.</p>
   </section>
 
   <h2>1. الملخص التنفيذي</h2>
@@ -183,7 +183,7 @@
       <tr><td>Vercel</td><td>النشر الإنتاجي، Cron Jobs، وتشغيل تطبيق Next.js.</td></tr>
       <tr><td>n8n</td><td>تنفيذ تدفقات الأتمتة الخاصة بالمهام.</td></tr>
       <tr><td>OpenAI</td><td>توليد النصوص والصور عند توفر المفاتيح والفوترة.</td></tr>
-      <tr><td>NVIDIA NIM</td><td>مزود بديل أو احتياطي لتوليد النصوص.</td></tr>
+      <tr><td>OpenAI</td><td>مزود OpenAI الوحيد لتوليد النصوص.</td></tr>
       <tr><td>Meta / Facebook / Instagram</td><td>أساس النشر العضوي، Reels، ومسودات الإعلانات المدفوعة المتوقفة.</td></tr>
       <tr><td>Google Ads</td><td>إنشاء مسودات حملات Search بحالة PAUSED.</td></tr>
       <tr><td>Pinterest</td><td>نشر Pin عضوي عند اكتمال OAuth واللوحة والأصل الإبداعي.</td></tr>
@@ -379,24 +379,18 @@
     تمت معالجة رسائل quota وbilling بشكل لطيف وواضح.
   </p>
 
-  <h2>18. مزود NVIDIA NIM البديل</h2>
+  <h2>18. مزود OpenAI البديل</h2>
   <p>
-    تم دعم NVIDIA NIM كمزود بديل أو احتياطي لتوليد النصوص. يدعم النظام أوضاع <code>AI_TEXT_PROVIDER</code> التالية:
-  </p>
-  <ul>
-    <li><code>openai</code></li>
-    <li><code>nvidia</code></li>
-    <li><code>auto</code></li>
-  </ul>
+    تم دعم OpenAI كمزود OpenAI الوحيد لتوليد النصوص. يعتمد النظام الآن على <code>OPENAI_API_KEY</code> فقط لتوليد النصوص.</p>
   <p>
-    يبقى OpenAI مدعوماً، بينما NVIDIA مخصص لتوليد النصوص. توليد الصور يبقى OpenAI-only ما لم يتم تغييره لاحقاً.
+    يبقى OpenAI مدعوماً، بينما OpenAI مخصص لتوليد النصوص. توليد الصور يبقى OpenAI-only ما لم يتم تغييره لاحقاً.
   </p>
-  <p>متغيرات البيئة المطلوبة عند استخدام NVIDIA:</p>
+  <p>متغيرات البيئة المطلوبة عند استخدام OpenAI:</p>
   <ul>
-    <li><code>NVIDIA_API_KEY</code></li>
-    <li><code>NVIDIA_BASE_URL</code></li>
-    <li><code>NVIDIA_MODEL</code></li>
-    <li><code>AI_TEXT_PROVIDER</code></li>
+    <li><code>OPENAI_API_KEY</code></li>
+    <li><code>OPENAI_API_KEY</code></li>
+    <li><code>OPENAI_TEXT_MODEL</code></li>
+    <li><code>OPENAI_API_KEY</code></li>
   </ul>
 
   <h2>19. نظام Provider Readiness</h2>
@@ -619,7 +613,7 @@
     <li>Content Studio.</li>
     <li>AI task actions.</li>
     <li>AI content generation logic.</li>
-    <li>NVIDIA/OpenAI text provider support.</li>
+    <li>OpenAI text provider support.</li>
     <li>Toast notifications.</li>
     <li>Provider readiness.</li>
     <li>Google Ads paused draft creation.</li>
@@ -637,7 +631,7 @@
     </thead>
     <tbody>
       <tr><td>OpenAI</td><td>API billing / credit / quota</td><td>الفوترة أو الرصيد قد يمنع التوليد</td><td>لا يتم عرض أو تخزين المفاتيح في الواجهة.</td></tr>
-      <tr><td>NVIDIA</td><td><code>NVIDIA_API_KEY</code> / model / credits</td><td>يتطلب إعداد المزود إذا تم استخدامه</td><td>مخصص لتوليد النصوص.</td></tr>
+      <tr><td>OpenAI</td><td><code>OPENAI_API_KEY</code> / model / credits</td><td>يتطلب إعداد المزود إذا تم استخدامه</td><td>مخصص لتوليد النصوص.</td></tr>
       <tr><td>Meta</td><td>Meta app، OAuth، scopes، selected Page، selected Instagram Business Account، و<code>ads_management</code> للمدفوع</td><td>الصلاحيات والحسابات المختارة</td><td>النشر المدفوع يبقى PAUSED فقط.</td></tr>
       <tr><td>Google Ads</td><td>developer token approval، OAuth، customer ID</td><td>موافقة Google Ads قد تكون مطلوبة</td><td>إنشاء مسودات PAUSED فقط.</td></tr>
       <tr><td>Pinterest</td><td>app secret، OAuth، board selection</td><td>اختيار board وصلاحية OAuth</td><td>Pinterest Ads غير منفذة.</td></tr>
@@ -690,7 +684,7 @@
     <li>اختبار نشر Facebook Page post.</li>
     <li>اختبار Pinterest Pin publishing.</li>
     <li>انتظار موافقة Google Ads عند الحاجة.</li>
-    <li>إضافة OpenAI billing أو الاعتماد على NVIDIA fallback للنصوص.</li>
+    <li>إضافة OpenAI billing أو الاعتماد على OpenAI فقط للنصوص.</li>
     <li>إجراء اختبارات قوية للفيديو وReels.</li>
     <li>إضافة metrics حقيقية فقط عندما تتوفر من API موثوق.</li>
     <li>متابعة تحسين الواجهة بحذر.</li>

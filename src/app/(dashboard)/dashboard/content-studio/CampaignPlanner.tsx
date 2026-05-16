@@ -252,7 +252,7 @@ export function CampaignPlanner({
           title: result.error ?? 'AI generation failed.',
           description:
             result.error === 'AI provider setup required.'
-              ? 'Configure OpenAI or NVIDIA server-side to enable planning.'
+              ? 'Configure OPENAI_API_KEY server-side to enable planning.'
               : undefined,
         });
         return;
@@ -264,7 +264,7 @@ export function CampaignPlanner({
       toast.update(loadingToastId, {
         tone: 'success',
         title: 'Campaign plan generated.',
-        description: result.fallbackUsed ? 'Generated with NVIDIA fallback.' : undefined,
+        description: 'Generated with OpenAI.',
       });
     });
   }

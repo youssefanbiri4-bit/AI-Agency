@@ -7,8 +7,10 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import {
+  canCreateTasks,
   canEditContent,
   canPublishContent,
+  canUseAIGeneration,
   normalizeWorkspaceRole,
 } from '@/lib/workspace-permissions';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
@@ -28,6 +30,7 @@ import {
 import { createNotification } from '@/lib/data/notifications';
 import { createTask } from '@/lib/data/tasks';
 import { getBrandKitForWorkspace } from '@/lib/data/brand-kit';
+import { checkInMemoryRateLimit } from '@/lib/rate-limit';
 import { generateContentStudioText, type ContentGenerationKind } from '@/lib/ai/openai-content';
 import { generateMarketingText } from '@/lib/ai/text-provider';
 import {
@@ -76,16 +79,16 @@ export interface GenerateContentStudioFieldState {
   generatedText?: string | null;
   field?: string | null;
   requestId?: string | null;
-  providerUsed?: 'openai' | 'nvidia' | null;
-  fallbackUsed?: boolean;
+  providerUsed?: 'openai' | null;
+  fallbackUsed?: false;
 }
 
 export interface CampaignPlannerGenerateState {
   error: string | null;
   message?: string | null;
   plan?: CampaignPlannerResult | null;
-  providerUsed?: 'openai' | 'nvidia' | null;
-  fallbackUsed?: boolean;
+  providerUsed?: 'openai' | null;
+  fallbackUsed?: false;
   model?: string | null;
 }
 
@@ -1402,6 +1405,14 @@ function buildTaskTitle(item: ContentStudioItemRecord, kind: ContentStudioTaskKi
   }
 }
 
+function checkGenerationLimit(workspaceId: string, userId: string) {
+  return checkInMemoryRateLimit({
+    key: `content-generation:${workspaceId}:${userId}`,
+    limit: 20,
+    windowMs: 10 * 60 * 1000,
+  });
+}
+
 export async function createContentStudioItemAction(
   _state: ContentStudioActionState,
   formData: FormData
@@ -1443,7 +1454,24 @@ export async function removeCreativeAssetFromDraftAction(
       };
     }
 
-    const { supabase, workspace } = await getWorkspaceContext();
+    const { supabase, user, workspace, role } = await getWorkspaceContext();
+
+    if (!canEditContent(role)) {
+      await logSecurityAuditEvent({
+        supabase,
+        workspaceId: workspace.id,
+        userId: user.id,
+        eventType: 'permission_denied',
+        severity: 'warning',
+        entityType: 'content',
+        entityId: itemId,
+        message: 'Blocked creative asset unlink from content draft.',
+        metadata: { role },
+      });
+
+      return { ...initialState, error: 'ما عندكش صلاحية لتعديل المحتوى. Content editing is restricted for your workspace role.' };
+    }
+
     const result = await removeContentStudioItemAsset(
       itemId,
       workspace.id,
@@ -1490,7 +1518,24 @@ export async function linkCreativeAssetToDraftAction(
       };
     }
 
-    const { supabase, workspace } = await getWorkspaceContext();
+    const { supabase, user, workspace, role } = await getWorkspaceContext();
+
+    if (!canEditContent(role)) {
+      await logSecurityAuditEvent({
+        supabase,
+        workspaceId: workspace.id,
+        userId: user.id,
+        eventType: 'permission_denied',
+        severity: 'warning',
+        entityType: 'content',
+        entityId: itemId,
+        message: 'Blocked creative asset link to content draft.',
+        metadata: { role },
+      });
+
+      return { ...initialState, error: 'ما عندكش صلاحية لتعديل المحتوى. Content editing is restricted for your workspace role.' };
+    }
+
     const result = await addContentStudioItemAsset(itemId, workspace.id, creativeAssetId, supabase);
 
     if (result.error || !result.data) {
@@ -1966,7 +2011,15 @@ export async function createContentStudioTaskAction(
 ): Promise<ContentStudioActionState> {
   try {
     const kind = readField(formData, 'task_kind') as ContentStudioTaskKind;
-    const { supabase, user, workspace } = await getWorkspaceContext();
+    const { supabase, user, workspace, role } = await getWorkspaceContext();
+
+    if (!canCreateTasks(role)) {
+      return {
+        ...initialState,
+        error: 'ما عندكش صلاحية لإنشاء مهام من Content Studio. Task creation is restricted for your workspace role.',
+      };
+    }
+
     const itemResult = await getContentStudioItemById(workspace.id, itemId, supabase);
 
     if (itemResult.error || !itemResult.data) {
@@ -2065,7 +2118,34 @@ export async function generateContentStudioFieldAction(
       };
     }
 
-    const { supabase, workspace } = await getWorkspaceContext();
+    const { supabase, user, workspace, role } = await getWorkspaceContext();
+
+    if (!canUseAIGeneration(role)) {
+      await logSecurityAuditEvent({
+        supabase,
+        workspaceId: workspace.id,
+        userId: user.id,
+        eventType: 'permission_denied',
+        severity: 'warning',
+        entityType: 'content_generation',
+        entityId: itemId,
+        message: 'Blocked content field generation.',
+        metadata: { role },
+      });
+
+      return {
+        ...initialGenerateState,
+        error: 'ما عندكش صلاحية لاستعمال توليد المحتوى. AI generation is restricted for your workspace role.',
+      };
+    }
+
+    if (!checkGenerationLimit(workspace.id, user.id).allowed) {
+      return {
+        ...initialGenerateState,
+        error: 'وصلتي للحد المؤقت لتوليد المحتوى. عاود المحاولة بعد شوية.',
+      };
+    }
+
     const [itemResult, brandKitResult] = await Promise.all([
       getContentStudioItemById(workspace.id, itemId, supabase),
       getBrandKitForWorkspace(supabase, workspace.id),
@@ -2160,14 +2240,12 @@ export async function generateContentStudioFieldAction(
       error: null,
       message:
         generationResult.message ??
-        (generationResult.fallbackUsed
-          ? 'NVIDIA fallback generated successfully.'
-          : generationMessageFromKind(kind)),
+        generationMessageFromKind(kind),
       generatedText: generationResult.text,
       field: generationFieldFromKind(kind),
       requestId: `${Date.now()}`,
       providerUsed: generationResult.providerUsed ?? null,
-      fallbackUsed: generationResult.fallbackUsed ?? false,
+      fallbackUsed: false,
     };
   } catch (error) {
     return {
@@ -2192,7 +2270,31 @@ export async function generateCampaignPlanAction(
       };
     }
 
-    const { supabase, workspace } = await getWorkspaceContext();
+    const { supabase, user, workspace, role } = await getWorkspaceContext();
+
+    if (!canUseAIGeneration(role)) {
+      await logSecurityAuditEvent({
+        supabase,
+        workspaceId: workspace.id,
+        userId: user.id,
+        eventType: 'permission_denied',
+        severity: 'warning',
+        entityType: 'campaign_generation',
+        message: 'Blocked campaign plan generation.',
+        metadata: { role },
+      });
+
+      return {
+        error: 'ما عندكش صلاحية لتوليد الحملات. Campaign generation is restricted for your workspace role.',
+      };
+    }
+
+    if (!checkGenerationLimit(workspace.id, user.id).allowed) {
+      return {
+        error: 'وصلتي للحد المؤقت لتوليد الحملات. عاود المحاولة بعد شوية.',
+      };
+    }
+
     const brandKitResult = await getBrandKitForWorkspace(supabase, workspace.id);
     const generationResult = await generateMarketingText({
       kind: 'one_click_campaign_planner',
@@ -2219,7 +2321,7 @@ export async function generateCampaignPlanAction(
       return {
         error: 'AI generation failed. The provider returned an invalid campaign plan.',
         providerUsed: generationResult.providerUsed,
-        fallbackUsed: generationResult.fallbackUsed,
+        fallbackUsed: false,
         model: generationResult.model,
       };
     }
@@ -2229,7 +2331,7 @@ export async function generateCampaignPlanAction(
       message: 'Campaign plan generated.',
       plan,
       providerUsed: generationResult.providerUsed,
-      fallbackUsed: generationResult.fallbackUsed,
+      fallbackUsed: false,
       model: generationResult.model,
     };
   } catch (error) {
@@ -2267,7 +2369,26 @@ export async function createCampaignPlanDraftsAction(
       };
     }
 
-    const { supabase, user, workspace } = await getWorkspaceContext();
+    const { supabase, user, workspace, role } = await getWorkspaceContext();
+
+    if (!canEditContent(role)) {
+      await logSecurityAuditEvent({
+        supabase,
+        workspaceId: workspace.id,
+        userId: user.id,
+        eventType: 'permission_denied',
+        severity: 'warning',
+        entityType: 'campaign_drafts',
+        message: 'Blocked campaign draft creation.',
+        metadata: { role },
+      });
+
+      return {
+        error: 'ما عندكش صلاحية لإنشاء مسودات الحملات. Campaign draft creation is restricted for your workspace role.',
+        outcome: 'failed',
+      };
+    }
+
     const planId =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? `planner-${crypto.randomUUID()}`

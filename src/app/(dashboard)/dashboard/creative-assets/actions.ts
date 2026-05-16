@@ -5,7 +5,15 @@ import {
   createSupabaseServerClient,
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
-import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
+import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
+import {
+  canDeleteContent,
+  canEditContent,
+  canUseAIGeneration,
+  normalizeWorkspaceRole,
+  type StrictWorkspaceRole,
+} from '@/lib/workspace-permissions';
+import { checkInMemoryRateLimit } from '@/lib/rate-limit';
 import {
   buildBrandKitGenerationContext,
   getBrandKitForWorkspace,
@@ -358,11 +366,49 @@ async function getCurrentWorkspaceContext() {
     throw new Error('Workspace not found');
   }
 
+  const membershipResult = await getCurrentWorkspaceMembership(supabase, workspaceResult.data.id, user.id);
+  const role = normalizeWorkspaceRole(membershipResult.data?.role, workspaceResult.data, user.id);
+
+  if (membershipResult.error || !membershipResult.data) {
+    throw new Error('ما عندكش صلاحية لهذه المساحة. Workspace membership is required.');
+  }
+
   return {
     supabase,
     user,
     workspace: workspaceResult.data,
+    role,
   };
+}
+
+function assertCanEditAssets(role: StrictWorkspaceRole) {
+  if (!canEditContent(role)) {
+    throw new Error('ما عندكش صلاحية لتعديل الأصول الإبداعية. Creative asset editing is restricted for your workspace role.');
+  }
+}
+
+function assertCanGenerateAssets(role: StrictWorkspaceRole) {
+  if (!canUseAIGeneration(role)) {
+    throw new Error('ما عندكش صلاحية لاستعمال توليد الذكاء الاصطناعي. AI generation is restricted for your workspace role.');
+  }
+}
+
+function assertCreativeGenerationLimit(workspaceId: string, userId: string) {
+  const limiter = checkInMemoryRateLimit({
+    key: `creative-generation:${workspaceId}:${userId}`,
+    limit: 10,
+    windowMs: 10 * 60 * 1000,
+  });
+
+  if (!limiter.allowed) {
+    throw new Error('وصلتي للحد المؤقت لتوليد الأصول الإبداعية. عاود المحاولة بعد شوية.');
+  }
+}
+
+function assertCanDeleteAssets(role: StrictWorkspaceRole) {
+  if (!canDeleteContent(role)) {
+    throw new Error('ما عندكش صلاحية لحذف الأصول الإبداعية. Deleting creative assets is restricted to workspace owners and admins.');
+  }
 }
 
 async function createCreativeAssetNotification({
@@ -412,7 +458,7 @@ function revalidateCreativeAssetPaths(assetId?: string) {
 }
 
 async function loadOwnedAsset(assetId: string) {
-  const { supabase, user, workspace } = await getCurrentWorkspaceContext();
+  const { supabase, user, workspace, role } = await getCurrentWorkspaceContext();
   const assetResult = await getCreativeAssetById(workspace.id, user.id, assetId, supabase);
 
   if (!assetResult.data) {
@@ -423,6 +469,7 @@ async function loadOwnedAsset(assetId: string) {
     supabase,
     user,
     workspace,
+    role,
     asset: assetResult.data,
   };
 }
@@ -435,7 +482,9 @@ async function generatePromptForAsset(
 }
 
 async function generateImageForAsset(assetId: string): Promise<CreativeAssetActionState> {
-  const { supabase, user, workspace, asset } = await loadOwnedAsset(assetId);
+  const { supabase, user, workspace, role, asset } = await loadOwnedAsset(assetId);
+  assertCanGenerateAssets(role);
+  assertCreativeGenerationLimit(workspace.id, user.id);
   const readiness = checkOpenAIImageReadiness();
 
   if (!readiness.isReady) {
@@ -597,7 +646,8 @@ export async function createCreativeAssetAction(
       return { error: validation.error };
     }
 
-    const { supabase, user, workspace } = await getCurrentWorkspaceContext();
+    const { supabase, user, workspace, role } = await getCurrentWorkspaceContext();
+    assertCanEditAssets(role);
     const uploadedImage = readUploadedImageFields(formData, workspace.id, user.id);
     const uploadedVideo = readUploadedVideoFields(formData, workspace.id, user.id);
 
@@ -733,7 +783,8 @@ export async function updateCreativeAssetAction(
       return { error: validation.error };
     }
 
-    const { supabase, user, workspace, asset } = await loadOwnedAsset(assetId);
+    const { supabase, user, workspace, role, asset } = await loadOwnedAsset(assetId);
+    assertCanEditAssets(role);
     const uploadedImage = readUploadedImageFields(formData, workspace.id, user.id);
     const uploadedVideo = readUploadedVideoFields(formData, workspace.id, user.id);
 
@@ -887,7 +938,8 @@ export async function generatePromptAction(
 ): Promise<CreativeAssetActionState> {
   try {
     const assetId = resolveActionAssetId(assetIdOrFormData);
-    const { supabase, user, workspace, asset } = await loadOwnedAsset(assetId);
+    const { supabase, user, workspace, role, asset } = await loadOwnedAsset(assetId);
+    assertCanGenerateAssets(role);
     const builtPrompt = await generatePromptForAsset(asset);
     const result = await markCreativeAssetPromptReady(
       asset.id,
@@ -937,7 +989,8 @@ export async function archiveCreativeAssetAction(
 ): Promise<CreativeAssetActionState> {
   try {
     const assetId = resolveActionAssetId(assetIdOrFormData);
-    const { supabase, asset } = await loadOwnedAsset(assetId);
+    const { supabase, role, asset } = await loadOwnedAsset(assetId);
+    assertCanEditAssets(role);
     const result = await archiveCreativeAsset(asset.id, supabase);
 
     if (result.error || !result.data) {
@@ -959,7 +1012,8 @@ export async function removeCreativeAssetImageAction(
 ): Promise<CreativeAssetActionState> {
   try {
     const assetId = resolveActionAssetId(assetIdOrFormData);
-    const { supabase, workspace, user, asset } = await loadOwnedAsset(assetId);
+    const { supabase, workspace, user, role, asset } = await loadOwnedAsset(assetId);
+    assertCanEditAssets(role);
     const oldStoragePath = asset.storage_path;
     const result = await updateCreativeAsset(
       asset.id,
@@ -1005,7 +1059,8 @@ export async function deleteCreativeAssetAction(
 ): Promise<CreativeAssetActionState> {
   try {
     const assetId = resolveActionAssetId(assetIdOrFormData);
-    const { supabase, workspace, user, asset } = await loadOwnedAsset(assetId);
+    const { supabase, workspace, user, role, asset } = await loadOwnedAsset(assetId);
+    assertCanDeleteAssets(role);
     const unlinkResult = await unlinkCreativeAssetFromContentStudioItems(
       asset.id,
       workspace.id,
@@ -1047,7 +1102,8 @@ export async function selectCreativeAssetAction(
 ): Promise<CreativeAssetActionState> {
   try {
     const assetId = resolveActionAssetId(assetIdOrFormData);
-    const { supabase, workspace, user, asset } = await loadOwnedAsset(assetId);
+    const { supabase, workspace, user, role, asset } = await loadOwnedAsset(assetId);
+    assertCanEditAssets(role);
     const result = await updateCreativeAsset(
       asset.id,
       {

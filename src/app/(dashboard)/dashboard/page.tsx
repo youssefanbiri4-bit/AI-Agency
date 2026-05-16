@@ -49,7 +49,6 @@ import { getPinterestConfigReadiness } from '@/lib/ads/pinterest';
 import { getContentStudioProviderReadiness } from '@/lib/content-studio/provider-actions';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
 import {
-  checkNvidiaTextProviderReadiness,
   checkOpenAITextProviderReadiness,
 } from '@/lib/ai/text-provider';
 import { buttonStyles } from '@/components/ui/Button';
@@ -448,7 +447,6 @@ export default async function DashboardPage() {
   const googleAdsReadiness = getGoogleAdsConfigReadiness();
   const pinterestReadiness = getPinterestConfigReadiness();
   const openAIReadiness = checkOpenAITextProviderReadiness();
-  const nvidiaReadiness = checkNvidiaTextProviderReadiness();
   const providerReadinessEntries =
     workspaceId && userId
       ? await Promise.all([
@@ -472,11 +470,6 @@ export default async function DashboardPage() {
       name: 'OpenAI',
       status: getReadinessState(openAIReadiness),
       nextAction: openAIReadiness.isReady ? openAIReadiness.message : 'Add API key and confirm quota/quota.',
-    },
-    {
-      name: 'NVIDIA',
-      status: getReadinessState(nvidiaReadiness),
-      nextAction: nvidiaReadiness.isReady ? nvidiaReadiness.message : 'Add NVIDIA_API_KEY if fallback generation is required.',
     },
     {
       name: 'Meta / Instagram / Facebook',

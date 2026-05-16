@@ -24,10 +24,8 @@ import { getPinterestConfigReadiness } from '@/lib/ads/pinterest';
 import { getContentStudioProviderReadiness } from '@/lib/content-studio/provider-actions';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
 import {
-  checkNvidiaTextProviderReadiness,
   checkOpenAITextProviderReadiness,
   getAITextProviderConfig,
-  testNvidiaTextProviderConnection,
 } from '@/lib/ai/text-provider';
 import { getGitHubReadiness } from '@/lib/github';
 import type { ContentStudioItemWithAssets } from '@/lib/data/content-studio';
@@ -488,10 +486,6 @@ export async function getSystemHealthSummary({
 
   const envChecks: EnvCheck[] = [
     envCheck('OPENAI_API_KEY', 'OpenAI text/image generation readiness.'),
-    envCheck('NVIDIA_API_KEY', 'NVIDIA fallback text generation.'),
-    envCheck('NVIDIA_BASE_URL', 'NVIDIA endpoint for OpenAI-compatible chat completions.'),
-    envCheck('NVIDIA_MODEL', 'NVIDIA model slug for text generation.'),
-    envCheck('AI_TEXT_PROVIDER', 'Optional provider mode override.', true),
     envCheck('META_APP_ID', 'Meta OAuth app ID.'),
     envCheck('META_APP_SECRET', 'Meta OAuth secret.'),
     envCheck('META_REDIRECT_URI', 'Meta OAuth callback URL.'),
@@ -525,11 +519,9 @@ export async function getSystemHealthSummary({
   const googleAdsReadiness = getGoogleAdsConfigReadiness();
   const pinterestReadiness = getPinterestConfigReadiness();
   const openAIReadiness = checkOpenAITextProviderReadiness();
-  const nvidiaReadiness = checkNvidiaTextProviderReadiness();
   const githubReadiness = getGitHubReadiness();
   const aiConfig = getAITextProviderConfig();
-  const [nvidiaDiagnostic, ...providerReadinessEntries] = await Promise.all([
-    testNvidiaTextProviderConnection(),
+  const providerReadinessEntries = await Promise.all([
     getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'facebook_post' }),
     getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'instagram_post' }),
     getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'google_ads_campaign_draft' }),
@@ -567,35 +559,9 @@ export async function getSystemHealthSummary({
         openAIReadiness.isReady ? 'API key is present.' : 'API key is missing or setup is incomplete.',
         latestFailedOpenAI ? `Last known possible quota/quota issue: ${safeMessage(latestFailedOpenAI.error_message)}` : 'No recent quota/quota error found in tracked attempts.',
         'Image generation uses the same OpenAI server-side key when enabled.',
+        `AI text provider: ${aiConfig.activeProvider}.`,
       ],
       missing: openAIReadiness.isReady ? [] : ['OPENAI_API_KEY'],
-      href: '/dashboard/settings#provider-setup-wizard',
-      cta: 'Open Provider Setup',
-    },
-    {
-      name: 'NVIDIA',
-      status:
-        nvidiaDiagnostic.keyStatus === 'missing' || nvidiaDiagnostic.baseUrlStatus === 'missing' || nvidiaDiagnostic.modelStatus === 'missing'
-          ? 'setup_required'
-          : nvidiaDiagnostic.errorCategory === 'rate_limited'
-            ? 'quota_limit'
-            : nvidiaDiagnostic.lastTestStatus === 'failed'
-              ? 'error'
-              : getReadinessState(nvidiaReadiness),
-      details: [
-        `AI Text Provider: ${aiConfig.activeProvider}.`,
-        `NVIDIA key: ${nvidiaDiagnostic.keyStatus}.`,
-        `NVIDIA base URL: ${nvidiaDiagnostic.baseUrlStatus}.`,
-        `NVIDIA test path: ${nvidiaDiagnostic.requestPath}.`,
-        `NVIDIA model: ${nvidiaDiagnostic.model}.`,
-        `Last test status: ${nvidiaDiagnostic.lastTestStatus}${nvidiaDiagnostic.responseStatusCode ? ` (${nvidiaDiagnostic.responseStatusCode})` : ''}${nvidiaDiagnostic.errorCategory ? ` - ${nvidiaDiagnostic.errorCategory}` : ''}.`,
-        `Safe provider message: ${nvidiaDiagnostic.safeProviderMessage ?? 'none'}.`,
-      ],
-      missing: [
-        ...(nvidiaDiagnostic.keyStatus === 'present' ? [] : ['NVIDIA_API_KEY']),
-        ...(nvidiaDiagnostic.baseUrlStatus === 'present' ? [] : ['NVIDIA_BASE_URL']),
-        ...(nvidiaDiagnostic.modelStatus === 'present' ? [] : ['NVIDIA_MODEL']),
-      ],
       href: '/dashboard/settings#provider-setup-wizard',
       cta: 'Open Provider Setup',
     },

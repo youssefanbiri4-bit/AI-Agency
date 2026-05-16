@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
-import { Footer } from '@/components/layout/Footer';
+import { RouteAwareFooter } from '@/components/layout/RouteAwareFooter';
 import { ToastProvider } from '@/components/ui/toast';
 import { LanguageProvider, type Translations } from '@/i18n/context';
 import type { LanguageCode } from '@/i18n/index';
@@ -39,10 +40,6 @@ export const metadata: Metadata = {
   },
 };
 
-const LANGUAGE_SCRIPT = `
-(function(){try{var e=localStorage.getItem("agentflow-language");if(e==="ar"){document.documentElement.lang="ar";document.documentElement.dir="rtl"}else if(e==="en"){document.documentElement.lang="en";document.documentElement.dir="ltr"}else if(e==="fr"){document.documentElement.lang="fr";document.documentElement.dir="ltr"}else if(e==="es"){document.documentElement.lang="es";document.documentElement.dir="ltr"}}catch(e){}})();
-`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" className="h-full scroll-smooth" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: LANGUAGE_SCRIPT }} />
+        <Script src="/agentflow-language-init.js" strategy="beforeInteractive" />
       </head>
       <body className="h-full flex flex-col bg-transparent text-foreground">
         <LanguageProvider translations={allTranslations}>
@@ -59,7 +56,7 @@ export default function RootLayout({
             <main className="flex-1">
               {children}
             </main>
-            <Footer />
+            <RouteAwareFooter />
           </ToastProvider>
         </LanguageProvider>
       </body>

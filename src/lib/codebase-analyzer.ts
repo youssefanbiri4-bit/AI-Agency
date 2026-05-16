@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { inflateRawSync } from 'node:zlib';
-import { checkNvidiaTextProviderReadiness, checkOpenAITextProviderReadiness, getAITextProviderConfig } from '@/lib/ai/text-provider';
+import { checkOpenAITextProviderReadiness, getAITextProviderConfig } from '@/lib/ai/text-provider';
 import { getGitHubRepositoryFiles, type GitHubRepositoryFile } from '@/lib/github';
 
 export type CodebaseAnalysisSource = 'github' | 'zip' | 'manual';
@@ -270,7 +270,7 @@ function detectTechStack(files: CodebaseFileInput[]) {
   if ([...paths].some((path) => path.includes('flask')) || 'flask' in dependencies) stack.add('Flask');
   if ([...paths].some((path) => path.toLowerCase().includes('dockerfile') || path.endsWith('docker-compose.yml'))) stack.add('Docker');
   if (paths.has('vercel.json') || 'next' in dependencies) stack.add('Vercel');
-  if ([...paths].some((path) => path.includes('openai') || path.includes('nvidia'))) stack.add('AI providers visible in code');
+  if ([...paths].some((path) => path.includes('openai'))) stack.add('OpenAI provider visible in code');
 
   return [...stack];
 }
@@ -478,7 +478,7 @@ function buildReport(input: {
     .slice(0, 40);
   const techStack = detectTechStack(files);
   const findings = buildFindings(files, routes, apiRoutes);
-  const readiness = [checkOpenAITextProviderReadiness(), checkNvidiaTextProviderReadiness()];
+  const readiness = [checkOpenAITextProviderReadiness()];
   const providerConfig = getAITextProviderConfig();
   const aiReady = readiness.some((provider) => provider.isReady);
   const appName = typeof packageJson?.name === 'string' ? packageJson.name : input.sourceLabel;

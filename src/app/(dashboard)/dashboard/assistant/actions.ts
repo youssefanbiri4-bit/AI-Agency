@@ -90,7 +90,7 @@ function detectAssistantIntent(question: string): AssistantIntent {
   const lower = question.toLowerCase();
 
   if (/what should i do today|today['’]?s procedures|today procedures|do today|today|next action|next actions|priorit|إجراءات اليوم|اجراءات اليوم|شنو خاصني ندير اليوم|خاصني ندير اليوم|اليوم/i.test(lower)) return 'today';
-  if (/show provider blockers|provider blockers|provider setup status|provider setup|provider status|provider|blocker|blocked|setup|nvidia|openai|meta|google|pinterest|quota|token/i.test(lower)) return 'provider_blockers';
+  if (/show provider blockers|provider blockers|provider setup status|provider setup|provider status|provider|blocker|blocked|setup|openai|meta|google|pinterest|quota|token/i.test(lower)) return 'provider_blockers';
   if (/summarize system health|system health|health|status|diagnostic|diagnose/i.test(lower)) return 'system_health';
   if (/tasks needing review|needs review|need review|مراجعة المهام|مهام.*مراجعة/i.test(lower)) return 'tasks_review';
   if (/scheduled content|ready content|content scheduled|المحتوى.*مجدول|المحتوى.*جاهز/i.test(lower)) return 'scheduled_content';
@@ -187,7 +187,7 @@ function chooseLinks(question: string): AssistantLink[] {
     if (!links.some((link) => link.href === href)) links.push({ label, href });
   };
 
-  if (/provider|setup|meta|google|pinterest|openai|nvidia|ready|blocker/.test(lower)) {
+  if (/provider|setup|meta|google|pinterest|openai|ready|blocker/.test(lower)) {
     add('Open Provider Setup', '/dashboard/settings#provider-setup-wizard');
     add('Open System Health', '/dashboard/system-health');
   }

@@ -16,7 +16,7 @@ import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
 import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
 import { getContentStudioProviderReadiness } from '@/lib/content-studio/provider-actions';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
-import { checkNvidiaTextProviderReadiness, checkOpenAITextProviderReadiness } from '@/lib/ai/text-provider';
+import { checkOpenAITextProviderReadiness } from '@/lib/ai/text-provider';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
@@ -413,8 +413,6 @@ function buildProviderReadinessIssues(input: {
   schedulerMessage: string;
   openAIStatus: string;
   openAIMessage: string;
-  nvidiaStatus: string;
-  nvidiaMessage: string;
 }) {
   const issues: RecoveryIssue[] = [];
   const providerRows: Array<{
@@ -480,7 +478,6 @@ function buildProviderReadinessIssues(input: {
 
   for (const ai of [
     { id: 'openai' as const, provider: 'OpenAI' as const, status: input.openAIStatus, message: input.openAIMessage },
-    { id: 'nvidia' as const, provider: 'NVIDIA' as const, status: input.nvidiaStatus, message: input.nvidiaMessage },
   ]) {
     const category = categoryFromStatus(ai.status) ?? (ai.status === 'credits_required' ? 'quota_limit' : null);
     if (!category) continue;
@@ -496,7 +493,7 @@ function buildProviderReadinessIssues(input: {
       reason: ai.message,
       lastAttemptAt: null,
       lastAttemptStatus: ai.status,
-      nextAction: ai.provider === 'OpenAI' ? 'Add OpenAI quota/credits or use NVIDIA fallback.' : 'Add NVIDIA API key or credits if fallback generation is required.',
+      nextAction: 'Check OPENAI_API_KEY, OpenAI billing, quota, and model access.',
       fixSteps: defaultFixSteps(category, ai.provider, ai.message),
       missing: [ai.status],
       retryable: false,
@@ -510,7 +507,7 @@ function buildProviderReadinessIssues(input: {
 }
 
 function buildProviderBlockers(issues: RecoveryIssue[]): ProviderBlockerGroup[] {
-  const providers: RecoveryIssue['provider'][] = ['Meta', 'Google Ads', 'Pinterest', 'OpenAI', 'NVIDIA', 'LinkedIn', 'Scheduler', 'Media'];
+  const providers: RecoveryIssue['provider'][] = ['Meta', 'Google Ads', 'Pinterest', 'OpenAI', 'LinkedIn', 'Scheduler', 'Media'];
 
   return providers.map((provider) => {
     const providerIssues = issues.filter((issue) => issue.provider === provider);
@@ -588,7 +585,6 @@ export default async function RecoveryPage() {
   ]);
   const schedulerReadiness = getContentStudioSchedulerReadiness();
   const openAIReadiness = checkOpenAITextProviderReadiness();
-  const nvidiaReadiness = checkNvidiaTextProviderReadiness();
   const items = itemsResult.error ? [] : itemsResult.data;
   const assets = assetsResult.error ? [] : assetsResult.data;
   const attempts = attemptsResult.error ? [] : attemptsResult.data;
@@ -603,8 +599,6 @@ export default async function RecoveryPage() {
       schedulerMessage: schedulerReadiness.message,
       openAIStatus: openAIReadiness.status,
       openAIMessage: openAIReadiness.message,
-      nvidiaStatus: nvidiaReadiness.status,
-      nvidiaMessage: nvidiaReadiness.message,
     }),
   ];
   const providerBlockers = buildProviderBlockers(issues);

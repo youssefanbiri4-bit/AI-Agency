@@ -37,9 +37,7 @@ import { checkOpenAIImageReadiness } from '@/lib/ai/openai-images';
 import { checkOpenAIContentReadiness } from '@/lib/ai/openai-content';
 import {
   checkOpenAITextProviderReadiness,
-  checkNvidiaTextProviderReadiness,
   getAITextProviderConfig,
-  testNvidiaTextProviderConnection,
   type AITextProvider,
 } from '@/lib/ai/text-provider';
 import {
@@ -113,18 +111,7 @@ export interface ProviderReadinessState {
   aiTextProvider: {
     activeProvider: AITextProvider;
     openaiStatus: 'ready' | 'quota_limit' | 'setup_required';
-    nvidiaStatus: 'ready' | 'setup_required' | 'credits_required' | 'error';
     openaiMessage: string;
-    nvidiaMessage: string;
-    nvidiaBaseUrlStatus: 'present' | 'missing';
-    nvidiaModelStatus: 'present' | 'missing';
-    nvidiaKeyStatus: 'present' | 'missing';
-    nvidiaModel: string;
-    nvidiaLastTestPath: string;
-    nvidiaLastTestStatus: 'not_run' | 'ok' | 'failed';
-    nvidiaLastTestStatusCode: number | null;
-    nvidiaLastTestCategory: string | null;
-    nvidiaLastTestMessage: string | null;
   };
 }
 
@@ -182,7 +169,6 @@ export interface ProviderSetupCheckItem {
 export interface ProviderSetupWizardProvider {
   key:
     | 'openai'
-    | 'nvidia'
     | 'meta'
     | 'google_ads'
     | 'pinterest'
@@ -247,50 +233,15 @@ export interface PinterestConnectionSettingsState {
   selectedBoardName: string | null;
 }
 
-function getNvidiaProviderSetupStatus(input: {
-  keyStatus: 'present' | 'missing';
-  baseUrlStatus: 'present' | 'missing';
-  modelStatus: 'present' | 'missing';
-  lastTestStatus: 'not_run' | 'ok' | 'failed';
-  errorCategory: string | null;
-}): 'ready' | 'setup_required' | 'credits_required' | 'error' {
-  if (input.keyStatus === 'missing' || input.baseUrlStatus === 'missing' || input.modelStatus === 'missing') {
-    return 'setup_required';
-  }
-
-  if (input.errorCategory === 'rate_limited') return 'credits_required';
-  if (input.lastTestStatus === 'failed') return 'error';
-  return 'ready';
-}
-
 function buildAITextProviderReadinessState(input: {
   activeProvider: AITextProvider;
   openaiReady: boolean;
   openaiMessage: string;
-  nvidiaMessage: string;
-  nvidiaDiagnostic: Awaited<ReturnType<typeof testNvidiaTextProviderConnection>>;
 }): ProviderReadinessState['aiTextProvider'] {
   return {
     activeProvider: input.activeProvider,
     openaiStatus: input.openaiReady ? 'ready' : 'setup_required',
-    nvidiaStatus: getNvidiaProviderSetupStatus({
-      keyStatus: input.nvidiaDiagnostic.keyStatus,
-      baseUrlStatus: input.nvidiaDiagnostic.baseUrlStatus,
-      modelStatus: input.nvidiaDiagnostic.modelStatus,
-      lastTestStatus: input.nvidiaDiagnostic.lastTestStatus,
-      errorCategory: input.nvidiaDiagnostic.errorCategory,
-    }),
     openaiMessage: input.openaiMessage,
-    nvidiaMessage: input.nvidiaMessage,
-    nvidiaBaseUrlStatus: input.nvidiaDiagnostic.baseUrlStatus,
-    nvidiaModelStatus: input.nvidiaDiagnostic.modelStatus,
-    nvidiaKeyStatus: input.nvidiaDiagnostic.keyStatus,
-    nvidiaModel: input.nvidiaDiagnostic.model,
-    nvidiaLastTestPath: input.nvidiaDiagnostic.requestPath,
-    nvidiaLastTestStatus: input.nvidiaDiagnostic.lastTestStatus,
-    nvidiaLastTestStatusCode: input.nvidiaDiagnostic.responseStatusCode,
-    nvidiaLastTestCategory: input.nvidiaDiagnostic.errorCategory,
-    nvidiaLastTestMessage: input.nvidiaDiagnostic.safeProviderMessage,
   };
 }
 
@@ -1589,9 +1540,7 @@ export async function getProviderReadinessAction(): Promise<ProviderReadinessSta
   } = await supabase.auth.getUser();
 
   const openAITextReadiness = checkOpenAIContentReadiness();
-  const nvidiaTextReadiness = checkNvidiaTextProviderReadiness();
   const aiTextProviderConfig = getAITextProviderConfig();
-  const nvidiaDiagnostic = await testNvidiaTextProviderConnection();
   const googleAdsReadiness = getGoogleAdsConfigReadiness();
   const pinterestReadiness = getPinterestConfigReadiness();
   const metaEnvConfigured = Boolean(
@@ -1647,8 +1596,6 @@ export async function getProviderReadinessAction(): Promise<ProviderReadinessSta
           activeProvider: aiTextProviderConfig.activeProvider,
           openaiReady: openAITextReadiness.isReady,
           openaiMessage: openAITextReadiness.message,
-          nvidiaMessage: nvidiaTextReadiness.message,
-          nvidiaDiagnostic,
         }),
       },
     };
@@ -1704,8 +1651,6 @@ export async function getProviderReadinessAction(): Promise<ProviderReadinessSta
           activeProvider: aiTextProviderConfig.activeProvider,
           openaiReady: openAITextReadiness.isReady,
           openaiMessage: openAITextReadiness.message,
-          nvidiaMessage: nvidiaTextReadiness.message,
-          nvidiaDiagnostic,
         }),
       },
     };
@@ -1786,8 +1731,6 @@ export async function getProviderReadinessAction(): Promise<ProviderReadinessSta
         activeProvider: aiTextProviderConfig.activeProvider,
         openaiReady: openAITextReadiness.isReady,
         openaiMessage: openAITextReadiness.message,
-        nvidiaMessage: nvidiaTextReadiness.message,
-        nvidiaDiagnostic,
       }),
     },
   };
@@ -1858,9 +1801,6 @@ export async function getProviderSetupWizardAction(): Promise<ProviderSetupWizar
 
   const openAITextReadiness = checkOpenAITextProviderReadiness();
   const openAIImageReadiness = checkOpenAIImageReadiness();
-  const nvidiaReadiness = checkNvidiaTextProviderReadiness();
-  const aiTextProviderConfig = getAITextProviderConfig();
-  const nvidiaDiagnostic = await testNvidiaTextProviderConnection();
   const googleConfig = getGoogleAdsConfigReadiness();
   const pinterestConfig = getPinterestConfigReadiness();
   const schedulerReadiness = getContentStudioSchedulerReadiness();
@@ -1893,54 +1833,6 @@ export async function getProviderSetupWizardAction(): Promise<ProviderSetupWizar
       status: 'needs_review',
       explanation: 'quota and quota are only known after provider responses report a limit issue.',
       nextAction: 'Review OpenAI quota and usage limits if generation fails.',
-    },
-  ];
-
-  const nvidiaChecklist: ProviderSetupCheckItem[] = [
-    envCheck('NVIDIA_API_KEY', 'NVIDIA_API_KEY'),
-    {
-      label: 'NVIDIA_BASE_URL',
-      status: nvidiaDiagnostic.baseUrlStatus === 'present' ? 'present' : 'missing',
-      explanation: `NVIDIA base URL is ${nvidiaDiagnostic.baseUrlStatus}.`,
-      nextAction: nvidiaDiagnostic.baseUrlStatus === 'present'
-        ? 'No action needed.'
-        : 'Set NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1 and redeploy.',
-    },
-    {
-      label: 'NVIDIA_MODEL',
-      status: nvidiaDiagnostic.modelStatus === 'present' ? 'present' : 'missing',
-      explanation: `Model configured: ${nvidiaDiagnostic.model}.`,
-      nextAction: nvidiaDiagnostic.modelStatus === 'present'
-        ? 'No action needed.'
-        : 'Set NVIDIA_MODEL=minimaxai/minimax-m2.7 and redeploy.',
-    },
-    {
-      label: 'AI_TEXT_PROVIDER',
-      status:
-        aiTextProviderConfig.activeProvider === 'auto' ||
-        aiTextProviderConfig.activeProvider === 'nvidia'
-          ? 'present'
-          : 'needs_review',
-      explanation: `Current text provider mode: ${aiTextProviderConfig.activeProvider}.`,
-      nextAction:
-        aiTextProviderConfig.activeProvider === 'auto' ||
-        aiTextProviderConfig.activeProvider === 'nvidia'
-          ? 'No action needed.'
-          : 'Set AI_TEXT_PROVIDER=auto if NVIDIA should be used as fallback.',
-    },
-    {
-      label: 'Last NVIDIA test',
-      status:
-        nvidiaDiagnostic.lastTestStatus === 'ok'
-          ? 'present'
-          : nvidiaDiagnostic.errorCategory === 'rate_limited'
-            ? 'needs_review'
-            : 'error',
-      explanation: `Last test status: ${nvidiaDiagnostic.lastTestStatus}${nvidiaDiagnostic.responseStatusCode ? ` (${nvidiaDiagnostic.responseStatusCode})` : ''}${nvidiaDiagnostic.errorCategory ? ` - ${nvidiaDiagnostic.errorCategory}` : ''}. Path: ${nvidiaDiagnostic.requestPath}.${nvidiaDiagnostic.safeProviderMessage ? ` Message: ${nvidiaDiagnostic.safeProviderMessage}` : ''}`,
-      nextAction:
-        nvidiaDiagnostic.lastTestStatus === 'ok'
-          ? 'No action needed.'
-          : 'Review NVIDIA key permissions, model access, quota, and endpoint settings.',
     },
   ];
 
@@ -2297,27 +2189,11 @@ export async function getProviderSetupWizardAction(): Promise<ProviderSetupWizar
     buildProvider({
       key: 'openai',
       name: 'OpenAI',
-      description: 'AI text and image generation readiness.',
+      description: 'OpenAI-only text and image generation readiness.',
       status: openAITextReadiness.isReady ? 'ready' : 'setup_required',
       checklist: openAIChecklist,
       safeLastError: null,
       primaryActionLabel: openAITextReadiness.isReady ? 'View Details' : 'Fix Env',
-      primaryActionHref: null,
-    }),
-    buildProvider({
-      key: 'nvidia',
-      name: 'NVIDIA',
-      description: `NVIDIA text generation readiness. AI_TEXT_PROVIDER=${aiTextProviderConfig.activeProvider}.`,
-      status: getNvidiaProviderSetupStatus({
-        keyStatus: nvidiaDiagnostic.keyStatus,
-        baseUrlStatus: nvidiaDiagnostic.baseUrlStatus,
-        modelStatus: nvidiaDiagnostic.modelStatus,
-        lastTestStatus: nvidiaDiagnostic.lastTestStatus,
-        errorCategory: nvidiaDiagnostic.errorCategory,
-      }),
-      checklist: nvidiaChecklist,
-      safeLastError: nvidiaDiagnostic.safeProviderMessage ?? nvidiaDiagnostic.errorCategory,
-      primaryActionLabel: nvidiaReadiness.isReady ? 'View Details' : 'Fix Env',
       primaryActionHref: null,
     }),
     buildProvider({

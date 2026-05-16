@@ -466,12 +466,12 @@ src/i18n/context.tsx:45:5
 | `stripe-server.ts` يحتوي على مفتاح Stripe | منخفضة | يستخدم `process.env.STRIPE_SECRET_KEY` — آمن طالما أنه لا يُستخدم (كود ميت حالياً). |
 | عدم وجود rate limiting على API route | غير مؤكد | `src/lib/rate-limit.ts` موجود ولكن لم يتم تأكيد استخدامه في جميع المسارات. |
 
-### صلاحية GitHub و OpenAI/NVIDIA
+### صلاحية GitHub و OpenAI
 
 - `src/lib/github.ts` موجود — يجب التأكد من أنه للقراءة فقط أو محمي
 - `src/lib/alex/` يستخدم OpenAI من جانب الخادم فقط
 - GPT model المذكور: `gpt-5.5` (افتراضي، يمكن تغييره عبر `OPENAI_MODEL`)
-- مفتاح NVIDIA API يُقرأ من البيئة فقط
+- مفتاح OpenAI API يُقرأ من البيئة فقط
 
 ---
 
@@ -505,7 +505,7 @@ src/i18n/context.tsx:45:5
 | التحسين | دليل الفحص |
 |---------|------------|
 | **إزالة Billing/SaaS** | كود Stripe موجود لكنه معطل وغير مستخدم في الواجهة. لا توجد صفحات فوترة. |
-| **إصلاح NVIDIA parsing** | `checkNvidiaTextProviderReadiness` موجود في `src/lib/ai/text-provider.ts` |
+| **إصلاح OpenAI parsing** | `checkOpenAITextProviderReadiness` موجود في `src/lib/ai/text-provider.ts` |
 | **صفحة Alex** | موجودة في `src/app/(dashboard)/dashboard/alex/` وتعمل بشكل كامل |
 | **نظام i18n** | مثبت بالكامل مع 4 لغات وتبديل تفاعلي |
 | **التقويم** | موجود ويعرض عناصر المحتوى والإصدارات وReels في شبكة شهرية |

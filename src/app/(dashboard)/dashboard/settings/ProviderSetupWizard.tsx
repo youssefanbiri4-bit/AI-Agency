@@ -35,7 +35,6 @@ interface ProviderSetupWizardProps {
 
 const providerIcons: Record<ProviderSetupWizardProvider['key'], typeof Sparkles> = {
   openai: Sparkles,
-  nvidia: Sparkles,
   meta: RadioTower,
   google_ads: Search,
   pinterest: ImageIcon,

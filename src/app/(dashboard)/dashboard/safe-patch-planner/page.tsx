@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
   ArrowLeft,
+  Bot,
   Code2,
   FolderKanban,
   SearchCode,
@@ -61,6 +62,14 @@ export default async function SafePatchPlannerPage({
             <Link href="/dashboard/projects#codebase-analyzer" className={buttonStyles({ variant: 'outline' })}>
               <SearchCode className="h-4 w-4" />
               Open Codebase Analyzer
+            </Link>
+            <Link href="/dashboard/alex?template=bug-diagnosis-agent" className={buttonStyles({ variant: 'outline' })}>
+              <Bot className="h-4 w-4" />
+              Bug Diagnosis Agent
+            </Link>
+            <Link href="/dashboard/alex?template=patch-planner-agent" className={buttonStyles({ variant: 'outline' })}>
+              <Code2 className="h-4 w-4" />
+              Patch Planner Agent
             </Link>
             <Link href="/dashboard/prompt-library" className={buttonStyles({ variant: 'outline' })}>
               <Sparkles className="h-4 w-4" />

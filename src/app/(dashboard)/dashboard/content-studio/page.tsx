@@ -19,6 +19,7 @@ import { getGoogleAdsConfigReadiness } from '@/lib/ads/google-ads';
 import { getPinterestConfigReadiness } from '@/lib/ads/pinterest';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
 import { getContentStudioProviderReadiness } from '@/lib/content-studio/provider-actions';
+import { getAgentTemplateById } from '@/lib/agent-library/templates';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
@@ -109,6 +110,8 @@ export default async function ContentStudioPage({ searchParams }: ContentStudioP
   const activeStatus = readStatus(getSearchParam(params, 'status'));
   const selectedItemId = getSearchParam(params, 'item');
   const initialDraftType = readContentType(getSearchParam(params, 'type'));
+  const requestedTemplateId = getSearchParam(params, 'template')?.trim();
+  const selectedTemplate = getAgentTemplateById(requestedTemplateId);
   const activeContentType = readContentType(getSearchParam(params, 'content_type'));
   const searchQuery = getSearchParam(params, 'q')?.trim() ?? '';
   const googleAdsReadiness = getGoogleAdsConfigReadiness();
@@ -320,6 +323,8 @@ export default async function ContentStudioPage({ searchParams }: ContentStudioP
         selectedItemProviderReadiness={selectedItemProviderReadiness}
         brandKit={brandKitResult.data.brandKit}
         brandKitExists={brandKitResult.data.exists}
+        agentTemplate={selectedTemplate}
+        templateNotFound={Boolean(requestedTemplateId && !selectedTemplate)}
       />
     </div>
   );

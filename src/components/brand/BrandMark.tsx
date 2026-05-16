@@ -108,6 +108,9 @@ function BrandContent({
         )}
       >
         {customLogoUrl ? (
+          // Custom workspace logos may be arbitrary Supabase/external URLs; keep
+          // the plain img to avoid requiring broad next/image remote patterns.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={customLogoUrl}
             alt={customLogoAlt || `${BRAND_NAME} logo`}

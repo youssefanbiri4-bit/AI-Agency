@@ -6,7 +6,9 @@ import {
 import { getTaskById, createTaskEvent, updateTaskExecutionState } from '@/lib/data/tasks';
 import { getAgentById } from '@/lib/data/agents';
 import { getLatestTaskRevisionNotes } from '@/lib/data/reviews';
-import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
+import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
+import { checkInMemoryRateLimit } from '@/lib/rate-limit';
+import { canRunTasks, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
 import { reportAppError } from '@/lib/logger';
 import { getN8nReadiness } from '@/lib/n8n';
 import type { JsonObject } from '@/types';
@@ -123,6 +125,27 @@ export async function POST(request: NextRequest) {
     }
 
     const workspaceId = workspaceResult.data.id;
+    const membershipResult = await getCurrentWorkspaceMembership(supabase, workspaceId, user.id);
+    const role = normalizeWorkspaceRole(membershipResult.data?.role, workspaceResult.data, user.id);
+
+    if (membershipResult.error) {
+      return jsonError('Workspace permission could not be verified', 403);
+    }
+
+    if (!membershipResult.data || !canRunTasks(role)) {
+      return jsonError('ما عندكش صلاحية لتشغيل المهام. Task execution is restricted for your workspace role.', 403);
+    }
+
+    const limiter = checkInMemoryRateLimit({
+      key: `task-execute:${workspaceId}:${user.id}`,
+      limit: 10,
+      windowMs: 10 * 60 * 1000,
+    });
+
+    if (!limiter.allowed) {
+      return jsonError('وصلتي للحد المؤقت لتشغيل المهام. عاود المحاولة بعد شوية.', 429);
+    }
+
     const taskResult = await getTaskById(taskId, workspaceId, supabase);
 
     if (taskResult.error) {

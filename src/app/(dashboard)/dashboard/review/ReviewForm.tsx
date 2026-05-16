@@ -109,7 +109,12 @@ export function ReviewForm({ taskId }: ReviewFormProps) {
           variant="success"
           className="flex-1"
           disabled={isPending}
-          onClick={() => setReviewIntent('approve')}
+          onClick={(event) => {
+            setReviewIntent('approve');
+            if (!window.confirm('Approve and mark this task completed? / واش تأكد اعتماد المهمة وإكمالها؟')) {
+              event.preventDefault();
+            }
+          }}
         >
           {isPending ? <Star className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
           Approve
@@ -122,7 +127,12 @@ export function ReviewForm({ taskId }: ReviewFormProps) {
             variant="outline"
             className="flex-1"
             disabled={isPending || !hasRevisionNotes}
-            onClick={() => setReviewIntent('request_changes')}
+            onClick={(event) => {
+              setReviewIntent('request_changes');
+              if (!window.confirm('Send this task back to pending with change notes? / واش ترجع المهمة للتعديل؟')) {
+                event.preventDefault();
+              }
+            }}
           >
             <RotateCcw className="h-5 w-5" />
             Send Change Request

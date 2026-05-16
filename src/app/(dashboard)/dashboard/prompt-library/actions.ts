@@ -243,6 +243,9 @@ export async function togglePromptFavoriteAction(
 ): Promise<PromptActionState> {
   const context = await getPromptContext();
   if (context.error) return { error: context.error, promptId: id };
+  if (!canEditContent(context.role)) {
+    return { error: 'ما عندكش صلاحية لتعديل المفضلة. Prompt edits are restricted for your workspace role.', promptId: id };
+  }
 
   const result = await updatePromptFavorite(id, context.workspace.id, isFavorite, context.supabase);
   if (result.error) return { error: result.error, promptId: id };
@@ -256,6 +259,9 @@ export async function togglePromptFavoriteAction(
 export async function markPromptCopiedAction(id: string): Promise<PromptActionState> {
   const context = await getPromptContext();
   if (context.error) return { error: context.error, promptId: id };
+  if (!canEditContent(context.role)) {
+    return { error: 'ما عندكش صلاحية لتحديث استعمال البرومبت. Prompt usage updates are restricted for your workspace role.', promptId: id };
+  }
 
   const result = await markPromptUsed(id, context.workspace.id, context.supabase);
   if (result.error) return { error: result.error, promptId: id };
@@ -269,6 +275,9 @@ export async function markPromptCopiedAction(id: string): Promise<PromptActionSt
 export async function importStarterPromptsAction(): Promise<PromptActionState> {
   const context = await getPromptContext();
   if (context.error) return { error: context.error };
+  if (!canEditContent(context.role)) {
+    return { error: 'ما عندكش صلاحية لاستيراد البرومبتات. Prompt imports are restricted for your workspace role.' };
+  }
 
   const existing = await listPromptLibraryForWorkspace(context.workspace.id, context.supabase);
   if (existing.error) return { error: existing.error };

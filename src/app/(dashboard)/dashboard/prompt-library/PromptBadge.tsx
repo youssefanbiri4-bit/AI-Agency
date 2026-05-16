@@ -1,19 +1,24 @@
+'use client';
+
 import type { PromptCategory, PromptTargetTool } from '@/types/database';
 import { cn } from '@/lib/utils';
-import { formatPromptCategory, formatPromptTargetTool } from '@/lib/data/prompt-library';
+import { useLanguage } from '@/i18n/context';
+import { translatePromptCategory, translatePromptTool } from './prompt-i18n';
 
 export function PromptCategoryBadge({ category }: { category: PromptCategory }) {
+  const { t } = useLanguage();
   return (
     <span className="inline-flex rounded-full border border-[#F7CBCA]/18 bg-[#D5E5E5]/70 px-2.5 py-1 text-xs font-black leading-none text-[#F7CBCA]">
-      {formatPromptCategory(category)}
+      {translatePromptCategory(t, category)}
     </span>
   );
 }
 
 export function PromptToolBadge({ tool }: { tool: PromptTargetTool | null }) {
+  const { t } = useLanguage();
   return (
     <span className="inline-flex rounded-full border border-black/10 bg-white px-2.5 py-1 text-xs font-black leading-none text-black/62">
-      {formatPromptTargetTool(tool)}
+      {translatePromptTool(t, tool)}
     </span>
   );
 }

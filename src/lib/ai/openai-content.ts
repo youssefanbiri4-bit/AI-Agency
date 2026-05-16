@@ -81,8 +81,8 @@ export type GenerateContentStudioTextResult =
       status: 'generated';
       text: string;
       model: string;
-      providerUsed?: 'openai' | 'nvidia';
-      fallbackUsed?: boolean;
+      providerUsed?: 'openai';
+      fallbackUsed?: false;
       message?: string;
     };
 

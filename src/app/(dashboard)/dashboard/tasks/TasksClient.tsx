@@ -19,6 +19,8 @@ import { TaskTable } from '@/components/ui/TaskTable';
 import { buttonStyles } from '@/components/ui/Button';
 import { getTaskStats } from '@/lib/stats';
 import type { Agent, Department, Task, TaskStatus } from '@/types';
+import { useLanguage } from '@/i18n/context';
+import { translateTaskStatus } from '@/i18n/dashboard-labels';
 
 interface TasksClientProps {
   tasks: Task[];
@@ -28,6 +30,7 @@ interface TasksClientProps {
 }
 
 export function TasksClient({ tasks, agents, departments, initialSearch = '' }: TasksClientProps) {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | 'all'>('all');
@@ -51,37 +54,37 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Task operations"
-        title="Tasks"
-        description="Track real agent work requests stored in the active workspace."
+        eyebrow={t('topbar.pageTitles.tasks.title')}
+        title={t('nav.tasks')}
+        description={t('topbar.pageTitles.tasks.description')}
         actions={
           <Link href="/dashboard/create-task" className={buttonStyles({ size: 'lg' })}>
             <Plus className="h-5 w-5" />
-            New Task
+            {t('action.newTask', 'New Task')}
           </Link>
         }
       />
 
       <div className="dashboard-stat-grid">
-        <StatCard title="Total" value={taskStats.total} icon={FileText} tone="neutral" subtitle={taskStats.total === 0 ? 'Create a task to begin' : 'Real workspace tasks'} />
-        <StatCard title="Pending" value={taskStats.pending} icon={Clock} tone="accent" />
-        <StatCard title="Processing" value={taskStats.processing} icon={Zap} tone="brand" />
-        <StatCard title="Needs Review" value={taskStats.needsReview} icon={AlertCircle} tone="accent" />
-        <StatCard title="Completed" value={taskStats.completed} icon={CheckCircle2} tone="dark" />
-        <StatCard title="Failed" value={taskStats.failed} icon={AlertCircle} tone="accent" />
+        <StatCard title={t('dashboardI18n.common.total')} value={taskStats.total} icon={FileText} tone="neutral" subtitle={taskStats.total === 0 ? t('page.tasks.createToBegin', 'Create a task to begin') : t('page.tasks.realWorkspaceTasks', 'Real workspace tasks')} />
+        <StatCard title={t('status.pending')} value={taskStats.pending} icon={Clock} tone="accent" />
+        <StatCard title={t('status.processing')} value={taskStats.processing} icon={Zap} tone="brand" />
+        <StatCard title={t('status.needsReview')} value={taskStats.needsReview} icon={AlertCircle} tone="accent" />
+        <StatCard title={t('status.completed')} value={taskStats.completed} icon={CheckCircle2} tone="dark" />
+        <StatCard title={t('status.failed')} value={taskStats.failed} icon={AlertCircle} tone="accent" />
       </div>
 
       <section className="min-w-0 rounded-lg border border-[#F7CBCA]/8 bg-white/58 p-4 shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] sm:p-5">
         <div className="mb-5">
-          <h2 className="text-lg font-semibold text-black">Task Filters</h2>
-          <p className="mt-1 text-sm text-black/52">Find work by agent, department, status, or task description.</p>
+          <h2 className="text-lg font-semibold text-black">{t('page.tasks.filtersTitle', 'Task Filters')}</h2>
+          <p className="mt-1 text-sm text-black/52">{t('page.tasks.filtersDescription', 'Find work by agent, department, status, or task description.')}</p>
         </div>
         <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_220px_240px_180px]">
           <div className="relative">
             <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
             <Input
               type="search"
-              placeholder="Search tasks by title or description"
+              placeholder={t('page.tasks.searchPlaceholder', 'Search tasks by title or description')}
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               className="ps-10"
@@ -94,7 +97,7 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
               value={selectedDepartment}
               onChange={(event) => setSelectedDepartment(event.target.value)}
             >
-              <option value="all">All Departments</option>
+              <option value="all">{t('form.allDepartments')}</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.name}>
                   {department.name}
@@ -106,7 +109,7 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
           <div className="relative">
             <ChevronDown className="pointer-events-none absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
             <Select value={selectedAgent} onChange={(event) => setSelectedAgent(event.target.value)}>
-              <option value="all">All Agents</option>
+              <option value="all">{t('form.allAgents', 'All Agents')}</option>
               {agents.map((agent) => (
                 <option key={agent.id} value={agent.id}>
                   {agent.name}
@@ -121,19 +124,19 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
               value={selectedStatus}
               onChange={(event) => setSelectedStatus(event.target.value as TaskStatus | 'all')}
             >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="needs_review">Needs Review</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t('form.allStatus')}</option>
+              <option value="draft">{translateTaskStatus(t, 'draft')}</option>
+              <option value="pending">{translateTaskStatus(t, 'pending')}</option>
+              <option value="processing">{translateTaskStatus(t, 'processing')}</option>
+              <option value="needs_review">{translateTaskStatus(t, 'needs_review')}</option>
+              <option value="completed">{translateTaskStatus(t, 'completed')}</option>
+              <option value="failed">{translateTaskStatus(t, 'failed')}</option>
+              <option value="cancelled">{translateTaskStatus(t, 'cancelled')}</option>
             </Select>
           </div>
         </div>
         <p className="mt-4 text-sm text-black/52">
-          Showing {filteredTasks.length} of {tasks.length} real task records.
+          {t('dashboardI18n.common.showing')} {filteredTasks.length} {t('dashboardI18n.common.of')} {tasks.length} {t('page.tasks.realTaskRecords', 'real task records')}.
         </p>
       </section>
 
@@ -143,7 +146,7 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
         emptyAction={
           <Link href="/dashboard/create-task" className={buttonStyles()}>
             <Plus className="h-4 w-4" />
-            Create Task
+            {t('action.createTask')}
           </Link>
         }
       />

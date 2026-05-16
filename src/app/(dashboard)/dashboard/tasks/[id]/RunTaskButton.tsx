@@ -64,6 +64,17 @@ export function RunTaskButton({
     }
 
     setError(null);
+
+    const confirmed = window.confirm(
+      isRetry
+        ? 'Retry this task in n8n? / واش بغيتي تعاود تشغيل هاد المهمة؟'
+        : 'Run this task in n8n now? / واش بغيتي تشغل هاد المهمة دابا؟'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     setIsRunning(true);
     setIsProcessing(true);
     setHasTimedOut(false);

@@ -348,9 +348,7 @@ export function BrandKitSettings({ initialState }: BrandKitSettingsProps) {
             <div>
               <Label htmlFor="providerMode">Preferred AI provider mode</Label>
               <Select id="providerMode" name="providerMode" defaultValue={sampleOrSavedKit.aiPreferences.providerMode}>
-                <option value="auto">Auto</option>
                 <option value="openai">OpenAI</option>
-                <option value="nvidia">NVIDIA</option>
               </Select>
             </div>
             <div>

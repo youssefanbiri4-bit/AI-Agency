@@ -34,6 +34,14 @@ export function SchedulerControls({ canRunScheduler }: SchedulerControlsProps) {
       return;
     }
 
+    const confirmed = window.confirm(
+      'Run the secure scheduler now? / واش تشغل المجدول دابا؟ This may process due scheduled content only.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     setIsRunning(true);
     setError(null);
 

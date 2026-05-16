@@ -5,49 +5,72 @@ interface RateLimitBucket {
   resetAt: number;
 }
 
-const buckets = new Map<string, RateLimitBucket>();
-
 export interface RateLimitResult {
   allowed: boolean;
   remaining: number;
   resetAt: number;
 }
 
-export function checkInMemoryRateLimit({
-  key,
-  limit,
-  windowMs,
-}: {
+export interface RateLimitInput {
   key: string;
   limit: number;
   windowMs: number;
-}): RateLimitResult {
-  const now = Date.now();
-  const bucket = buckets.get(key);
+}
 
-  if (!bucket || bucket.resetAt <= now) {
-    const resetAt = now + windowMs;
-    buckets.set(key, { count: 1, resetAt });
+export interface RateLimitStore {
+  check(input: RateLimitInput): RateLimitResult | Promise<RateLimitResult>;
+}
+
+export class InMemoryRateLimitStore implements RateLimitStore {
+  private buckets = new Map<string, RateLimitBucket>();
+
+  check({ key, limit, windowMs }: RateLimitInput): RateLimitResult {
+    const now = Date.now();
+    const bucket = this.buckets.get(key);
+
+    if (!bucket || bucket.resetAt <= now) {
+      const resetAt = now + windowMs;
+      this.buckets.set(key, { count: 1, resetAt });
+      return {
+        allowed: true,
+        remaining: Math.max(0, limit - 1),
+        resetAt,
+      };
+    }
+
+    if (bucket.count >= limit) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetAt: bucket.resetAt,
+      };
+    }
+
+    bucket.count += 1;
+
     return {
       allowed: true,
-      remaining: Math.max(0, limit - 1),
-      resetAt,
-    };
-  }
-
-  if (bucket.count >= limit) {
-    return {
-      allowed: false,
-      remaining: 0,
+      remaining: Math.max(0, limit - bucket.count),
       resetAt: bucket.resetAt,
     };
   }
+}
 
-  bucket.count += 1;
+const inMemoryRateLimitStore = new InMemoryRateLimitStore();
+let activeRateLimitStore: RateLimitStore = inMemoryRateLimitStore;
 
-  return {
-    allowed: true,
-    remaining: Math.max(0, limit - bucket.count),
-    resetAt: bucket.resetAt,
-  };
+export function setRateLimitStore(store: RateLimitStore) {
+  activeRateLimitStore = store;
+}
+
+export function getRateLimitStore() {
+  return activeRateLimitStore;
+}
+
+export function checkRateLimit(input: RateLimitInput) {
+  return activeRateLimitStore.check(input);
+}
+
+export function checkInMemoryRateLimit(input: RateLimitInput): RateLimitResult {
+  return inMemoryRateLimitStore.check(input);
 }

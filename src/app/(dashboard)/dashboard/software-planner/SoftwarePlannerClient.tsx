@@ -233,7 +233,7 @@ export function SoftwarePlannerClient({ projects, selectedProjectId }: SoftwareP
             <Field name="databasePreference" label="Database" placeholder="Supabase Postgres" />
             <Field name="authRequirement" label="Auth" placeholder="Supabase Auth" />
             <Field name="storageRequirement" label="File upload/storage" placeholder="Supabase Storage" />
-            <Field name="aiRequirement" label="AI integration" placeholder="OpenAI/NVIDIA server-side" />
+            <Field name="aiRequirement" label="AI integration" placeholder="OpenAI server-side" />
             <Field name="paymentRequirement" label="Payments" placeholder="Stripe later" />
             <Field name="deploymentTarget" label="Deployment target" placeholder="Vercel" />
             <Field name="integrationsNeeded" label="Integrations" placeholder="GitHub, Slack, email..." />

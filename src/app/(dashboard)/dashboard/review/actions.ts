@@ -2,10 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import {
-  createSupabaseServerClient,
-  getActiveWorkspaceIdFromCookie,
-} from '@/lib/supabase-server';
 import { createTaskReview } from '@/lib/data/reviews';
 import { createNotification } from '@/lib/data/notifications';
 import {
@@ -13,7 +9,7 @@ import {
   getTaskById,
   updateTaskReviewStatus,
 } from '@/lib/data/tasks';
-import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
+import { canReviewTasks, getWorkspaceAccessContext } from '@/lib/workspace-permissions';
 
 export interface ReviewTaskState {
   error: string | null;
@@ -56,23 +52,27 @@ export async function reviewTaskAction(
     return { error: 'Feedback is required when requesting changes.' };
   }
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const access = await getWorkspaceAccessContext();
 
-  if (!user) {
+  if (!access.data && access.error === 'Authentication is required.') {
     redirect(`/auth/login?redirectTo=${encodeURIComponent(`/dashboard/review?taskId=${taskId}`)}`);
   }
 
-  const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
-  const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
-
-  if (!workspaceResult.data) {
+  if (!access.data && access.error === 'Active workspace is required.') {
     redirect('/onboarding');
   }
 
-  const workspaceId = workspaceResult.data.id;
+  if (!access.data) {
+    return { error: access.error };
+  }
+
+  const { supabase, user, workspace, role } = access.data;
+
+  if (!canReviewTasks(role)) {
+    return { error: 'ما عندكش صلاحية لمراجعة المهام. Task review is restricted for your workspace role.' };
+  }
+
+  const workspaceId = workspace.id;
   const taskResult = await getTaskById(taskId, workspaceId, supabase);
 
   if (taskResult.error) {
