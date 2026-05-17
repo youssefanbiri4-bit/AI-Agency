@@ -7,10 +7,48 @@ import { ACTIVE_WORKSPACE_COOKIE } from '@/lib/data/workspaces';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const DEFAULT_SUPABASE_FETCH_TIMEOUT_MS = 8_000;
 
 export const isSupabaseServerConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export async function createSupabaseServerClient() {
+interface SupabaseServerClientOptions {
+  fetchTimeoutMs?: number;
+}
+
+function createTimeoutFetch(timeoutMs = DEFAULT_SUPABASE_FETCH_TIMEOUT_MS): typeof fetch {
+  return async (input, init = {}) => {
+    if (timeoutMs <= 0) {
+      return fetch(input, init);
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort(new Error(`Supabase request timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    const upstreamSignal = init.signal;
+    const abortFromUpstream = () => {
+      controller.abort(upstreamSignal?.reason);
+    };
+
+    if (upstreamSignal?.aborted) {
+      abortFromUpstream();
+    } else {
+      upstreamSignal?.addEventListener('abort', abortFromUpstream, { once: true });
+    }
+
+    try {
+      return await fetch(input, {
+        ...init,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+      upstreamSignal?.removeEventListener('abort', abortFromUpstream);
+    }
+  };
+}
+
+export async function createSupabaseServerClient(options: SupabaseServerClientOptions = {}) {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
@@ -19,6 +57,9 @@ export async function createSupabaseServerClient() {
     {
       auth: {
         flowType: 'pkce',
+      },
+      global: {
+        fetch: createTimeoutFetch(options.fetchTimeoutMs),
       },
       cookies: {
         getAll() {
@@ -56,7 +97,7 @@ export async function setActiveWorkspaceIdCookie(workspaceId: string) {
 
 // SERVER ONLY: this helper reads SUPABASE_SERVICE_ROLE_KEY and must never be
 // imported into client components. Use src/lib/supabase-client.ts in browsers.
-export function getSupabaseAdmin() {
+export function getSupabaseAdmin(fetchTimeoutMs = DEFAULT_SUPABASE_FETCH_TIMEOUT_MS) {
   if (typeof window !== 'undefined') {
     throw new Error('Supabase admin client cannot be created in the browser');
   }
@@ -69,7 +110,11 @@ export function getSupabaseAdmin() {
   }
 
   return {
-    client: createClient<Database>(supabaseUrl, serviceRoleKey),
+    client: createClient<Database>(supabaseUrl, serviceRoleKey, {
+      global: {
+        fetch: createTimeoutFetch(fetchTimeoutMs),
+      },
+    }),
     error: null,
   };
 }

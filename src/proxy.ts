@@ -4,6 +4,36 @@ import type { Database } from '@/types/database';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const PROXY_AUTH_TIMEOUT_MS = 4_000;
+
+function createTimeoutFetch(timeoutMs = PROXY_AUTH_TIMEOUT_MS): typeof fetch {
+  return async (input, init = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort(new Error(`Proxy auth request timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    const upstreamSignal = init.signal;
+    const abortFromUpstream = () => {
+      controller.abort(upstreamSignal?.reason);
+    };
+
+    if (upstreamSignal?.aborted) {
+      abortFromUpstream();
+    } else {
+      upstreamSignal?.addEventListener('abort', abortFromUpstream, { once: true });
+    }
+
+    try {
+      return await fetch(input, {
+        ...init,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+      upstreamSignal?.removeEventListener('abort', abortFromUpstream);
+    }
+  };
+}
 
 function buildLoginUrl(request: NextRequest) {
   const loginUrl = new URL('/auth/login', request.url);
@@ -35,6 +65,9 @@ export async function proxy(request: NextRequest) {
     auth: {
       flowType: 'pkce',
     },
+    global: {
+      fetch: createTimeoutFetch(),
+    },
     cookies: {
       getAll() {
         return request.cookies.getAll().map(({ name, value }) => ({ name, value }));
@@ -55,7 +88,10 @@ export async function proxy(request: NextRequest) {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser().catch((error: unknown) => {
+    console.warn('[proxy] auth lookup failed', error);
+    return { data: { user: null } };
+  });
 
   if (!user && isProtectedRoute) {
     return NextResponse.redirect(buildLoginUrl(request));

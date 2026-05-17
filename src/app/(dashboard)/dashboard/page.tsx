@@ -291,7 +291,7 @@ function hasMediaUrl(asset: CreativeAssetRecord) {
 }
 
 async function listRecentPublishAttempts(workspaceId: string) {
-  const { client, error } = getSupabaseAdmin();
+  const { client, error } = getSupabaseAdmin(DASHBOARD_PROVIDER_TIMEOUT_MS);
 
   if (!client) {
     return {
@@ -478,14 +478,28 @@ function buildTodayActions({
 }
 
 export default async function DashboardPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await createSupabaseServerClient({
+    fetchTimeoutMs: DASHBOARD_PROVIDER_TIMEOUT_MS,
+  });
+  const authResult = await withDashboardTimeout(
+    'dashboard auth',
+    supabase.auth.getUser(),
+    DASHBOARD_PROVIDER_TIMEOUT_MS
+  ).catch((error: unknown) => {
+    console.warn('[dashboard] auth timeout', error);
+    return {
+      data: { user: null },
+      error,
+    };
+  });
+  const user = authResult.data.user;
   console.info('[dashboard] auth resolved');
 
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
-  const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
+  const workspaceResult = await withDashboardTimeout(
+    'workspace context',
+    getCurrentUserWorkspace(supabase, activeWorkspaceId)
+  ).catch(() => dashboardFallbackResult(null, timeoutMessage('workspace context')));
   console.info('[dashboard] workspace resolved');
 
   const workspaceId = workspaceResult.data?.id;

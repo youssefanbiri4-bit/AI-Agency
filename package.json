@@ -6,7 +6,8 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "dev": "bash scripts/next-node20.sh dev",
+    "dev": "bash scripts/next-node20.sh dev --webpack",
+    "dev:turbo": "bash scripts/next-node20.sh dev --turbopack",
     "build": "bash scripts/next-node20.sh build",
     "start": "bash scripts/next-node20.sh start",
     "lint": "eslint",
@@ -15,9 +16,7 @@
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.105.1",
-    "axios": "^1.15.2",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
     "react": "19.2.4",
