@@ -10,8 +10,9 @@ import { defaultWorkspaceBranding } from '@/lib/data/branding';
 import { getWorkspaceTheme } from '@/lib/data/theme';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { defaultWorkspaceTheme } from '@/lib/theme';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 
 export const maxDuration = 120;
 
@@ -20,6 +21,30 @@ const DASHBOARD_LAYOUT_DATA_TIMEOUT_MS = 2_500;
 
 function timeoutMessage(sectionName: string) {
   return `${sectionName} did not respond quickly enough.`;
+}
+
+function DashboardRouteFallback() {
+  return (
+    <div className="-mx-4 -my-6 min-h-screen bg-[var(--theme-background,#F1F7F7)] px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <section className="rounded-2xl border border-black/7 bg-white/90 p-6 shadow-[0_24px_70px_rgba(93,107,107,0.08)]">
+        <h1 className="text-2xl font-black text-[#5D6B6B]">Workspace route is preparing</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-black/58">
+          Navigation remains available while this page finishes loading. Slow data requests are isolated from the dashboard shell.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link href="/dashboard" className="rounded-lg border border-[#F7CBCA]/15 bg-white/78 px-4 py-2 text-sm font-bold text-black shadow-sm">
+            Command Center
+          </Link>
+          <Link href="/dashboard/system-health" className="rounded-lg border border-[#F7CBCA]/15 bg-white/78 px-4 py-2 text-sm font-bold text-black shadow-sm">
+            System Health
+          </Link>
+          <Link href="/dashboard/settings" className="rounded-lg border border-[#F7CBCA]/15 bg-white/78 px-4 py-2 text-sm font-bold text-black shadow-sm">
+            Settings
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 async function withLayoutTimeout<T>(
@@ -145,7 +170,9 @@ export default async function DashboardLayout({
       initialUnreadCount={unreadCount}
       theme={theme}
     >
-      {children}
+      <Suspense fallback={<DashboardRouteFallback />}>
+        {children}
+      </Suspense>
     </DashboardShell>
   );
 }

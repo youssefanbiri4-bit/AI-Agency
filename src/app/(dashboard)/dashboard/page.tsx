@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import {
   AlertCircle,
   ArrowRight,
@@ -477,7 +477,96 @@ function buildTodayActions({
   return actions.slice(0, 10);
 }
 
-export default async function DashboardPage() {
+function DashboardContentFallback() {
+  return (
+    <div className="-mx-4 -my-6 min-h-screen bg-[var(--theme-background,#F1F7F7)] px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+      <div className="mx-auto max-w-[1540px] space-y-8">
+        <Notice tone="warning" title="Dashboard is running in safe mode">
+          Core navigation is available while workspace data finishes loading. If a provider or database request is slow, this page stays usable instead of returning to an infinite loading screen.
+        </Notice>
+
+        <section className="rounded-2xl border border-black/7 bg-white/90 p-5 shadow-[0_24px_70px_rgba(93,107,107,0.08)] sm:p-7">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] xl:items-center">
+            <div className="min-w-0">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#F7CBCA]/14 bg-[#F1F7F7] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#F7CBCA]">
+                <Sparkles className="h-3.5 w-3.5" />
+                Safe dashboard shell
+              </div>
+              <h1 className="text-3xl font-black leading-tight tracking-normal text-[#5D6B6B] sm:text-4xl xl:text-5xl">
+                Agency Command Center
+              </h1>
+              <p className="mt-3 max-w-3xl text-base leading-7 text-black/60">
+                The dashboard shell is ready. Heavy widgets load separately so one slow request cannot block the whole workspace.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Link href="/dashboard/create-task" className={buttonStyles({ size: 'lg' })}>
+                  <Plus className="h-5 w-5" />
+                  Create Task
+                </Link>
+                <Link href="/dashboard/content-studio" className={buttonStyles({ size: 'lg', variant: 'secondary' })}>
+                  <PenSquare className="h-5 w-5" />
+                  Content Studio
+                </Link>
+                <Link href="/dashboard/system-health" className={buttonStyles({ size: 'lg', variant: 'outline' })}>
+                  <Gauge className="h-5 w-5" />
+                  System Health
+                </Link>
+                <Link href="/dashboard/alex" className={buttonStyles({ size: 'lg', variant: 'outline' })}>
+                  <Bot className="h-5 w-5" />
+                  Open Alex
+                </Link>
+              </div>
+            </div>
+            <div className="min-w-0 rounded-2xl border border-black/7 bg-[#F1F7F7]/72 p-4">
+              <WavingRobot />
+            </div>
+          </div>
+        </section>
+
+        <div className="dashboard-stat-grid">
+          <ManagerStat label="Tasks" value="..." helper="Loading with timeout protection" icon={FileText} />
+          <ManagerStat label="Reviews" value="..." helper="Safe fallback remains visible" icon={AlertCircle} tone="coral" />
+          <ManagerStat label="Content" value="..." helper="Widgets load independently" icon={CheckCircle2} tone="dark" />
+          <ManagerStat label="Providers" value="..." helper="Provider checks cannot freeze this page" icon={RadioTower} />
+        </div>
+
+        <CommandCard title="Workspace Shortcuts" description="Routes stay available even while dashboard data is recovering.">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ['Open Alex', '/dashboard/alex', Bot],
+              ['Agent Library', '/dashboard/agent-library', Bot],
+              ['Workflow Builder', '/dashboard/agent-library/workflows', Layers3],
+              ['AI Studio', '/dashboard/ai-studio', Sparkles],
+              ['Projects', '/dashboard/projects', FolderKanban],
+              ['Settings', '/dashboard/settings', Settings],
+              ['Tasks', '/dashboard/tasks', ClipboardList],
+              ['Reports', '/dashboard/reports', BarChart3],
+            ].map(([label, href, Icon]) => (
+              <Link
+                key={label as string}
+                href={href as string}
+                className={buttonStyles({ variant: 'outline', size: 'lg', className: 'w-full justify-start' })}
+              >
+                <Icon className="h-5 w-5" />
+                {label as string}
+              </Link>
+            ))}
+          </div>
+        </CommandCard>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardContentFallback />}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+async function DashboardContent() {
   const supabase = await createSupabaseServerClient({
     fetchTimeoutMs: DASHBOARD_PROVIDER_TIMEOUT_MS,
   });
