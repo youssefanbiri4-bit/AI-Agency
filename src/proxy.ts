@@ -1,10 +1,55 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/types/database';
+import { randomBytes } from 'node:crypto';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const PROXY_AUTH_TIMEOUT_MS = 4_000;
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+function createNonce() {
+  return randomBytes(16).toString('hex');
+}
+
+function buildContentSecurityPolicy(nonce: string) {
+  const directives = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "object-src 'none'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ''}`,
+    `style-src 'self' 'nonce-${nonce}'`,
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co https://api.openai.com https://graph.facebook.com https://graph.instagram.com https://oauth2.googleapis.com https://googleads.googleapis.com https://api.pinterest.com https://api.github.com",
+    "media-src 'self' blob: https:",
+    "worker-src 'self' blob:",
+    "upgrade-insecure-requests",
+  ];
+
+  return directives.join('; ');
+}
+
+function applySecurityHeaders(response: NextResponse, contentSecurityPolicy: string | undefined) {
+  // Set security headers that should always be present
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()'
+  );
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-DNS-Prefetch-Control', 'on');
+  
+  // Only set CSP if provided (for HTML requests)
+  if (contentSecurityPolicy) {
+    response.headers.set('Content-Security-Policy', contentSecurityPolicy);
+  }
+  
+  return response;
+}
 
 function createTimeoutFetch(timeoutMs = PROXY_AUTH_TIMEOUT_MS): typeof fetch {
   return async (input, init = {}) => {
@@ -45,7 +90,28 @@ function buildLoginUrl(request: NextRequest) {
 }
 
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  // Check if the request accepts HTML (we only need CSP/nonce for HTML responses)
+  const acceptHeader = request.headers.get('accept') || '';
+  const isHtmlRequest = acceptHeader.includes('text/html');
+
+  let nonce: string | undefined;
+  let csp: string | undefined;
+  const requestHeaders = new Headers(request.headers);
+
+  if (isHtmlRequest) {
+    // Generate a random nonce for HTML requests
+    nonce = createNonce();
+    requestHeaders.set('x-nonce', nonce);
+    csp = buildContentSecurityPolicy(nonce);
+  }
+
+  // Create response early so we can use it in cookie callbacks
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
   const pathname = request.nextUrl.pathname;
   const isProtectedRoute =
     pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding');
@@ -55,10 +121,11 @@ export async function proxy(request: NextRequest) {
     if (isProtectedRoute) {
       const loginUrl = buildLoginUrl(request);
       loginUrl.searchParams.set('message', 'Supabase is not configured yet');
-      return NextResponse.redirect(loginUrl);
+      return applySecurityHeaders(NextResponse.redirect(loginUrl), csp);
     }
 
-    return response;
+    // For non-protected routes or when Supabase is not configured, continue without auth
+    return applySecurityHeaders(response, csp);
   }
 
   const supabase = createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -73,15 +140,15 @@ export async function proxy(request: NextRequest) {
         return request.cookies.getAll().map(({ name, value }) => ({ name, value }));
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => {
-          request.cookies.set(name, value);
-        });
-
-        response = NextResponse.next({ request });
-
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        } catch (error) {
+          // The `setAll` method was called from a Server Component.
+          // This can be ignored if you have middleware refreshing user sessions.
+          console.error('Error setting cookies in proxy:', error);
+        }
       },
     },
   });
@@ -94,14 +161,17 @@ export async function proxy(request: NextRequest) {
   });
 
   if (!user && isProtectedRoute) {
-    return NextResponse.redirect(buildLoginUrl(request));
+    return applySecurityHeaders(NextResponse.redirect(buildLoginUrl(request)), csp);
   }
 
   if (user && isAuthFormRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return applySecurityHeaders(
+      NextResponse.redirect(new URL('/dashboard', request.url)),
+      csp
+    );
   }
 
-  return response;
+  return applySecurityHeaders(response, csp);
 }
 
 export const config = {

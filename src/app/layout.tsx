@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import Script from 'next/script';
 import './globals.css';
 import { RouteAwareFooter } from '@/components/layout/RouteAwareFooter';
@@ -36,15 +37,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
+
   return (
     <html lang="ar" dir="rtl" className="h-full scroll-smooth" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <Script src="/agentflow-language-init.js" strategy="beforeInteractive" />
+        <Script src="/agentflow-language-init.js" strategy="beforeInteractive" nonce={nonce} />
       </head>
       <body className="h-full flex flex-col bg-transparent text-foreground">
         <LanguageProvider translations={allTranslations}>

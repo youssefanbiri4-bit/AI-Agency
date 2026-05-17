@@ -1,30 +1,7 @@
 import type { NextConfig } from "next";
 
-const isDevelopment = process.env.NODE_ENV !== 'production';
-
 const nextConfig: NextConfig = {
   async headers() {
-    const scriptSrc = [
-      "script-src 'self'",
-      isDevelopment ? "'unsafe-inline'" : null,
-      isDevelopment ? "'unsafe-eval'" : null,
-    ].filter(Boolean).join(' ');
-    const contentSecurityPolicy = [
-      "default-src 'self'",
-      "base-uri 'self'",
-      "frame-ancestors 'none'",
-      "form-action 'self'",
-      "object-src 'none'",
-      scriptSrc,
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https:",
-      "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co https://api.openai.com https://graph.facebook.com https://graph.instagram.com https://oauth2.googleapis.com https://googleads.googleapis.com https://api.pinterest.com https://api.github.com",
-      "media-src 'self' blob: https:",
-      "worker-src 'self' blob:",
-      "upgrade-insecure-requests",
-    ].join('; ');
-
     return [
       {
         source: '/:path*',
@@ -33,7 +10,6 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()' },
           { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Content-Security-Policy', value: contentSecurityPolicy },
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
         ],
       },
