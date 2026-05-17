@@ -45,7 +45,6 @@ import { listReleasesForWorkspace } from '@/lib/data/releases';
 import { getMetaConnectionStatus, getGoogleAdsConnectionStatus } from '@/lib/data/ad-connections';
 import { getGoogleAdsConfigReadiness } from '@/lib/ads/google-ads';
 import { getPinterestConfigReadiness } from '@/lib/ads/pinterest';
-import { getContentStudioProviderReadiness } from '@/lib/content-studio/provider-actions';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
 import {
   checkOpenAITextProviderReadiness,
@@ -85,8 +84,6 @@ interface ProviderRow {
   nextAction: string;
 }
 
-type ProviderReadiness = Awaited<ReturnType<typeof getContentStudioProviderReadiness>>;
-
 interface TodayAction {
   id: string;
   title: string;
@@ -119,6 +116,18 @@ const readinessBadgeStatuses: Record<ReadinessState, Parameters<typeof StatusBad
 
 const DASHBOARD_SECTION_TIMEOUT_MS = 3500;
 const DASHBOARD_PROVIDER_TIMEOUT_MS = 2500;
+const DASHBOARD_TRACE_PREFIX = '[workspace-route]';
+
+export const dynamic = 'force-dynamic';
+
+function traceWorkspace(message: string, details?: Record<string, unknown>) {
+  if (details) {
+    console.info(DASHBOARD_TRACE_PREFIX, message, details);
+    return;
+  }
+
+  console.info(DASHBOARD_TRACE_PREFIX, message);
+}
 
 function buildEmptyDashboardData(): DashboardData {
   const agents: DashboardData['agents'] = [];
@@ -149,19 +158,25 @@ async function withDashboardTimeout<T>(
   timeoutMs = DASHBOARD_SECTION_TIMEOUT_MS
 ): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const startedAt = Date.now();
+  traceWorkspace(`before ${sectionName}`);
   const guardedPromise = promise.catch((error: unknown) => {
-    console.warn('[dashboard] section failed', sectionName, error);
+    console.warn(DASHBOARD_TRACE_PREFIX, `failed ${sectionName}`, error);
     throw error;
   });
   const timeout = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
-      console.warn('[dashboard] section timeout', sectionName);
+      console.warn(DASHBOARD_TRACE_PREFIX, `timeout ${sectionName}`, {
+        durationMs: Date.now() - startedAt,
+      });
       reject(new Error(timeoutMessage(sectionName)));
     }, timeoutMs);
   });
 
   try {
-    return await Promise.race([guardedPromise, timeout]);
+    const result = await Promise.race([guardedPromise, timeout]);
+    traceWorkspace(`after ${sectionName}`, { durationMs: Date.now() - startedAt });
+    return result;
   } finally {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -181,20 +196,49 @@ function settledDataResult<T>(
   return dashboardFallbackResult(fallbackData, timeoutMessage(sectionName));
 }
 
-function fallbackProviderReadiness(name: string): ProviderReadiness {
-  return {
-    provider: name,
-    state: 'setup_required',
-    message: `${name} setup status is temporarily unavailable.`,
-    missing: ['Refresh provider setup status from Settings'],
-  } as ProviderReadiness;
+function getMetaEnvironmentMissing() {
+  return ['META_APP_ID', 'META_APP_SECRET', 'META_REDIRECT_URI'].filter(
+    (key) => !process.env[key]?.trim()
+  );
 }
 
-function settledProviderReadiness(
-  result: PromiseSettledResult<ProviderReadiness>,
-  name: string
-) {
-  return result.status === 'fulfilled' ? result.value : fallbackProviderReadiness(name);
+function getMetaProviderState({
+  missingEnvironment,
+  status,
+  requiredSelection,
+}: {
+  missingEnvironment: string[];
+  status: string | null | undefined;
+  requiredSelection: string | null;
+}): ReadinessState {
+  if (missingEnvironment.length > 0) return 'setup_required';
+  if (!status || status === 'not_connected') return 'token_missing';
+  if (status === 'expired' || status === 'revoked') return 'token_missing';
+  if (status !== 'connected') return 'setup_required';
+  return requiredSelection ? 'ready' : 'setup_required';
+}
+
+function getGoogleAdsProviderState({
+  isConfigured,
+  status,
+}: {
+  isConfigured: boolean;
+  status: string | null | undefined;
+}): ReadinessState {
+  if (!isConfigured) return 'setup_required';
+  if (!status || status === 'not_connected') return 'token_missing';
+  if (status === 'expired' || status === 'revoked') return 'token_missing';
+  return status === 'connected' ? 'ready' : 'setup_required';
+}
+
+function getPinterestProviderState(): ReadinessState {
+  return 'setup_required';
+}
+
+function fallbackProviderReadiness(): { state: ReadinessState } {
+  return {
+    state: 'setup_required',
+  };
 }
 
 function countBy<T extends string>(values: T[]) {
@@ -567,34 +611,43 @@ export default function DashboardPage() {
 }
 
 async function DashboardContent() {
+  traceWorkspace('route render start');
+  traceWorkspace('before createSupabaseServerClient');
   const supabase = await createSupabaseServerClient({
     fetchTimeoutMs: DASHBOARD_PROVIDER_TIMEOUT_MS,
   });
+  traceWorkspace('after createSupabaseServerClient');
   const authResult = await withDashboardTimeout(
     'dashboard auth',
     supabase.auth.getUser(),
     DASHBOARD_PROVIDER_TIMEOUT_MS
   ).catch((error: unknown) => {
-    console.warn('[dashboard] auth timeout', error);
+    console.warn(DASHBOARD_TRACE_PREFIX, 'auth timeout', error);
     return {
       data: { user: null },
       error,
     };
   });
   const user = authResult.data.user;
-  console.info('[dashboard] auth resolved');
+  traceWorkspace('auth resolved', { hasUser: Boolean(user), userId: user?.id ?? null });
 
+  traceWorkspace('before active workspace cookie');
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
+  traceWorkspace('after active workspace cookie', { activeWorkspaceId });
   const workspaceResult = await withDashboardTimeout(
     'workspace context',
     getCurrentUserWorkspace(supabase, activeWorkspaceId)
   ).catch(() => dashboardFallbackResult(null, timeoutMessage('workspace context')));
-  console.info('[dashboard] workspace resolved');
+  traceWorkspace('workspace resolved', {
+    workspaceId: workspaceResult.data?.id ?? null,
+    error: workspaceResult.error,
+  });
 
   const workspaceId = workspaceResult.data?.id;
   const userId = user?.id ?? '';
   const emptyDashboardData = buildEmptyDashboardData();
 
+  traceWorkspace('before dashboard section batch');
   const dashboardSections = await Promise.allSettled([
     withDashboardTimeout(
       'dashboard data',
@@ -650,6 +703,7 @@ async function DashboardContent() {
         : Promise.resolve(dashboardFallbackResult<Awaited<ReturnType<typeof getGoogleAdsConnectionStatus>>['data'] | null>(null))
     ),
   ]);
+  traceWorkspace('after dashboard section batch');
 
   const [
     dashboardResult,
@@ -673,7 +727,12 @@ async function DashboardContent() {
     settledDataResult(dashboardSections[8] as PromiseSettledResult<DataResult<Awaited<ReturnType<typeof getGoogleAdsConnectionStatus>>['data'] | null>>, null, 'google ads connection status'),
   ];
 
-  console.info('[dashboard] dashboard data loaded');
+  traceWorkspace('dashboard data loaded', {
+    hasWorkspace: Boolean(workspaceId),
+    dashboardError: dashboardResult.error,
+    contentError: contentItemsResult.error,
+    creativeAssetsError: creativeAssetsResult.error,
+  });
 
   const { tasks, events, taskStats } = dashboardResult.data;
   const contentItems = contentItemsResult.data;
@@ -696,30 +755,43 @@ async function DashboardContent() {
   const googleAdsReadiness = getGoogleAdsConfigReadiness();
   const pinterestReadiness = getPinterestConfigReadiness();
   const openAIReadiness = checkOpenAITextProviderReadiness();
-  const providerReadinessEntries =
-    workspaceId && userId
-      ? await Promise.allSettled([
-          withDashboardTimeout('facebook provider status', getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'facebook_post' }), DASHBOARD_PROVIDER_TIMEOUT_MS),
-          withDashboardTimeout('instagram provider status', getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'instagram_post' }), DASHBOARD_PROVIDER_TIMEOUT_MS),
-          withDashboardTimeout('google ads provider status', getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'google_ads_campaign_draft' }), DASHBOARD_PROVIDER_TIMEOUT_MS),
-          withDashboardTimeout('pinterest provider status', getContentStudioProviderReadiness({ workspaceId, userId, contentType: 'pinterest_pin' }), DASHBOARD_PROVIDER_TIMEOUT_MS),
-        ])
-      : [];
-  const [facebookReadiness, instagramReadiness, googleProviderReadiness, pinterestProviderReadiness] =
-    providerReadinessEntries.length > 0
-      ? [
-          settledProviderReadiness(providerReadinessEntries[0], 'facebook'),
-          settledProviderReadiness(providerReadinessEntries[1], 'instagram'),
-          settledProviderReadiness(providerReadinessEntries[2], 'google_ads'),
-          settledProviderReadiness(providerReadinessEntries[3], 'pinterest'),
-        ]
-      : [];
+  traceWorkspace('provider readiness snapshot uses local DB/env only');
   const metaMetadata = readObject(metaConnectionResult.data?.metadata);
   const selectedPage = safeString(metaMetadata.selected_facebook_page_name);
   const selectedInstagram = safeString(metaMetadata.selected_instagram_business_account_name);
   const selectedMetaAdAccount = safeString(metaMetadata.selected_meta_ad_account_name);
-  const selectedPinterestBoard = safeString(pinterestProviderReadiness?.details?.selectedBoardName);
+  const selectedPinterestBoard = null;
   const googleConnection = googleAdsConnectionResult.data;
+  const metaEnvironmentMissing = getMetaEnvironmentMissing();
+  const facebookReadiness = workspaceId && userId
+    ? {
+        state: getMetaProviderState({
+          missingEnvironment: metaEnvironmentMissing,
+          status: metaConnectionResult.data?.status,
+          requiredSelection: selectedPage,
+        }),
+      }
+    : fallbackProviderReadiness();
+  const instagramReadiness = workspaceId && userId
+    ? {
+        state: getMetaProviderState({
+          missingEnvironment: metaEnvironmentMissing,
+          status: metaConnectionResult.data?.status,
+          requiredSelection: selectedInstagram,
+        }),
+      }
+    : fallbackProviderReadiness();
+  const googleProviderReadiness = workspaceId && userId
+    ? {
+        state: getGoogleAdsProviderState({
+          isConfigured: googleAdsReadiness.isConfigured,
+          status: googleConnection?.status,
+        }),
+      }
+    : fallbackProviderReadiness();
+  const pinterestProviderReadiness = {
+    state: getPinterestProviderState(),
+  };
   const providerRows: ProviderRow[] = [
     {
       name: 'OpenAI',
@@ -745,7 +817,7 @@ async function DashboardContent() {
     {
       name: 'Pinterest',
       status: getReadinessState(pinterestProviderReadiness ?? pinterestReadiness),
-      nextAction: selectedPinterestBoard ? 'Board selected. Verify OAuth remains connected.' : 'Connect Pinterest and select a board.',
+      nextAction: selectedPinterestBoard ? 'Board selected. Verify OAuth remains connected.' : 'Open Settings to verify Pinterest OAuth and selected board.',
     },
     {
       name: 'LinkedIn',

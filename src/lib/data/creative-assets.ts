@@ -22,6 +22,7 @@ import type {
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
 type CreativeAssetsClient = SupabaseClient<Database>;
+const CREATIVE_ASSETS_DATA_TRACE_PREFIX = '[creative-assets-data]';
 
 export interface ListCreativeAssetsOptions {
   limit?: number;
@@ -142,7 +143,15 @@ export async function listCreativeAssetsForWorkspace(
   client?: CreativeAssetsClient,
   options: ListCreativeAssetsOptions = {}
 ): Promise<DataResult<CreativeAssetRecord[]>> {
+  console.info(CREATIVE_ASSETS_DATA_TRACE_PREFIX, 'before list assets', {
+    workspaceId,
+    userId: userId ?? null,
+    limit: options.limit ?? null,
+    includeSignedUrls: options.includeSignedUrls ?? true,
+  });
+
   if (!isSupabaseServerConfigured) {
+    console.warn(CREATIVE_ASSETS_DATA_TRACE_PREFIX, 'Supabase is not configured');
     return emptyDataResult([], false);
   }
 
@@ -162,6 +171,11 @@ export async function listCreativeAssetsForWorkspace(
   }
 
   const { data, error } = await query;
+  console.info(CREATIVE_ASSETS_DATA_TRACE_PREFIX, 'after list assets', {
+    workspaceId,
+    count: data?.length ?? 0,
+    error: error?.message ?? null,
+  });
 
   if (error) {
     return errorDataResult([], error.message);

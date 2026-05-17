@@ -18,6 +18,16 @@ export const maxDuration = 120;
 
 const DASHBOARD_LAYOUT_AUTH_TIMEOUT_MS = 4_000;
 const DASHBOARD_LAYOUT_DATA_TIMEOUT_MS = 2_500;
+const DASHBOARD_LAYOUT_TRACE_PREFIX = '[dashboard-layout]';
+
+function traceDashboardLayout(message: string, details?: Record<string, unknown>) {
+  if (details) {
+    console.info(DASHBOARD_LAYOUT_TRACE_PREFIX, message, details);
+    return;
+  }
+
+  console.info(DASHBOARD_LAYOUT_TRACE_PREFIX, message);
+}
 
 function timeoutMessage(sectionName: string) {
   return `${sectionName} did not respond quickly enough.`;
@@ -53,21 +63,27 @@ async function withLayoutTimeout<T>(
   timeoutMs = DASHBOARD_LAYOUT_DATA_TIMEOUT_MS
 ): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const startedAt = Date.now();
+  traceDashboardLayout(`before ${sectionName}`);
   const timeout = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
-      console.warn('[dashboard-layout] timeout', sectionName);
+      console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'timeout', sectionName, {
+        durationMs: Date.now() - startedAt,
+      });
       reject(new Error(timeoutMessage(sectionName)));
     }, timeoutMs);
   });
 
   try {
-    return await Promise.race([
+    const result = await Promise.race([
       promise.catch((error: unknown) => {
-        console.warn('[dashboard-layout] failed', sectionName, error);
+        console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'failed', sectionName, error);
         throw error;
       }),
       timeout,
     ]);
+    traceDashboardLayout(`after ${sectionName}`, { durationMs: Date.now() - startedAt });
+    return result;
   } finally {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -80,13 +96,17 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
+  traceDashboardLayout('render start');
   if (!isSupabaseServerConfigured) {
+    console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'redirect login: Supabase not configured');
     redirect('/auth/login?message=Supabase is not configured yet');
   }
 
+  traceDashboardLayout('before createSupabaseServerClient');
   const supabase = await createSupabaseServerClient({
     fetchTimeoutMs: DASHBOARD_LAYOUT_AUTH_TIMEOUT_MS,
   });
+  traceDashboardLayout('after createSupabaseServerClient');
   const authResult = await withLayoutTimeout(
     'auth session',
     supabase.auth.getUser(),
@@ -95,10 +115,13 @@ export default async function DashboardLayout({
   const user = authResult.data.user;
 
   if (!user) {
+    console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'redirect login: no user');
     redirect('/auth/login?redirectTo=/dashboard');
   }
 
+  traceDashboardLayout('before active workspace cookie');
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
+  traceDashboardLayout('after active workspace cookie', { activeWorkspaceId });
   const workspaceResult = await withLayoutTimeout(
     'workspace context',
     getCurrentUserWorkspace(supabase, activeWorkspaceId),
@@ -110,9 +133,13 @@ export default async function DashboardLayout({
   }));
 
   if (!workspaceResult.data) {
+    console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'redirect onboarding: no workspace', {
+      error: workspaceResult.error,
+    });
     redirect('/onboarding');
   }
 
+  traceDashboardLayout('before shell data batch', { workspaceId: workspaceResult.data.id });
   const [unreadCountResult, brandingResult, themeResult] = await Promise.allSettled([
     withLayoutTimeout(
       'notification count',
@@ -133,6 +160,7 @@ export default async function DashboardLayout({
       getWorkspaceTheme(supabase, workspaceResult.data.id)
     ),
   ]);
+  traceDashboardLayout('after shell data batch');
 
   const unreadCount =
     unreadCountResult.status === 'fulfilled' && !unreadCountResult.value.error
@@ -146,6 +174,11 @@ export default async function DashboardLayout({
     themeResult.status === 'fulfilled' && !themeResult.value.error
       ? themeResult.value.data
       : defaultWorkspaceTheme;
+
+  traceDashboardLayout('render shell', {
+    workspaceId: workspaceResult.data.id,
+    unreadCount,
+  });
 
   return (
     <DashboardShell

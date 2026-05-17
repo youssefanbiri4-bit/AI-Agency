@@ -6,6 +6,8 @@ import type { Agent, AgentType, Department } from '@/types';
 import type { AgentRecord, Database, DepartmentRecord } from '@/types/database';
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
+const AGENT_DATA_TRACE_PREFIX = '[agent-data]';
+
 type DepartmentId = DepartmentRecord['id'];
 type CatalogSource = 'supabase' | 'fallback';
 type AgentCatalogRecord = Pick<
@@ -125,7 +127,10 @@ export async function listAgents(
 export async function listAgentCatalog(
   client: SupabaseClient<Database> = supabase as SupabaseClient<Database>
 ): Promise<DataResult<AgentCatalogData>> {
+  console.info(AGENT_DATA_TRACE_PREFIX, 'before agent catalog batch');
+
   if (!isSupabaseConfigured) {
+    console.warn(AGENT_DATA_TRACE_PREFIX, 'Supabase is not configured');
     return emptyDataResult(
       {
         agents: agentCatalog,
@@ -145,6 +150,12 @@ export async function listAgentCatalog(
         .eq('is_active', true)
         .order('sort_order', { ascending: true }),
     ]);
+  console.info(AGENT_DATA_TRACE_PREFIX, 'after agent catalog batch', {
+    departmentCount: departments?.length ?? 0,
+    agentCount: agents?.length ?? 0,
+    departmentError: departmentError?.message ?? null,
+    agentError: agentError?.message ?? null,
+  });
 
   if (departmentError) {
     return errorDataResult(

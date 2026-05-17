@@ -5,6 +5,7 @@ import type { Database, ReleaseRecord, ReleaseStatus, ReleaseType } from '@/type
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
 type ReleaseClient = SupabaseClient<Database>;
+const RELEASE_DATA_TRACE_PREFIX = '[release-data]';
 
 export interface ReleaseInput {
   projectId: string | null;
@@ -132,7 +133,14 @@ export async function listReleasesForWorkspace(
   client: ReleaseClient = supabase as ReleaseClient,
   options: { limit?: number } = {}
 ): Promise<DataResult<ReleaseRecord[]>> {
-  if (!isSupabaseConfigured) return emptyDataResult([], false);
+  console.info(RELEASE_DATA_TRACE_PREFIX, 'before list releases', {
+    workspaceId,
+    limit: options.limit ?? null,
+  });
+  if (!isSupabaseConfigured) {
+    console.warn(RELEASE_DATA_TRACE_PREFIX, 'Supabase is not configured');
+    return emptyDataResult([], false);
+  }
   let query = client
     .from('releases')
     .select('*')
@@ -142,6 +150,11 @@ export async function listReleasesForWorkspace(
     query = query.limit(options.limit);
   }
   const { data, error } = await query;
+  console.info(RELEASE_DATA_TRACE_PREFIX, 'after list releases', {
+    workspaceId,
+    count: data?.length ?? 0,
+    error: error?.message ?? null,
+  });
   if (error) return errorDataResult([], error.message);
   return emptyDataResult(data ?? [], true);
 }

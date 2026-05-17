@@ -8,6 +8,16 @@ import type {
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
 export const ACTIVE_WORKSPACE_COOKIE = 'ai-agency-active-workspace-id';
+const WORKSPACE_TRACE_PREFIX = '[workspace-data]';
+
+function traceWorkspaceData(message: string, details?: Record<string, unknown>) {
+  if (details) {
+    console.info(WORKSPACE_TRACE_PREFIX, message, details);
+    return;
+  }
+
+  console.info(WORKSPACE_TRACE_PREFIX, message);
+}
 
 export interface WorkspaceContextData {
   workspace: WorkspaceRecord | null;
@@ -29,11 +39,17 @@ export async function getCurrentUserWorkspace(
   preferredWorkspaceId?: string | null
 ): Promise<DataResult<WorkspaceRecord | null>> {
   if (preferredWorkspaceId) {
+    traceWorkspaceData('before preferred workspace query', { preferredWorkspaceId });
     const { data, error } = await client
       .from('workspaces')
       .select('*')
       .eq('id', preferredWorkspaceId)
       .maybeSingle();
+    traceWorkspaceData('after preferred workspace query', {
+      preferredWorkspaceId,
+      found: Boolean(data),
+      error: error?.message ?? null,
+    });
 
     if (error) {
       return errorDataResult(null, error.message);
@@ -44,12 +60,17 @@ export async function getCurrentUserWorkspace(
     }
   }
 
+  traceWorkspaceData('before fallback workspace query');
   const { data, error } = await client
     .from('workspaces')
     .select('*')
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
+  traceWorkspaceData('after fallback workspace query', {
+    found: Boolean(data),
+    error: error?.message ?? null,
+  });
 
   if (error) {
     return errorDataResult(null, error.message);
@@ -76,6 +97,7 @@ export async function getCurrentWorkspaceMembership(
   workspaceId: string,
   userId?: string
 ): Promise<DataResult<WorkspaceMemberRecord | null>> {
+  traceWorkspaceData('before membership query', { workspaceId, userId: userId ?? null });
   let query = client
     .from('workspace_members')
     .select('*')
@@ -86,6 +108,12 @@ export async function getCurrentWorkspaceMembership(
   }
 
   const { data, error } = await query.maybeSingle();
+  traceWorkspaceData('after membership query', {
+    workspaceId,
+    userId: userId ?? null,
+    found: Boolean(data),
+    error: error?.message ?? null,
+  });
 
   if (error) {
     return errorDataResult(null, error.message);

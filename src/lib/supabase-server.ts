@@ -8,6 +8,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DEFAULT_SUPABASE_FETCH_TIMEOUT_MS = 8_000;
+const SUPABASE_TRACE_PREFIX = '[supabase-server]';
 
 export const isSupabaseServerConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
@@ -17,8 +18,35 @@ interface SupabaseServerClientOptions {
 
 function createTimeoutFetch(timeoutMs = DEFAULT_SUPABASE_FETCH_TIMEOUT_MS): typeof fetch {
   return async (input, init = {}) => {
+    const startedAt = Date.now();
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+    const safeUrl = (() => {
+      try {
+        const parsed = new URL(url);
+        return `${parsed.origin}${parsed.pathname}`;
+      } catch {
+        return url;
+      }
+    })();
+
+    console.info(SUPABASE_TRACE_PREFIX, 'before fetch', {
+      url: safeUrl,
+      timeoutMs,
+    });
+
     if (timeoutMs <= 0) {
-      return fetch(input, init);
+      const response = await fetch(input, init);
+      console.info(SUPABASE_TRACE_PREFIX, 'after fetch', {
+        url: safeUrl,
+        status: response.status,
+        durationMs: Date.now() - startedAt,
+      });
+      return response;
     }
 
     const controller = new AbortController();
@@ -37,10 +65,23 @@ function createTimeoutFetch(timeoutMs = DEFAULT_SUPABASE_FETCH_TIMEOUT_MS): type
     }
 
     try {
-      return await fetch(input, {
+      const response = await fetch(input, {
         ...init,
         signal: controller.signal,
       });
+      console.info(SUPABASE_TRACE_PREFIX, 'after fetch', {
+        url: safeUrl,
+        status: response.status,
+        durationMs: Date.now() - startedAt,
+      });
+      return response;
+    } catch (error) {
+      console.warn(SUPABASE_TRACE_PREFIX, 'fetch failed', {
+        url: safeUrl,
+        durationMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     } finally {
       clearTimeout(timeoutId);
       upstreamSignal?.removeEventListener('abort', abortFromUpstream);
@@ -49,7 +90,9 @@ function createTimeoutFetch(timeoutMs = DEFAULT_SUPABASE_FETCH_TIMEOUT_MS): type
 }
 
 export async function createSupabaseServerClient(options: SupabaseServerClientOptions = {}) {
+  console.info(SUPABASE_TRACE_PREFIX, 'before cookies for server client');
   const cookieStore = await cookies();
+  console.info(SUPABASE_TRACE_PREFIX, 'after cookies for server client');
 
   return createServerClient<Database>(
     supabaseUrl || 'https://example.supabase.co',
@@ -81,8 +124,13 @@ export async function createSupabaseServerClient(options: SupabaseServerClientOp
 }
 
 export async function getActiveWorkspaceIdFromCookie() {
+  console.info(SUPABASE_TRACE_PREFIX, 'before active workspace cookie read');
   const cookieStore = await cookies();
-  return cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value ?? null;
+  const workspaceId = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value ?? null;
+  console.info(SUPABASE_TRACE_PREFIX, 'after active workspace cookie read', {
+    workspaceId,
+  });
+  return workspaceId;
 }
 
 export async function setActiveWorkspaceIdCookie(workspaceId: string) {

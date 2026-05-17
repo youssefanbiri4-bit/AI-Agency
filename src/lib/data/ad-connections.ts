@@ -196,6 +196,7 @@ const GOOGLE_ADS_ACCESS_TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
 const GOOGLE_ADS_MAX_CUSTOMERS_TO_INSPECT = 10;
 const GOOGLE_ADS_MAX_CAMPAIGNS_PER_CUSTOMER = 50;
 const GOOGLE_ADS_MAX_TOTAL_CAMPAIGNS = 100;
+const AD_CONNECTIONS_TRACE_PREFIX = '[ad-connections-data]';
 
 const notConnectedMetaConnection: MetaConnectionStatusData = {
   provider: 'meta',
@@ -386,6 +387,10 @@ export async function getMetaConnectionStatus(
   workspaceId: string,
   userId: string
 ): Promise<DataResult<MetaConnectionStatusData>> {
+  console.info(AD_CONNECTIONS_TRACE_PREFIX, 'before meta connection status query', {
+    workspaceId,
+    userId,
+  });
   const { client, error } = getAdConnectionAdminClient();
 
   if (!client) {
@@ -402,6 +407,12 @@ export async function getMetaConnectionStatus(
     .eq('user_id', userId)
     .eq('provider', 'meta')
     .maybeSingle();
+  console.info(AD_CONNECTIONS_TRACE_PREFIX, 'after meta connection status query', {
+    workspaceId,
+    userId,
+    found: Boolean(data),
+    error: selectError?.message ?? null,
+  });
 
   if (selectError) {
     return errorDataResult(notConnectedMetaConnection, selectError.message);
@@ -418,6 +429,10 @@ export async function getGoogleAdsConnectionStatus(
   workspaceId: string,
   userId: string
 ): Promise<DataResult<GoogleAdsConnectionStatusData>> {
+  console.info(AD_CONNECTIONS_TRACE_PREFIX, 'before google ads connection status query', {
+    workspaceId,
+    userId,
+  });
   const { client, error } = getAdConnectionAdminClient();
 
   if (!client) {
@@ -434,6 +449,12 @@ export async function getGoogleAdsConnectionStatus(
     .eq('user_id', userId)
     .eq('provider', 'google_ads')
     .maybeSingle();
+  console.info(AD_CONNECTIONS_TRACE_PREFIX, 'after google ads connection status query', {
+    workspaceId,
+    userId,
+    found: Boolean(data),
+    error: selectError?.message ?? null,
+  });
 
   if (selectError) {
     return errorDataResult(notConnectedGoogleAdsConnection, selectError.message);

@@ -18,6 +18,7 @@ import type { JsonObject } from '@/types';
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
 type ContentStudioClient = SupabaseClient<Database>;
+const CONTENT_STUDIO_DATA_TRACE_PREFIX = '[content-studio-data]';
 
 export interface ListContentStudioItemsOptions {
   limit?: number;
@@ -124,7 +125,13 @@ export async function listContentStudioItemsForWorkspace(
   client?: ContentStudioClient,
   options: ListContentStudioItemsOptions = {}
 ): Promise<DataResult<ContentStudioItemWithAssets[]>> {
+  console.info(CONTENT_STUDIO_DATA_TRACE_PREFIX, 'before list items', {
+    workspaceId,
+    limit: options.limit ?? null,
+  });
+
   if (!isSupabaseServerConfigured) {
+    console.warn(CONTENT_STUDIO_DATA_TRACE_PREFIX, 'Supabase is not configured');
     return emptyDataResult([], false);
   }
 
@@ -140,6 +147,11 @@ export async function listContentStudioItemsForWorkspace(
   }
 
   const { data: items, error } = await query;
+  console.info(CONTENT_STUDIO_DATA_TRACE_PREFIX, 'after list items', {
+    workspaceId,
+    count: items?.length ?? 0,
+    error: error?.message ?? null,
+  });
 
   if (error) {
     return errorDataResult([], error.message);
@@ -151,10 +163,19 @@ export async function listContentStudioItemsForWorkspace(
     return emptyDataResult([], true);
   }
 
+  console.info(CONTENT_STUDIO_DATA_TRACE_PREFIX, 'before item asset links query', {
+    workspaceId,
+    itemCount: itemIds.length,
+  });
   const { data: links, error: linksError } = await supabase
     .from('content_studio_item_assets')
     .select('*')
     .in('content_item_id', itemIds);
+  console.info(CONTENT_STUDIO_DATA_TRACE_PREFIX, 'after item asset links query', {
+    workspaceId,
+    linkCount: links?.length ?? 0,
+    error: linksError?.message ?? null,
+  });
 
   if (linksError) {
     return errorDataResult([], linksError.message);

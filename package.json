@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "bash scripts/next-node20.sh dev --webpack",
     "dev:turbo": "bash scripts/next-node20.sh dev --turbopack",
-    "build": "bash scripts/next-node20.sh build",
+    "build": "bash scripts/next-node20.sh build --webpack",
+    "build:turbo": "bash scripts/next-node20.sh build --turbopack",
     "start": "bash scripts/next-node20.sh start",
     "lint": "eslint",
     "security:audit": "node scripts/security-audit.mjs"
