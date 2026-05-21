@@ -141,8 +141,7 @@ export async function listAgentCatalog(
     );
   }
 
-  const [{ data: departments, error: departmentError }, { data: agents, error: agentError }] =
-    await Promise.all([
+    const [departmentsResult, agentsResult] = await Promise.allSettled([
       client.from('departments').select('*').order('sort_order', { ascending: true }),
       client
         .from('agents')
@@ -150,26 +149,23 @@ export async function listAgentCatalog(
         .eq('is_active', true)
         .order('sort_order', { ascending: true }),
     ]);
-  console.info(AGENT_DATA_TRACE_PREFIX, 'after agent catalog batch', {
-    departmentCount: departments?.length ?? 0,
-    agentCount: agents?.length ?? 0,
-    departmentError: departmentError?.message ?? null,
-    agentError: agentError?.message ?? null,
-  });
+    const departments = departmentsResult.status === 'fulfilled' ? departmentsResult.value.data : null;
+    const departmentError = departmentsResult.status === 'rejected' ? departmentsResult.reason : null;
+    const agents = agentsResult.status === 'fulfilled' ? agentsResult.value.data : null;
+    const agentError = agentsResult.status === 'rejected' ? agentsResult.reason : null;
+    if (departmentError) {
+      return errorDataResult(
+        { agents: [], departments: [], source: 'supabase' },
+        departmentError.message
+      );
+    }
 
-  if (departmentError) {
-    return errorDataResult(
-      { agents: [], departments: [], source: 'supabase' },
-      departmentError.message
-    );
-  }
-
-  if (agentError) {
-    return errorDataResult(
-      { agents: [], departments: departments?.map(mapDepartmentRecordToDepartment) ?? [], source: 'supabase' },
-      agentError.message
-    );
-  }
+    if (agentError) {
+      return errorDataResult(
+        { agents: [], departments: departments?.map(mapDepartmentRecordToDepartment) ?? [], source: 'supabase' },
+        agentError.message
+      );
+    }
 
   return emptyDataResult(
     mapAgentCatalogData(departments ?? [], agents ?? [], 'supabase'),

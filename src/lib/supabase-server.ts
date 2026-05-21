@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
@@ -9,6 +11,9 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DEFAULT_SUPABASE_FETCH_TIMEOUT_MS = 8_000;
 const SUPABASE_TRACE_PREFIX = '[supabase-server]';
+
+// Cache for the default admin client to avoid creating a new one on every call
+let adminClient: ReturnType<typeof createClient<Database>> | null = null;
 
 export const isSupabaseServerConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
@@ -157,6 +162,19 @@ export function getSupabaseAdmin(fetchTimeoutMs = DEFAULT_SUPABASE_FETCH_TIMEOUT
     };
   }
 
+  // If the requested timeout is the default, use the cached client
+  if (fetchTimeoutMs === DEFAULT_SUPABASE_FETCH_TIMEOUT_MS) {
+    if (!adminClient) {
+      adminClient = createClient<Database>(supabaseUrl, serviceRoleKey, {
+        global: {
+          fetch: createTimeoutFetch(fetchTimeoutMs),
+        },
+      });
+    }
+    return { client: adminClient, error: null };
+  }
+
+  // For non-default timeouts, create a new client (not cached)
   return {
     client: createClient<Database>(supabaseUrl, serviceRoleKey, {
       global: {

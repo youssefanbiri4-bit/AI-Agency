@@ -1,7 +1,10 @@
+import 'server-only';
+
 import type { ApiResponse, JsonObject } from '@/types';
 import { PRIMARY_AGENT_IDS } from '@/lib/agents';
 import { reportAppError } from '@/lib/logger';
 import { setupBlockerMessage } from '@/lib/safe-messages';
+import { safeFetch } from '@/lib/network/safeFetch';
 
 const PLACEHOLDER_VALUES = new Set([
   'your_n8n_production_webhook_url',
@@ -95,7 +98,7 @@ export async function executeN8nWorkflow(
       };
     }
 
-    const response = await fetch(webhookUrl, {
+    const response = await safeFetch<JsonObject>(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -104,20 +107,22 @@ export async function executeN8nWorkflow(
         workflowId,
         data,
       }),
+      timeoutMs: 8_000,
+      retryOptions: {
+        maxRetries: 1,
+      },
     });
 
-    if (!response.ok) {
+    if (response.error || !response.statusCode || response.statusCode >= 400) {
       return {
         success: false,
         error: 'n8n workflow request was rejected. Blocked because the automation endpoint did not accept the task. Next: check n8n execution logs and webhook configuration, then retry. / n8n رفض الطلب، راجع سجلات n8n والإعدادات.',
       };
     }
 
-    const result = await response.json();
-
     return {
       success: true,
-      data: result,
+      data: response.data ?? {},
     };
   } catch (error) {
     reportAppError('Error executing N8N workflow', error);
@@ -141,4 +146,55 @@ export function getWorkflowIdForAgent(agentType: string): string {
   );
 
   return workflowMap[agentType] || agentType;
+}
+
+/**
+ * Execute a task through n8n
+ * This is the main task execution interface called from API routes
+ * @param taskPayload - Task data to execute
+ * @param taskExecutionId - Unique execution ID for tracking
+ * @param workspaceId - Workspace context for the task
+ * @returns Result with success status and optional error message
+ */
+export async function executeTask(
+  taskPayload: JsonObject,
+  taskExecutionId: string,
+  workspaceId: string
+): Promise<ApiResponse> {
+  try {
+    const readiness = getN8nReadiness();
+
+    if (!readiness.canExecute || !readiness.webhookUrl) {
+      return {
+        success: false,
+        error: readiness.message,
+      };
+    }
+
+    // Prepare task execution payload with context
+    const executionPayload: JsonObject = {
+      ...taskPayload,
+      taskExecutionId,
+      workspaceId,
+      executeAt: new Date().toISOString(),
+    };
+
+    // Execute through n8n workflow
+    const result = await executeN8nWorkflow(
+      `task-execute-${workspaceId}`,
+      executionPayload,
+      readiness.webhookUrl
+    );
+
+    return result;
+  } catch (error) {
+    reportAppError('Task execution failed', error, {
+      taskExecutionId,
+      workspaceId,
+    });
+    return {
+      success: false,
+      error: 'Task execution encountered an unexpected error. Please retry or contact support.',
+    };
+  }
 }

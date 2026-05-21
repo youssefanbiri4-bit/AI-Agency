@@ -6,7 +6,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const PROXY_AUTH_TIMEOUT_MS = 4_000;
 const isDevelopment = process.env.NODE_ENV !== 'production';
-const MIDDLEWARE_TRACE_PREFIX = '[middleware]';
+const PROXY_TRACE_PREFIX = '[proxy]';
 
 function createNonce() {
   const bytes = new Uint8Array(16);
@@ -44,12 +44,14 @@ function applySecurityHeaders(response: NextResponse, contentSecurityPolicy: str
   );
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-DNS-Prefetch-Control', 'on');
-  
+  // Hide powered by header
+  response.headers.set('X-Powered-By', '');
+   
   // Only set CSP if provided (for HTML requests)
   if (contentSecurityPolicy) {
     response.headers.set('Content-Security-Policy', contentSecurityPolicy);
   }
-  
+   
   return response;
 }
 
@@ -91,7 +93,7 @@ function buildLoginUrl(request: NextRequest) {
   return loginUrl;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const startedAt = Date.now();
   // Check if the request accepts HTML (we only need CSP/nonce for HTML responses)
   const acceptHeader = request.headers.get('accept') || '';
@@ -119,7 +121,7 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute =
     pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding');
   const isAuthFormRoute = pathname === '/auth/login' || pathname === '/auth/signup';
-  console.info(MIDDLEWARE_TRACE_PREFIX, 'request start', {
+  console.info(PROXY_TRACE_PREFIX, 'request start', {
     pathname,
     isProtectedRoute,
     isAuthFormRoute,
@@ -129,7 +131,7 @@ export async function middleware(request: NextRequest) {
     if (isProtectedRoute) {
       const loginUrl = buildLoginUrl(request);
       loginUrl.searchParams.set('message', 'Supabase is not configured yet');
-      console.warn(MIDDLEWARE_TRACE_PREFIX, 'redirect login: Supabase not configured', {
+      console.warn(PROXY_TRACE_PREFIX, 'redirect login: Supabase not configured', {
         pathname,
         durationMs: Date.now() - startedAt,
       });
@@ -137,7 +139,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // For non-protected routes or when Supabase is not configured, continue without auth
-    console.info(MIDDLEWARE_TRACE_PREFIX, 'request pass without Supabase config', {
+    console.info(PROXY_TRACE_PREFIX, 'request pass without Supabase config', {
       pathname,
       durationMs: Date.now() - startedAt,
     });
@@ -163,20 +165,20 @@ export async function middleware(request: NextRequest) {
         } catch (error) {
           // The `setAll` method was called from a Server Component.
           // This can be ignored if you have middleware refreshing user sessions.
-          console.error('Error setting cookies in middleware:', error);
+          console.error('Error setting cookies in proxy:', error);
         }
       },
     },
   });
 
-  console.info(MIDDLEWARE_TRACE_PREFIX, 'before auth getUser', { pathname });
+  console.info(PROXY_TRACE_PREFIX, 'before auth getUser', { pathname });
   const {
     data: { user },
   } = await supabase.auth.getUser().catch((error: unknown) => {
-    console.warn(MIDDLEWARE_TRACE_PREFIX, 'auth lookup failed', error);
+    console.warn(PROXY_TRACE_PREFIX, 'auth lookup failed', error);
     return { data: { user: null } };
   });
-  console.info(MIDDLEWARE_TRACE_PREFIX, 'after auth getUser', {
+  console.info(PROXY_TRACE_PREFIX, 'after auth getUser', {
     pathname,
     hasUser: Boolean(user),
     userId: user?.id ?? null,
@@ -184,7 +186,7 @@ export async function middleware(request: NextRequest) {
   });
 
   if (!user && isProtectedRoute) {
-    console.warn(MIDDLEWARE_TRACE_PREFIX, 'redirect login: no user', {
+    console.warn(PROXY_TRACE_PREFIX, 'redirect login: no user', {
       pathname,
       durationMs: Date.now() - startedAt,
     });
@@ -192,7 +194,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isAuthFormRoute) {
-    console.info(MIDDLEWARE_TRACE_PREFIX, 'redirect dashboard: authenticated auth route', {
+    console.info(PROXY_TRACE_PREFIX, 'redirect dashboard: authenticated auth route', {
       pathname,
       durationMs: Date.now() - startedAt,
     });
@@ -202,7 +204,7 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  console.info(MIDDLEWARE_TRACE_PREFIX, 'request pass', {
+  console.info(PROXY_TRACE_PREFIX, 'request pass', {
     pathname,
     durationMs: Date.now() - startedAt,
   });

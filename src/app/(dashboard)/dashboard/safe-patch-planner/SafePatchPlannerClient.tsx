@@ -298,9 +298,12 @@ export function SafePatchPlannerClient({
           />
 
           {!activePlan ? (
-            <div className="rounded-lg border border-dashed border-black/12 bg-[#F1F7F7]/70 p-6 text-sm leading-6 text-black/58">
-              <ShieldCheck className="mb-3 h-5 w-5 text-[#F7CBCA]" />
-              Generate or open a saved plan. This planner never applies patches, writes to GitHub, deploys, or runs tasks.
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-black/12 bg-[#F1F7F7]/70 p-8 sm:p-12 text-center text-sm leading-6 text-black/58">
+              <ShieldCheck className="mb-4 h-6 w-6 text-[#F7CBCA]" />
+              <p className="mb-2 font-semibold text-black/70">Generate or open a saved plan</p>
+              <p className="max-w-sm text-xs text-black/55">
+                This planner never applies patches, writes to GitHub, deploys, or runs tasks.
+              </p>
             </div>
           ) : (
             <PatchPlanView
@@ -317,9 +320,10 @@ export function SafePatchPlannerClient({
         <Card>
           <CardHeader title="Saved Patch Plans" description="Draft and approved prompt plans saved in this workspace." />
           {plans.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-black/10 bg-[#F1F7F7]/70 p-4 text-sm text-black/55">
-              No saved patch plans yet.
-            </p>
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-black/10 bg-[#F1F7F7]/70 p-8 text-center text-sm text-black/55">
+              <p className="font-semibold text-black/70">No saved patch plans yet</p>
+              <p className="mt-1 text-xs text-black/55">Generate your first patch plan to get started</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {plans.map((record) => (

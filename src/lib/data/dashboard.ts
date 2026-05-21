@@ -49,23 +49,40 @@ export async function getDashboardData(
   console.info(DASHBOARD_DATA_TRACE_PREFIX, 'before catalog/tasks batch', {
     workspaceId: workspaceId ?? null,
   });
-  const [catalogResult, tasksResult] = await Promise.all([
+  const [catalogResult, tasksResult] = await Promise.allSettled([
     listAgentCatalog(client),
     listTasks({ workspaceId, limit: 40 }, client),
   ]);
   console.info(DASHBOARD_DATA_TRACE_PREFIX, 'after catalog/tasks batch', {
-    catalogError: catalogResult.error,
-    tasksError: tasksResult.error,
-    taskCount: tasksResult.data.length,
+    catalogStatus: catalogResult.status,
+    tasksStatus: tasksResult.status,
+    catalogError: catalogResult.status === 'rejected' ? (catalogResult.reason as Error).message : null,
+    tasksError: tasksResult.status === 'rejected' ? (tasksResult.reason as Error).message : null,
+    agentCount: catalogResult.status === 'fulfilled' ? catalogResult.value.data.agents.length : 0,
   });
 
-  if (catalogResult.error) {
-    return errorDataResult(emptyDashboard, catalogResult.error);
+  // Handle errors from Promise.allSettled
+  if (catalogResult.status === 'rejected') {
+    const errorMsg = (catalogResult.reason as Error).message || 'Failed to load agent catalog';
+    return errorDataResult(emptyDashboard, errorMsg);
+  }
+  
+  if (catalogResult.status === 'fulfilled' && catalogResult.value.error) {
+    return errorDataResult(emptyDashboard, catalogResult.value.error);
   }
 
-  if (tasksResult.error) {
-    return errorDataResult(emptyDashboard, tasksResult.error);
+  if (tasksResult.status === 'rejected') {
+    const errorMsg = (tasksResult.reason as Error).message || 'Failed to load tasks';
+    return errorDataResult(emptyDashboard, errorMsg);
   }
+  
+  if (tasksResult.status === 'fulfilled' && tasksResult.value.error) {
+    return errorDataResult(emptyDashboard, tasksResult.value.error);
+  }
+    
+  // Assuming catalogResult and tasksResult are fulfilled and have data
+  const { agents, departments } = catalogResult.status === 'fulfilled' ? catalogResult.value.data : { agents: [], departments: [] };
+  const actualTasks = tasksResult.status === 'fulfilled' ? tasksResult.value.data : [];
 
   let eventsQuery = client
     .from('task_events')
@@ -93,9 +110,9 @@ export async function getDashboardData(
 
   return emptyDataResult(
     buildDashboardData(
-      catalogResult.data.agents,
-      catalogResult.data.departments,
-      tasksResult.data,
+      catalogResult.value.data.agents,
+      catalogResult.value.data.departments,
+      tasksResult.value.data,
       events ?? []
     ),
     true
