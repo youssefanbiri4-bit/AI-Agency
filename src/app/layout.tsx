@@ -8,6 +8,7 @@ import { LanguageProvider, type Translations } from '@/i18n/context';
 import type { LanguageCode } from '@/i18n/index';
 import en from '@/i18n/locales/en.json';
 import ar from '@/i18n/locales/ar.json';
+import { SentrySetup, SentryErrorBoundary } from '@/lib/sentry-client';
 
 const iconVersion = 'agentflow-ai-v3';
 
@@ -50,10 +51,11 @@ export default async function RootLayout({
         <Script src="/agentflow-language-init.js" strategy="beforeInteractive" nonce={nonce} />
       </head>
       <body className="h-full flex flex-col bg-transparent text-foreground">
+        <SentrySetup />
         <LanguageProvider translations={allTranslations}>
           <ToastProvider>
             <main className="flex-1">
-              {children}
+              <SentryErrorBoundary>{children}</SentryErrorBoundary>
             </main>
             <RouteAwareFooter />
           </ToastProvider>
