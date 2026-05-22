@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/types/database';
+import { logger } from '@/lib/logger';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -121,7 +122,7 @@ export async function proxy(request: NextRequest) {
   const isProtectedRoute =
     pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding');
   const isAuthFormRoute = pathname === '/auth/login' || pathname === '/auth/signup';
-  console.info(PROXY_TRACE_PREFIX, 'request start', {
+  logger.info('request start', {
     pathname,
     isProtectedRoute,
     isAuthFormRoute,
@@ -131,7 +132,7 @@ export async function proxy(request: NextRequest) {
     if (isProtectedRoute) {
       const loginUrl = buildLoginUrl(request);
       loginUrl.searchParams.set('message', 'Supabase is not configured yet');
-      console.warn(PROXY_TRACE_PREFIX, 'redirect login: Supabase not configured', {
+      logger.warn('redirect login: Supabase not configured', {
         pathname,
         durationMs: Date.now() - startedAt,
       });
@@ -139,7 +140,7 @@ export async function proxy(request: NextRequest) {
     }
 
     // For non-protected routes or when Supabase is not configured, continue without auth
-    console.info(PROXY_TRACE_PREFIX, 'request pass without Supabase config', {
+    logger.info('request pass without Supabase config', {
       pathname,
       durationMs: Date.now() - startedAt,
     });
@@ -163,22 +164,22 @@ export async function proxy(request: NextRequest) {
             response.cookies.set(name, value, options);
           });
         } catch (error) {
-          // The `setAll` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing user sessions.
-          console.error('Error setting cookies in proxy:', error);
+          logger.error('Error setting cookies in proxy', {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       },
     },
   });
 
-  console.info(PROXY_TRACE_PREFIX, 'before auth getUser', { pathname });
+  logger.info('before auth getUser', { pathname });
   const {
     data: { user },
   } = await supabase.auth.getUser().catch((error: unknown) => {
-    console.warn(PROXY_TRACE_PREFIX, 'auth lookup failed', error);
+    logger.warn('auth lookup failed', { error: error instanceof Error ? error.message : String(error) });
     return { data: { user: null } };
   });
-  console.info(PROXY_TRACE_PREFIX, 'after auth getUser', {
+  logger.info('after auth getUser', {
     pathname,
     hasUser: Boolean(user),
     userId: user?.id ?? null,
@@ -186,7 +187,7 @@ export async function proxy(request: NextRequest) {
   });
 
   if (!user && isProtectedRoute) {
-    console.warn(PROXY_TRACE_PREFIX, 'redirect login: no user', {
+    logger.warn('redirect login: no user', {
       pathname,
       durationMs: Date.now() - startedAt,
     });
@@ -194,7 +195,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && isAuthFormRoute) {
-    console.info(PROXY_TRACE_PREFIX, 'redirect dashboard: authenticated auth route', {
+    logger.info('redirect dashboard: authenticated auth route', {
       pathname,
       durationMs: Date.now() - startedAt,
     });
@@ -204,7 +205,7 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  console.info(PROXY_TRACE_PREFIX, 'request pass', {
+  logger.info('request pass', {
     pathname,
     durationMs: Date.now() - startedAt,
   });

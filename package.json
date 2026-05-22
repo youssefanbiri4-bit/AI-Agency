@@ -12,7 +12,10 @@
     "build:turbo": "bash scripts/next-node20.sh build --turbopack",
     "start": "bash scripts/next-node20.sh start",
     "lint": "eslint",
-    "security:audit": "node scripts/security-audit.mjs"
+    "security:audit": "node scripts/security-audit.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
@@ -30,10 +33,13 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^2",
+    "@vitest/ui": "^2",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2"
   },
   "overrides": {
     "postcss": "8.5.14"
