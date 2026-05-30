@@ -1,6 +1,11 @@
 import { timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { createTaskEvent, mapTaskRecordToTask, updateTaskExecutionState } from '@/lib/data/tasks';
+import { z } from 'zod';
+import {
+  createTaskEvent,
+  mapTaskRecordToTask,
+  updateTaskExecutionState,
+} from '@/lib/data/tasks';
 import { reportAppError } from '@/lib/logger';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import {
@@ -51,39 +56,99 @@ function readString(record: Record<string, unknown>, key: string) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+// Strict validation for n8n callback payloads.
+// Important: we do not change the public callback contract; we only validate required fields.
+const n8nCallbackSchema = z
+  .object({
+    taskId: z.string().uuid().optional(),
+    task_id: z.string().uuid().optional(),
+    status: z.enum(['completed', 'failed', 'processing']).optional(),
+    result: z.unknown().optional(),
+    error_message: z.string().optional(),
+  })
+  .passthrough();
+
+// Helper: safely extract task id from payload for logging.
+function extractTaskId(body: unknown): string | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const record = body as Record<string, unknown>;
+  const taskId = readString(record, 'taskId') || readString(record, 'task_id');
+  return taskId || null;
+}
+
 export async function POST(request: NextRequest) {
+  const callbackReceiveAt = Date.now();
+  const rawPayloadForLogs = { headers: null as unknown, task_id: null as unknown, status: null as unknown };
   try {
-    const incomingSecret = request.headers.get("x-n8n-callback-secret")?.trim();
+    const incomingSecret = request.headers.get('x-n8n-callback-secret')?.trim();
     const expectedSecret = process.env.N8N_CALLBACK_SECRET?.trim();
 
     if (!expectedSecret) {
-      return jsonError(setupBlockerMessage({
-        missing: 'N8N_CALLBACK_SECRET',
-        reason: 'callbacks cannot be trusted without the server-side shared secret',
-        next: 'add N8N_CALLBACK_SECRET in Vercel, redeploy, and retry the callback',
-      }), 500);
+      return jsonError(
+        setupBlockerMessage({
+          missing: 'N8N_CALLBACK_SECRET',
+          reason: 'callbacks cannot be trusted without the server-side shared secret',
+          next: 'add N8N_CALLBACK_SECRET in Vercel, redeploy, and retry the callback',
+        }),
+        500
+      );
     }
 
     if (!incomingSecret || !safeCompare(incomingSecret, expectedSecret)) {
-      return jsonError('Callback blocked: the callback secret is missing or invalid. Next: verify the n8n HTTP Request header without exposing the secret. / تم حظر الكالباك لأن السر غير صحيح.', 401);
+      reportAppError('n8n callback authentication failure', null, {
+        remoteIp: request.headers.get('x-forwarded-for') ?? null,
+      });
+
+      return jsonError(
+        'Callback blocked: the callback secret is missing or invalid. Next: verify the n8n HTTP Request header without exposing the secret. / تم حظر الكالباك لأن السر غير صحيح.',
+        401
+      );
     }
 
     const body = await request.json().catch(() => null);
 
+    const inferredTaskId = extractTaskId(body);
+    rawPayloadForLogs.task_id = inferredTaskId;
+
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      reportAppError('n8n callback invalid payload shape', null, {
+        task_id: inferredTaskId,
+      });
+
       return jsonError('Invalid callback payload', 400);
     }
 
-    const taskId = body.taskId || body.task_id;
+    const validationResult = n8nCallbackSchema.safeParse(body);
+    if (!validationResult.success) {
+      reportAppError('n8n callback invalid payload schema', null, {
+        task_id: inferredTaskId,
+        errors: validationResult.error.format(),
+      });
 
-    if (typeof taskId !== 'string' || !taskId.trim()) {
+      return jsonError('Invalid callback payload format', 400);
+    }
+
+    const payload = validationResult.data as Record<string, unknown>;
+    const normalizedTaskId = (readString(payload, 'taskId') || readString(payload, 'task_id')).trim();
+
+    if (!normalizedTaskId) {
+      reportAppError('n8n callback missing task id after validation', null, {
+        task_id: inferredTaskId,
+      });
       return jsonError('Task ID is required', 400);
     }
 
-    const payload = body as Record<string, unknown>;
-    const normalizedTaskId = taskId.trim();
     const callbackStatus = readString(payload, 'status');
+    rawPayloadForLogs.status = callbackStatus;
+
+    // Basic suspicious callback detection: explicit failed/completed without expected fields.
     const errorMessage = readString(payload, 'error_message') || null;
+    if (callbackStatus === 'failed' && !errorMessage) {
+      reportAppError('n8n callback suspicious: failed without error_message', null, {
+        task_id: normalizedTaskId,
+      });
+    }
+
     const { client: adminClient } = getSupabaseAdmin();
 
     if (!adminClient) {
@@ -105,17 +170,21 @@ export async function POST(request: NextRequest) {
     }
 
     const task = mapTaskRecordToTask(taskRecord);
+    const processStartAt = Date.now();
     const failed = Boolean(errorMessage) || callbackStatus === 'failed';
     const nextStatus: Extract<TaskStatus, 'needs_review' | 'failed'> = failed
       ? 'failed'
       : 'needs_review';
+
     const result = toResultObject(payload.result, errorMessage);
+
     const { executionIdentifier } = buildN8nCallbackKey({
       sourceRoute: '/api/n8n/callback',
       taskId: task.id,
       status: callbackStatus,
       payload,
     });
+
     const callbackEvent = await recordN8nCallback({
       supabase: adminClient,
       sourceRoute: '/api/n8n/callback',
@@ -126,10 +195,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (callbackEvent.error) {
+      reportAppError('n8n callback could not be recorded', null, {
+        task_id: task.id,
+        error: callbackEvent.error,
+      });
       return jsonError('Callback could not be recorded', 500);
     }
 
     if (callbackEvent.duplicate) {
+      reportAppError('n8n callback duplicate detected', null, {
+        task_id: task.id,
+      });
+
       return NextResponse.json({
         ok: true,
         success: true,
@@ -138,10 +215,25 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Safe state transition enforcement:
+    // - only accept transition when current status is processing
+    // - prevents completed/failed -> needs_review/failed overwrites.
     if (task.status !== 'processing') {
       if (callbackEvent.eventId) {
-        await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'stale_ignored');
+        await markN8nCallbackEvent(
+          adminClient,
+          callbackEvent.eventId,
+          'stale_ignored'
+        );
       }
+
+      const callbackLatencyMs = Date.now() - callbackReceiveAt;
+      reportAppError('n8n callback stale ignored', null, {
+        task_id: task.id,
+        task_status: task.status,
+        callbackLatencyMs,
+        processingDurationMs: Date.now() - processStartAt,
+      });
 
       return NextResponse.json({
         ok: true,
@@ -173,6 +265,14 @@ export async function POST(request: NextRequest) {
         await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'failed');
       }
 
+      reportAppError('n8n callback failed to update task state', null, {
+        task_id: task.id,
+        nextStatus,
+        updateError: updateResult.error ?? null,
+        callbackLatencyMs: Date.now() - callbackReceiveAt,
+        processingDurationMs: Date.now() - processStartAt,
+      });
+
       return jsonError(updateResult.error ?? 'Task could not be updated', 500);
     }
 
@@ -180,6 +280,7 @@ export async function POST(request: NextRequest) {
     const message = failed
       ? `Task failed by n8n${errorMessage ? `: ${errorMessage}` : ''}`
       : 'Task completed by n8n';
+
     const eventResult = await createTaskEvent(
       {
         workspaceId: taskRecord.workspace_id,
@@ -196,12 +297,27 @@ export async function POST(request: NextRequest) {
         await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'failed');
       }
 
+      reportAppError('n8n callback failed to create task event', null, {
+        task_id: task.id,
+        eventType,
+        callbackLatencyMs: Date.now() - callbackReceiveAt,
+        processingDurationMs: Date.now() - processStartAt,
+      });
+
       return jsonError(eventResult.error, 500);
     }
 
     if (callbackEvent.eventId) {
       await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'processed');
     }
+
+    const callbackLatencyMs = Date.now() - callbackReceiveAt;
+    reportAppError('n8n callback processed', null, {
+      task_id: task.id,
+      nextStatus,
+      callbackLatencyMs,
+      processingDurationMs: Date.now() - processStartAt,
+    });
 
     return NextResponse.json({
       success: true,

@@ -13,7 +13,7 @@ export interface ErrorContext {
   userId?: string;
   requestId?: string;
   endpoint?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   statusCode?: number;
 }
 
@@ -22,7 +22,7 @@ export class AppError extends Error {
     message: string,
     public readonly statusCode: number = 500,
     public readonly level: ErrorLevel = ErrorLevel.MEDIUM,
-    public readonly metadata?: Record<string, any>
+    public readonly metadata?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'AppError';
@@ -47,7 +47,7 @@ export function handleError(error: unknown, context?: ErrorContext): {
     statusCode,
     level,
     stack: error instanceof Error ? error.stack : undefined,
-    ...context?.metadata,
+    ...(context?.metadata ?? {}),
   });
 
   // Report to Sentry for monitoring

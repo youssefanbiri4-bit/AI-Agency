@@ -80,6 +80,12 @@ export function createInputA11y(id: string, label: string, required = false) {
   };
 }
 
+type AriaLive = 'polite' | 'off' | 'assertive';
+
+function ariaLivePolite(): AriaLive {
+  return 'polite';
+}
+
 /**
  * Helper function to create accessible error message attributes
  */
@@ -87,8 +93,9 @@ export function createErrorA11y(fieldId: string, error?: string) {
   return {
     id: `${fieldId}-error`,
     role: 'alert',
-    'aria-live': 'polite',
+    'aria-live': ariaLivePolite(),
     'aria-atomic': true,
+    ...(error ? { 'aria-label': error } : {}),
   };
 }
 
@@ -129,7 +136,7 @@ export function createDialogA11y(title: string, titleId: string) {
 export function createLoadingA11y(isLoading: boolean) {
   return {
     'aria-busy': isLoading,
-    'aria-live': 'polite',
+    'aria-live': ariaLivePolite(),
   };
 }
 
@@ -148,7 +155,7 @@ export function createStatusBadgeA11y(status: string) {
   return {
     'aria-label': statusMap[status] || status,
     role: 'status',
-    'aria-live': 'polite',
+    'aria-live': ariaLivePolite(),
   };
 }
 

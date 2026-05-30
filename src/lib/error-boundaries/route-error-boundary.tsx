@@ -1,6 +1,7 @@
 'use client';
 
 import { Component, type ComponentType, type ErrorInfo, type ReactNode } from 'react';
+import { reportAppError, logger } from '@/lib/logger';
 
 type RouteFallbackRenderer = (props: {
   error: Error;
@@ -65,15 +66,29 @@ export class RouteErrorBoundary extends Component<
       componentStack: info.componentStack ?? null,
     });
 
-    // Log error to console
-    console.error('RouteErrorBoundary caught an error:', error, info);
+    // Structured observability (no console-only logging in production paths)
+    try {
+      reportAppError('Route component boundary caught an error', error, {
+        category: 'route_error_boundary',
+        componentStack: info.componentStack ?? '',
+      });
+
+      logger.debug('RouteErrorBoundary captured error', {
+        category: 'route_error_boundary',
+        message: error.message,
+      });
+    } catch {
+      // Last resort: never break rendering if reporting fails
+    }
 
     // Call user-provided error callback if available
     if (this.props.onError) {
       try {
         this.props.onError(error, { componentStack: info.componentStack ?? '' });
       } catch (callbackError) {
-        console.error('Error in onError callback:', callbackError);
+        reportAppError('Error in RouteErrorBoundary onError callback', callbackError, {
+          category: 'route_error_boundary',
+        });
       }
     }
 

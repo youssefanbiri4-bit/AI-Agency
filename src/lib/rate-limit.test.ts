@@ -52,7 +52,7 @@ describe('Rate Limiting', () => {
       expect(result.remaining).toBe(0);
     });
 
-    it('should reset after window expires', (done) => {
+    it('should reset after window expires', async () => {
       const store = new InMemoryRateLimitStore();
       const windowMs = 100; // 100ms window
 
@@ -74,16 +74,15 @@ describe('Rate Limiting', () => {
       expect(result2.allowed).toBe(false);
 
       // Wait for window to expire
-      setTimeout(() => {
-        const result3 = store.check({
-          key: 'user-789',
-          limit: 1,
-          windowMs,
-        });
+      await new Promise((resolve) => setTimeout(resolve, windowMs + 10));
 
-        expect(result3.allowed).toBe(true);
-        done();
-      }, windowMs + 10);
+      const result3 = store.check({
+        key: 'user-789',
+        limit: 1,
+        windowMs,
+      });
+
+      expect(result3.allowed).toBe(true);
     });
 
     it('should track different keys separately', () => {

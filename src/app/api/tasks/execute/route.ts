@@ -1,13 +1,31 @@
 import { z } from 'zod';
-import { executeTask } from '@/lib/n8n';
+import { taskQueue } from '@/lib/queue/queues';
 import { logger } from '@/lib/logger';
 import { getWorkspace } from '@/lib/data/workspaces-server';
-import { createErrorResponse, handleError, AppError, ErrorLevel, validateRequired } from '@/lib/error-handler';
+import { getTaskById, updateTaskExecutionState } from '@/lib/data/tasks';
+import { createErrorResponse, AppError, ErrorLevel } from '@/lib/error-handler';
 import { checkRateLimit } from '@/lib/rate-limit';
 
+const jsonValueSchema: z.ZodType<import('@/types').JsonValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(jsonValueSchema),
+    z.record(z.string(), jsonValueSchema),
+  ])
+);
+
+// Accept multiple identifier shapes (task_id, taskId, taskExecutionId) but require workspaceId
 const taskExecuteSchema = z.object({
-  taskPayload: z.record(z.any()).describe('Task execution payload'),
-  taskExecutionId: z.string().uuid('Invalid task execution ID format'),
+  taskPayload: z.record(z.string(), jsonValueSchema).describe('Task execution payload'),
+  // canonical DB id (snake_case)
+  task_id: z.string().uuid('Invalid task id format').optional(),
+  // alternate camelCase form
+  taskId: z.string().uuid('Invalid task id format').optional(),
+  // existing execution identifier (may or may not equal tasks.id)
+  taskExecutionId: z.string().uuid('Invalid task execution ID format').optional(),
   workspaceId: z.string().uuid('Invalid workspace ID format'),
 }).strict();
 
@@ -17,40 +35,49 @@ export async function POST(req: Request) {
   const log = logger.child(requestId);
 
   try {
-    // Rate limiting check
-    const clientIp = req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
+    const body = await req.json();
+    const validation = taskExecuteSchema.safeParse(body);
+
+    // Rate limiting check (must happen before workspace resolution/business logic)
+    const clientIp =
+      req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
+
+    // Build a stable limiter key. If payload is invalid, fall back to IP-only key.
+    const workspaceIdForRateLimit =
+      validation.success ? validation.data.workspaceId : null;
+
+    const rateLimitKey = workspaceIdForRateLimit
+      ? `api:tasks:execute:${clientIp}:${workspaceIdForRateLimit}`
+      : `api:tasks:execute:${clientIp}`;
+
     const rateLimitResult = await checkRateLimit({
-      key: `api:tasks:execute:${clientIp}`,
+      key: rateLimitKey,
       limit: 100,
       windowMs: 15 * 60 * 1000, // 15 minutes
     });
 
     if (!rateLimitResult.allowed) {
-      log.warn('Rate limit exceeded for task execution', { clientIp });
-      return new Response(
-        JSON.stringify({ error: 'Rate limit exceeded', retryAfter: Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000) }),
+      log.warn('Rate limit exceeded for task execution', {
+        clientIp,
+        workspaceId: workspaceIdForRateLimit,
+      });
+
+      // Preserve the same error response envelope as the rest of this endpoint.
+      throw new AppError(
+        'Rate limit exceeded',
+        429,
+        ErrorLevel.LOW,
         {
-          status: 429,
-          headers: {
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': new Date(rateLimitResult.resetAt).toISOString(),
-            'Retry-After': Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000).toString(),
-          },
+          retryAfterSeconds: Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000),
+          resetAt: new Date(rateLimitResult.resetAt).toISOString(),
         }
       );
     }
 
-    const existingWorkspace = await getWorkspace(null);
-    if (!existingWorkspace?.data) {
-      log.warn('Workspace not found', { workspaceId: null });
-      throw new AppError('Workspace context not available', 400, ErrorLevel.MEDIUM);
-    }
-
-    const body = await req.json();
-    const validation = taskExecuteSchema.safeParse(body);
-
     if (!validation.success) {
-      log.warn('Invalid task execution payload', { errors: validation.error.flatten() });
+      log.warn('Invalid task execution payload', {
+        errors: validation.error.flatten(),
+      });
       throw new AppError(
         'Invalid payload format',
         400,
@@ -59,25 +86,129 @@ export async function POST(req: Request) {
       );
     }
 
-    const { taskPayload, taskExecutionId, workspaceId } = validation.data;
-    log.info('Received task execution request', { workspaceId, taskExecutionId, payloadKeys: Object.keys(taskPayload) });
+    const { taskPayload, taskExecutionId, workspaceId } = validation.data as {
+      taskPayload: Record<string, unknown>;
+      taskExecutionId?: string | undefined;
+      task_id?: string | undefined;
+      taskId?: string | undefined;
+      workspaceId: string;
+    };
+
+    // Resolve canonical `taskId` (DB primary key) according to resolution order:
+    // A) task_id
+    // B) taskId
+    // C) taskExecutionId (only if a tasks row exists whose id matches it)
+    let taskId: string | null = null;
+    // prefer snake_case task_id
+    taskId = (validation.data as any).task_id ?? (validation.data as any).taskId ?? null;
+
+    // If still not resolved, we'll attempt to use taskExecutionId as the canonical id
+    // only if it maps to an existing tasks row. We do this by attempting the
+    // optimistic transition using updateTaskExecutionState and rejecting when it
+    // fails. This avoids a separate DB lookup and keeps the operation atomic.
+    if (!taskId && taskExecutionId) {
+      // Resolve the candidate execution identifier to the canonical DB id first.
+      const candidate = await getTaskById(taskExecutionId, workspaceId);
+
+      if (candidate.error || !candidate.data) {
+        // No task found matching the provided execution identifier.
+        throw new AppError('Task cannot be processed at this time', 409, ErrorLevel.MEDIUM, {
+          detail: candidate.error ?? 'taskExecutionId_not_found',
+        });
+      }
+
+      // Use the canonical DB primary key for all subsequent transitions.
+      taskId = candidate.data.id;
+
+      // Attempt to mark the canonical task as processing. Failures should prevent enqueue.
+      const tentativeMark = await updateTaskExecutionState({
+        taskId,
+        workspaceId,
+        status: 'processing',
+        expectedCurrentStatus: 'pending',
+      });
+
+      if (tentativeMark.error || !tentativeMark.data) {
+        throw new AppError('Task cannot be processed at this time', 409, ErrorLevel.MEDIUM, {
+          detail: tentativeMark.error ?? 'failed_to_mark_processing',
+        });
+      }
+      // candidate matched and has been transitioned; avoid re-marking later.
+    }
+
+    if (!taskId) {
+      // No recognizable identifier provided
+      throw new AppError('Task identifier is required', 400, ErrorLevel.LOW);
+    }
+
+
+    // NOTE: use request-context workspace getter for API consistency
+    // (tests mock this dependency)
+    const existingWorkspace = await getWorkspace(workspaceId);
+    if (!existingWorkspace?.data) {
+      log.warn('Workspace not found', { workspaceId });
+      throw new AppError('Workspace context not available', 400, ErrorLevel.MEDIUM);
+    }
+
+    log.info('Received task execution request', {
+      workspaceId,
+      taskExecutionId,
+      payloadKeys: Object.keys(taskPayload),
+    });
+
 
     // Workspace ID validation
     if (existingWorkspace.data.id !== workspaceId) {
-      log.warn('Workspace ID mismatch', { requestedWorkspaceId: workspaceId, contextWorkspaceId: existingWorkspace.data.id });
+      log.warn('Workspace ID mismatch', {
+        requestedWorkspaceId: workspaceId,
+        contextWorkspaceId: existingWorkspace.data.id,
+      });
       throw new AppError('Workspace ID mismatch', 400, ErrorLevel.LOW);
     }
 
-    const result = await executeTask(taskPayload, taskExecutionId, workspaceId);
+    log.info('Task validated, marking processing and enqueueing job', {
+      workspaceId,
+      taskExecutionId,
+      taskId,
+      payloadKeys: Object.keys(taskPayload),
+    });
 
-    if (result.error) {
-      log.error('Failed to execute task', { workspaceId, taskExecutionId, error: result.error });
-      throw new AppError('Failed to execute task', 500, ErrorLevel.HIGH, { taskError: result.error });
+    // If we reached here and the task wasn't already transitioned by the
+    // tentative path above (i.e., we had a canonical task_id/taskId), perform
+    // the processing transition now.
+    let markResult = { data: null, error: null } as any;
+    if (!(validation.data as any).taskExecutionId || (validation.data as any).task_id || (validation.data as any).taskId) {
+      markResult = await updateTaskExecutionState({
+        taskId: taskId as string,
+        workspaceId,
+        status: 'processing',
+        expectedCurrentStatus: 'pending',
+      });
+
+      if (markResult.error || !markResult.data) {
+        // Do not enqueue if we cannot transition the task to processing.
+        throw new AppError('Task cannot be processed at this time', 409, ErrorLevel.MEDIUM, {
+          detail: markResult.error ?? 'failed_to_mark_processing',
+        });
+      }
     }
 
-    log.info('Task execution successful', { workspaceId, taskExecutionId });
+    const job = await taskQueue.add('execute-task', {
+      taskExecutionId: taskExecutionId ?? null,
+      // canonical DB id
+      task_id: taskId,
+      workspaceId,
+      taskPayload,
+      requestId,
+    });
+
     return new Response(
-      JSON.stringify({ success: true, result, requestId }),
+      JSON.stringify({
+        success: true,
+        queued: true,
+        requestId,
+        jobId: job.id,
+      }),
       {
         status: 200,
         headers: { 'Content-Type': 'application/json', 'X-Request-ID': requestId },

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
@@ -12,6 +13,16 @@ import {
 } from '@/lib/n8n-callback-idempotency';
 import { genericServerSetupMessage, setupBlockerMessage } from '@/lib/safe-messages';
 import type { JsonObject, JsonValue, TaskStatus } from '@/types';
+
+// Zod schema for validating n8n callback payload
+const n8nCallbackSchema = z.object({
+  task_id: z.string().uuid('Invalid task ID format'),
+  status: z.enum(['completed', 'failed', 'processing']),
+  result: z.unknown().optional(), // We'll validate this more specifically if needed
+  error_message: z.string().optional(),
+  // Allow additional fields for flexibility
+  // We're using .passthrough() to allow extra fields while validating the required ones
+}).passthrough();
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ success: false, error }, { status });
@@ -77,7 +88,17 @@ export async function POST(request: NextRequest) {
       return jsonError('Invalid callback payload', 400);
     }
 
-    const payload = body as Record<string, unknown>;
+    // Validate the callback payload using Zod schema
+    const validationResult = n8nCallbackSchema.safeParse(body);
+    if (!validationResult.success) {
+      reportAppError('Invalid n8n callback payload', null, {
+        errors: validationResult.error.format(),
+        payload: body
+      });
+      return jsonError('Invalid callback payload format', 400);
+    }
+
+    const payload = validationResult.data as Record<string, unknown>;
     const taskId = readString(payload, 'task_id') || readString(payload, 'taskId');
     const callbackStatus = readString(payload, 'status');
     const errorMessage = readString(payload, 'error_message') || null;

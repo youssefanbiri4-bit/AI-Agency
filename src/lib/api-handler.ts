@@ -13,13 +13,18 @@ export interface ApiHandlerOptions {
   requireAuth?: boolean;
 }
 
-export function createApiHandler<T extends Record<string, any>>(
+export function createApiHandler<T extends Record<string, unknown>>(
   handler: (req: Request, data?: T) => Promise<Response>,
   options?: ApiHandlerOptions
 ) {
   return async (req: Request): Promise<Response> => {
-    const requestId = `req-${Math.random().toString(36).substring(2, 10)}`;
-    const log = logger.child(requestId);
+    const requestId =
+      req.headers.get('X-Request-ID') ??
+      `req-${Math.random().toString(36).substring(2, 10)}`;
+
+    // Keep using the shared logger instance; attach requestId explicitly per log entry.
+    // This avoids breaking the logger's internal requestId scoping semantics.
+    const scopedLog = logger;
 
     try {
       // Method validation
@@ -45,7 +50,10 @@ export function createApiHandler<T extends Record<string, any>>(
         });
 
         if (!rateLimitResult.allowed) {
-          log.warn('Rate limit exceeded', { endpoint: new URL(req.url).pathname });
+          scopedLog.warn('Rate limit exceeded', {
+            endpoint: new URL(req.url).pathname,
+            requestId,
+          });
           return new Response(
             JSON.stringify({
               error: 'Rate limit exceeded',
@@ -73,9 +81,10 @@ export function createApiHandler<T extends Record<string, any>>(
         const validation = options.schema.safeParse(body);
 
         if (!validation.success) {
-          log.warn('Validation failed', {
+          scopedLog.warn('Validation failed', {
             errors: validation.error.flatten(),
             endpoint: new URL(req.url).pathname,
+            requestId,
           });
           throw new AppError(
             'Validation failed',
@@ -85,7 +94,7 @@ export function createApiHandler<T extends Record<string, any>>(
           );
         }
 
-        validatedData = validation.data;
+        validatedData = validation.data as T;
       }
 
       // Call the actual handler
@@ -95,10 +104,11 @@ export function createApiHandler<T extends Record<string, any>>(
       response.headers.set('X-Request-ID', requestId);
       response.headers.set('X-Content-Type-Options', 'nosniff');
 
-      log.info('API request successful', {
+      scopedLog.info('API request successful', {
         method: req.method,
         endpoint: new URL(req.url).pathname,
         status: response.status,
+        requestId,
       });
 
       return response;
@@ -111,7 +121,7 @@ export function createApiHandler<T extends Record<string, any>>(
   };
 }
 
-export function withApiHandler<T extends Record<string, any>>(
+export function withApiHandler<T extends Record<string, unknown>>(
   handler: (req: Request, data?: T) => Promise<Response>,
   options?: ApiHandlerOptions
 ) {

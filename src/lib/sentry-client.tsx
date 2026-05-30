@@ -26,6 +26,7 @@ export function SentrySetup() {
         }
       } catch (error) {
         // Silently fail if user context can't be set
+        void error;
         console.debug('Could not set Sentry user context');
       }
     };

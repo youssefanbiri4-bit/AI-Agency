@@ -1,0 +1,8 @@
+- [ ] Phase 2.5: Security Verification & Safe Hardening
+  - [x] SSRF verification: identify gaps in getValidWebhookUrl/safeFetch/webhook execution paths
+  - [x] Patch SSRF: add strict outbound webhook URL validator (block localhost/private/link-local; enforce https; allowlist host; DNS rebinding mitigation; manual redirect)
+  - [x] Unit tests: SSRF rejection cases (mock dns lookup)
+  - [x] Unit tests: ensure redirect:'manual' is used for n8n webhook POST
+  - [ ] Supabase tenant isolation verification report: workspaceId propagation, RLS/service-role usage, remaining risks
+  - [ ] Idempotency integrity verification report: duplicate webhook delivery, deterministic retries, side-effect duplication
+  - [ ] Final production readiness + security score update

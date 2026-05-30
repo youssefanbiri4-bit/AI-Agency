@@ -260,6 +260,25 @@ export async function updateTaskExecutionState(
     return emptyDataResult(null, false);
   }
 
+  // First, check if the task is already in a processing state to prevent race conditions
+  if (input.status === 'processing') {
+    const { data: currentTask, error: fetchError } = await client
+      .from('tasks')
+      .select('status')
+      .eq('id', input.taskId)
+      .eq('workspace_id', input.workspaceId)
+      .maybeSingle();
+
+    if (fetchError) {
+      return errorDataResult(null, fetchError.message);
+    }
+
+    // If task exists and is already processing, return error to prevent duplicate execution
+    if (currentTask && currentTask.status === 'processing') {
+      return errorDataResult(null, 'Task is already being processed');
+    }
+  }
+
   const update: Database['public']['Tables']['tasks']['Update'] = {
     status: input.status,
   };

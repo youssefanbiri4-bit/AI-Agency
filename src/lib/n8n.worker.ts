@@ -1,7 +1,3 @@
-if (typeof window !== 'undefined') {
-  throw new Error('This module must only run on the server');
-}
-
 import type { ApiResponse, JsonObject } from '@/types';
 import { PRIMARY_AGENT_IDS } from '@/lib/agents';
 import { reportAppError } from '@/lib/logger';
@@ -72,31 +68,26 @@ export async function getN8nReadiness(): Promise<N8nReadiness> {
 
 // Configurable workflow timeouts
 export function getWorkflowTimeoutMs(workflowId: string): number {
-    // Default timeout: 5 minutes
-    const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
-    
-    // Allow override via environment variable
-    const envVarName = `N8N_WORKFLOW_TIMEOUT_${workflowId.toUpperCase()}`;
-    const timeoutStr = process.env[envVarName];
-    
-    if (timeoutStr) {
-        const timeout = parseInt(timeoutStr, 10);
-        if (!isNaN(timeout) && timeout > 0) {
-            return timeout;
-        }
+  // Default timeout: 5 minutes
+  const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
+
+  // Allow override via environment variable
+  const envVarName = `N8N_WORKFLOW_TIMEOUT_${workflowId.toUpperCase()}`;
+  const timeoutStr = process.env[envVarName];
+
+  if (timeoutStr) {
+    const timeout = parseInt(timeoutStr, 10);
+    if (!Number.isNaN(timeout) && timeout > 0) {
+      return timeout;
     }
-    
-    return DEFAULT_TIMEOUT_MS;
+  }
+
+  return DEFAULT_TIMEOUT_MS;
 }
 
 /**
  * Execute a task through n8n webhook
- * This should be called from the backend API route to keep the webhook URL safe
- * @param workflowId - The n8n workflow ID to execute
- * @param data - The data to send to the webhook
- * @param webhookUrl - The n8n webhook URL
- * @param timeoutMs - Optional timeout in milliseconds (defaults to 8000ms)
- * @returns Promise with success status and optional error message
+ * Pure Node implementation (standalone worker).
  */
 export async function executeN8nWorkflow(
   workflowId: string,
@@ -152,8 +143,6 @@ export async function executeN8nWorkflow(
   }
 }
 
-
-
 /**
  * Map agent type to n8n workflow ID
  * You'll need to configure these IDs in your n8n workflows
@@ -170,12 +159,7 @@ export function getWorkflowIdForAgent(agentType: string): string {
 }
 
 /**
- * Execute a task through n8n
- * This is the main task execution interface called from API routes
- * @param taskPayload - Task data to execute
- * @param taskExecutionId - Unique execution ID for tracking
- * @param workspaceId - Workspace context for the task
- * @returns Result with success status and optional error message
+ * Execute a task through n8n (standalone worker entrypoint)
  */
 export async function executeTask(
   taskPayload: JsonObject,
@@ -205,20 +189,20 @@ export async function executeTask(
     };
 
     // Get workflow ID for this agent type
-    const workflowId = getWorkflowIdForAgent(taskPayload.agent_type as string || 'unknown');
-    
+    const workflowId = getWorkflowIdForAgent(
+      (taskPayload.agent_type as string) || 'unknown'
+    );
+
     // Get configurable timeout for this workflow
     const timeoutMs = getWorkflowTimeoutMs(workflowId);
 
     // Execute through n8n workflow with configurable timeout
-    const result = await executeN8nWorkflow(
+    return await executeN8nWorkflow(
       `task-execute-${workspaceId}`,
       executionPayload,
       readiness.webhookUrl,
       timeoutMs
     );
-
-    return result;
   } catch (error) {
     reportAppError('Task execution failed', error, {
       taskExecutionId,

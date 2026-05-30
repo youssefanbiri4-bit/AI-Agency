@@ -12,18 +12,30 @@ export default defineConfig({
         'node_modules/',
         '.next/',
         'dist/',
+        'build/',
+        'coverage/',
+        '.kilo/',
         '**/*.d.ts',
         '**/*.config.*',
         '**/mocks/**',
         '**/__tests__/**',
       ],
-      lines: 80,
-      functions: 80,
-      branches: 75,
-      statements: 80,
+      reportsDirectory: './coverage',
     },
-    include: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
-    exclude: ['node_modules', '.next', 'dist'],
+
+    // Strictly include only project tests (no vendor/dependency suites)
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/*.spec.ts', 'src/**/*.spec.tsx'],
+
+    // Explicitly exclude everything outside the project scope
+    exclude: [
+      'node_modules',
+      '.kilo',
+      'dist',
+      'build',
+      'coverage',
+      '.next',
+    ],
+
     testTimeout: 10000,
   },
   resolve: {

@@ -6,8 +6,6 @@ import { logger } from '@/lib/logger';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const PROXY_AUTH_TIMEOUT_MS = 4_000;
-const isDevelopment = process.env.NODE_ENV !== 'production';
-const PROXY_TRACE_PREFIX = '[proxy]';
 
 function createNonce() {
   const bytes = new Uint8Array(16);

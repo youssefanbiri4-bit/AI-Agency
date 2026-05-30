@@ -1,5 +1,3 @@
-import { stringify } from 'node:querystring'; // Use node: prefix for clarity and safety
-
 export enum LogLevel {
   Debug = 'debug',
   Info = 'info',
@@ -8,44 +6,58 @@ export enum LogLevel {
   Fatal = 'fatal',
 }
 
+type JsonLike = Record<string, unknown>;
+
 interface LogContext {
   level: LogLevel;
   timestamp: string;
   message: string;
   traceId?: string; // For request/operation tracing
   requestId?: string; // For request correlation
-  [key: string]: any; // Allow arbitrary context properties
+  [key: string]: unknown; // Allow arbitrary context properties
 }
 
-// Function to redact sensitive information
-// Add patterns for sensitive data like tokens, passwords, PII etc.
-function redactSensitiveInfo(obj: any): any {
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
+function redactSensitiveValue(key: string, value: unknown): unknown {
+  const lowerKey = key.toLowerCase();
+
+  if (
+    lowerKey.includes('token') ||
+    lowerKey.includes('password') ||
+    lowerKey.includes('secret') ||
+    lowerKey.includes('api_key')
+  ) {
+    return '[REDACTED]';
   }
 
-  // Deep clone to avoid modifying original objects
-  const clonedObj = JSON.parse(JSON.stringify(obj));
+  if (lowerKey.includes('email') && typeof value === 'string') {
+    const emailParts = value.split('@');
+    if (emailParts.length === 2) {
+      return `[REDACTED]@${emailParts[1]}`;
+    }
+    return '[REDACTED]';
+  }
+
+  if (value && typeof value === 'object') {
+    return redactSensitiveObject(value as unknown);
+  }
+
+  return value;
+}
+
+// Deep redaction for objects by walking keys.
+function redactSensitiveObject(input: unknown): unknown {
+  if (input === null || typeof input !== 'object') return input;
+
+  // Deep clone to avoid mutating caller objects
+  const clonedObj = JSON.parse(JSON.stringify(input)) as JsonLike;
 
   for (const key in clonedObj) {
-    if (Object.prototype.hasOwnProperty.call(clonedObj, key)) {
-      const lowerKey = key.toLowerCase();
-      // Basic redaction patterns
-      if (lowerKey.includes('token') || lowerKey.includes('password') || lowerKey.includes('secret') || lowerKey.includes('api_key')) {
-        clonedObj[key] = '[REDACTED]';
-      } else if (lowerKey.includes('email') && typeof clonedObj[key] === 'string') {
-        // Example: Keep domain but redact username part of email
-        const emailParts = clonedObj[key].split('@');
-        if (emailParts.length === 2) {
-          clonedObj[key] = `[REDACTED]@${emailParts[1]}`;
-        } else {
-          clonedObj[key] = '[REDACTED]';
-        }
-      } else if (typeof clonedObj[key] === 'object' && clonedObj[key] !== null) {
-        clonedObj[key] = redactSensitiveInfo(clonedObj[key]); // Recurse for nested objects
-      }
-    }
+    if (!Object.prototype.hasOwnProperty.call(clonedObj, key)) continue;
+
+    const value = clonedObj[key];
+    clonedObj[key] = redactSensitiveValue(key, value);
   }
+
   return clonedObj;
 }
 
@@ -60,7 +72,7 @@ function consoleLogger(context: LogContext): void {
   const timestamp = new Date(context.timestamp).toISOString();
   const baseMessage = `[${timestamp}] [${context.level.toUpperCase()}] ${context.message}`;
   
-  const logOutput: Record<string, any> = {
+  const logOutput: Record<string, unknown> = {
     message: baseMessage,
     level: context.level,
     timestamp: timestamp,
@@ -69,10 +81,16 @@ function consoleLogger(context: LogContext): void {
   if (context.requestId) logOutput.requestId = context.requestId;
   if (context.traceId) logOutput.traceId = context.traceId;
 
-  // Add other context properties, ensuring redaction
+  // Add other context properties, ensuring redaction (key-aware)
   for (const key in context) {
-    if (key !== 'level' && key !== 'timestamp' && key !== 'message' && key !== 'requestId' && key !== 'traceId') {
-      logOutput[key] = redactSensitiveInfo(context[key]);
+    if (
+      key !== 'level' &&
+      key !== 'timestamp' &&
+      key !== 'message' &&
+      key !== 'requestId' &&
+      key !== 'traceId'
+    ) {
+      logOutput[key] = redactSensitiveValue(key, context[key]);
     }
   }
 
@@ -107,34 +125,38 @@ export class Logger {
     this.traceId = traceId;
   }
 
-  private createLogContext(level: LogLevel, message: string, data?: Record<string, any>): LogContext {
+  private createLogContext(
+    level: LogLevel,
+    message: string,
+    data?: Record<string, unknown>
+  ): LogContext {
     return {
       level,
       timestamp: new Date().toISOString(),
       message,
       requestId: this.requestId,
       traceId: this.traceId,
-      ...data,
+      ...(data ?? {}),
     };
   }
 
-  debug(message: string, data?: Record<string, any>): void {
+  debug(message: string, data?: Record<string, unknown>): void {
     consoleLogger(this.createLogContext(LogLevel.Debug, message, data));
   }
 
-  info(message: string, data?: Record<string, any>): void {
+  info(message: string, data?: Record<string, unknown>): void {
     consoleLogger(this.createLogContext(LogLevel.Info, message, data));
   }
 
-  warn(message: string, data?: Record<string, any>): void {
+  warn(message: string, data?: Record<string, unknown>): void {
     consoleLogger(this.createLogContext(LogLevel.Warn, message, data));
   }
 
-  error(message: string, data?: Record<string, any>): void {
+  error(message: string, data?: Record<string, unknown>): void {
     consoleLogger(this.createLogContext(LogLevel.Error, message, data));
   }
 
-  fatal(message: string, data?: Record<string, any>): void {
+  fatal(message: string, data?: Record<string, unknown>): void {
     consoleLogger(this.createLogContext(LogLevel.Fatal, message, data));
   }
 
@@ -159,7 +181,7 @@ export const logger = new Logger();
 export function reportAppError(
   message: string,
   error: Error | unknown,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): void {
   try {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -183,7 +205,7 @@ export function reportAppError(
  */
 export function reportAppEvent(
   eventName: string,
-  data?: Record<string, any>
+  data?: Record<string, unknown>
 ): void {
   try {
     logger.info(`event:${eventName}`, data || {});

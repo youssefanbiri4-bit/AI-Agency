@@ -1,20 +1,44 @@
-// Define retry strategy options
+/**
+ * Retry strategy options for safeFetch.
+ * Incremental + production-safe: defaults preserve existing maxRetries=3 behavior.
+ */
 export interface RetryOptions {
+  /**
+   * Total retries after the first attempt (0 means single attempt).
+   * NOTE: safeFetch loop uses attemptIndex <= maxRetries to preserve existing semantics.
+   */
   maxRetries?: number;
+
   baseDelayMs?: number;
   maxDelayMs?: number;
+
+  /** Enable randomized jitter on backoff delay */
   jitter?: boolean;
-  retryOn?: (error: unknown) => boolean;
+
+  /**
+   * Optional override. If not provided, safeFetch uses transient classification:
+   * - network/TypeError
+   * - timeout/abort due to our timeout
+   * - 429 + 502 + 503 + 504
+   */
+  retryOn?: (
+    error: unknown,
+    meta: { statusCode: number | null; isTimeout: boolean }
+  ) => boolean;
+
+  /**
+   * Total retry budget across all attempts (including delay).
+   * If exceeded, we stop retrying and fail fast to avoid retry storms/hangs.
+   */
+  totalRetryTimeoutMs?: number;
 }
 
-// Define fetch options with timeout and retry
 export interface SafeFetchOptions extends RequestInit {
   timeoutMs?: number;
   retryOptions?: RetryOptions;
   traceId?: string;
 }
 
-// Define the result of a safe fetch operation
 export interface SafeFetchResult<T> {
   data: T | null;
   error: Error | null;
@@ -24,132 +48,232 @@ export interface SafeFetchResult<T> {
   fromCache: boolean;
 }
 
-// Default retry options
-const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
+const DEFAULT_RETRY_OPTIONS: Required<
+  Pick<RetryOptions, 'maxRetries' | 'baseDelayMs' | 'maxDelayMs' | 'jitter' | 'totalRetryTimeoutMs'>
+> & {
+  retryOn: NonNullable<RetryOptions['retryOn']>;
+} = {
   maxRetries: 3,
-  baseDelayMs: 100,
-  maxDelayMs: 5000,
+  baseDelayMs: 1000, // align with spec example scale (Retry1->2s etc when attemptIndex starts at 0)
+  maxDelayMs: 15_000,
   jitter: true,
-  retryOn: (error) => {
-    // Retry on network errors, timeouts, and 5xx errors
-    if (error instanceof Error) {
-      return (
-        error.name === 'TypeError' || // Network errors
-        error.message.includes('fetch failed') ||
-        error.message.includes('timeout')
-      );
+  totalRetryTimeoutMs:
+    typeof process !== 'undefined' && process.env?.SAFE_FETCH_TOTAL_RETRY_TIMEOUT_MS
+      ? Number(process.env.SAFE_FETCH_TOTAL_RETRY_TIMEOUT_MS)
+      : 30_000,
+
+  retryOn: (error, meta) => {
+    // Transient classification only.
+    if (meta.statusCode !== null) {
+      return [429, 502, 503, 504].includes(meta.statusCode);
     }
+
+    if (meta.isTimeout) return true;
+
+    if (error instanceof Error) {
+      // Network errors in fetch are commonly TypeError
+      if (error.name === 'TypeError') return true;
+      // Our own timeout abort error message includes "Request timed out"
+      if (error.message.toLowerCase().includes('request timed out')) return true;
+      // Some environments use "fetch failed"
+      if (error.message.toLowerCase().includes('fetch failed')) return true;
+    }
+
     return false;
   },
 };
 
-// Generate a simple trace ID
 function generateTraceId(): string {
   return Math.random().toString(36).substring(2, 10);
 }
 
-// Calculate delay with exponential backoff and jitter
-function calculateDelay(
-  attempt: number,
-  baseDelayMs: number,
-  maxDelayMs: number,
-  jitter: boolean
-): number {
-  // Exponential backoff: baseDelay * 2^attempt
-  let delay = baseDelayMs * Math.pow(2, attempt);
-  
-  // Apply max delay cap
+function calculateDelay(opts: {
+  attemptIndex: number; // 0 for first retry scheduling
+  baseDelayMs: number;
+  maxDelayMs: number;
+  jitter: boolean;
+}): number {
+  const { attemptIndex, baseDelayMs, maxDelayMs, jitter } = opts;
+
+  // Exponential backoff: baseDelay * 2^attemptIndex
+  let delay = baseDelayMs * Math.pow(2, attemptIndex);
+
   delay = Math.min(delay, maxDelayMs);
-  
-  // Add jitter if enabled (±25%)
+
   if (jitter) {
-    const jitterAmount = delay * 0.25;
-    delay += (Math.random() * 2 - 1) * jitterAmount; // [-jitterAmount, +jitterAmount]
+    const jitterAmount = delay * 0.25; // ±25%
+    delay += (Math.random() * 2 - 1) * jitterAmount;
   }
-  
+
   return Math.max(0, delay);
 }
 
-// Safe fetch implementation with timeout, retry, and tracing
+function getEnvNumber(name: string, fallback: number): number {
+  const raw = process?.env?.[name];
+  if (!raw) return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function isLikelyJsonResponse(response: Response): boolean {
+  return response.headers.get('content-type')?.includes('application/json') ?? false;
+}
+
 export async function safeFetch<T = unknown>(
   input: RequestInfo | URL,
   options: SafeFetchOptions = {}
 ): Promise<SafeFetchResult<T>> {
   const startTime = Date.now();
   const traceId = options.traceId ?? generateTraceId();
-  
-  // Extract our custom options
-  const { timeoutMs = 8000, retryOptions = {}, ...fetchOptions } = options;
-  const { 
-    maxRetries = DEFAULT_RETRY_OPTIONS.maxRetries,
-    baseDelayMs = DEFAULT_RETRY_OPTIONS.baseDelayMs,
-    maxDelayMs = DEFAULT_RETRY_OPTIONS.maxDelayMs,
-    jitter = DEFAULT_RETRY_OPTIONS.jitter,
-    retryOn = DEFAULT_RETRY_OPTIONS.retryOn
-  } = { ...DEFAULT_RETRY_OPTIONS, ...retryOptions };
-  
-  let lastError: Error | null = null;
-  
-  // Try the request with retries
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    try {
-      // Create abort controller for timeout
-      const controller = new AbortController();
-      timeoutId = setTimeout(() => {
-        controller.abort(new Error(`Request timed out after ${timeoutMs}ms`));
-      }, timeoutMs);
-      const upstreamSignal = fetchOptions.signal;
-      const abortFromUpstream = () => {
-        controller.abort(upstreamSignal?.reason);
-      };
 
+  const {
+    timeoutMs = getEnvNumber('SAFE_FETCH_TIMEOUT_MS_DEFAULT', 8000),
+    retryOptions = {},
+    ...fetchOptions
+  } = options;
+
+  const maxRetries =
+    retryOptions.maxRetries ??
+    getEnvNumber('SAFE_FETCH_MAX_RETRIES', DEFAULT_RETRY_OPTIONS.maxRetries);
+
+  const baseDelayMs =
+    retryOptions.baseDelayMs ?? getEnvNumber('SAFE_FETCH_BASE_DELAY_MS', DEFAULT_RETRY_OPTIONS.baseDelayMs);
+
+  const maxDelayMs =
+    retryOptions.maxDelayMs ?? getEnvNumber('SAFE_FETCH_MAX_DELAY_MS', DEFAULT_RETRY_OPTIONS.maxDelayMs);
+
+  const jitter = retryOptions.jitter ?? DEFAULT_RETRY_OPTIONS.jitter;
+
+  const totalRetryTimeoutMs =
+    retryOptions.totalRetryTimeoutMs ??
+    getEnvNumber('SAFE_FETCH_TOTAL_RETRY_TIMEOUT_MS', DEFAULT_RETRY_OPTIONS.totalRetryTimeoutMs);
+
+  const retryOn = retryOptions.retryOn ?? DEFAULT_RETRY_OPTIONS.retryOn;
+
+  const { reportAppEvent, reportAppError } = await import('@/lib/logger');
+
+  let lastError: Error | null = null;
+  let lastStatusCode: number | null = null;
+
+  const urlString = input instanceof URL ? input.toString() : String(input);
+  const method = (fetchOptions.method ?? 'GET').toUpperCase();
+
+  // attemptIndex in loop is the attempt number starting from 0 (first attempt)
+  for (let attemptIndex = 0; attemptIndex <= maxRetries; attemptIndex++) {
+    const elapsedMs = Date.now() - startTime;
+    if (elapsedMs > totalRetryTimeoutMs) {
+      reportAppError('safe_fetch_retry_budget_exceeded', new Error('Retry budget exceeded'), {
+        traceId,
+        method,
+        url: urlString,
+        durationMs: elapsedMs,
+        attempts: maxRetries + 1,
+      });
+
+      return {
+        data: null,
+        error: lastError ?? new Error('Retry budget exceeded'),
+        statusCode: lastStatusCode,
+        traceId,
+        durationMs: elapsedMs,
+        fromCache: false,
+      };
+    }
+
+    // Create abort controller for per-attempt timeout
+    const controller = new AbortController();
+    let isTimeoutAbort = false;
+
+    const timeoutId = setTimeout(() => {
+      isTimeoutAbort = true;
+      controller.abort(new Error(`Request timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    const upstreamSignal = fetchOptions.signal;
+    const abortFromUpstream = () => controller.abort(upstreamSignal?.reason);
+
+    try {
       if (upstreamSignal?.aborted) {
         abortFromUpstream();
       } else {
         upstreamSignal?.addEventListener('abort', abortFromUpstream, { once: true });
       }
-      
-      // Make the fetch request
+
       const response = await fetch(input, {
         ...fetchOptions,
         signal: controller.signal,
       });
-      
-      // Clear timeout
+
       if (timeoutId) clearTimeout(timeoutId);
       upstreamSignal?.removeEventListener('abort', abortFromUpstream);
-      
-      // Calculate duration
+
       const durationMs = Date.now() - startTime;
-      
+      lastStatusCode = response.status;
+
+      // Retryable HTTP codes: 429/502/503/504
+      if ([429, 502, 503, 504].includes(response.status) && attemptIndex < maxRetries) {
+        const retryReason = `retryable_http_status:${response.status}`;
+        const delayMs = calculateDelay({
+          attemptIndex,
+          baseDelayMs,
+          maxDelayMs,
+          jitter,
+        });
+
+        const projectedElapsed = Date.now() - startTime + delayMs;
+        if (projectedElapsed > totalRetryTimeoutMs) {
+          reportAppError('safe_fetch_retry_budget_exceeded_http', new Error('Retry budget exceeded after http'), {
+            traceId,
+            method,
+            url: urlString,
+            statusCode: response.status,
+            durationMs,
+            attempt: attemptIndex,
+            delayMs,
+            attempts: maxRetries + 1,
+          });
+
+          break;
+        }
+
+        reportAppEvent('safe_fetch_retry_scheduled', {
+          traceId,
+          method,
+          url: urlString,
+          statusCode: response.status,
+          durationMs,
+          attempt: attemptIndex + 1,
+          retryAttempt: attemptIndex + 1,
+          retryReason,
+          delayMs,
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+
       // Parse JSON response if applicable
       let data: T | null = null;
       const statusCode = response.status;
-      
-      if (response.headers.get('content-type')?.includes('application/json')) {
+
+      if (isLikelyJsonResponse(response)) {
         try {
-          const jsonData = await response.json();
-          data = jsonData as T;
+          data = (await response.json()) as T;
         } catch (parseError) {
-          // If JSON parsing fails, return null data but still success
           console.warn(`[safeFetch:${traceId}] JSON parsing failed`, parseError);
         }
       }
-      
-      // Log successful request
-      const { reportAppEvent } = await import('@/lib/logger');
+
       reportAppEvent('safe_fetch_success', {
         traceId,
-        method: fetchOptions.method ?? 'GET',
-        url: input instanceof URL ? input.toString() : String(input),
+        method,
+        url: urlString,
         statusCode,
         durationMs,
-        attempt,
+        attempt: attemptIndex + 1,
         fromCache: false,
       });
-      
-      // Return successful result
+
       return {
         data,
         error: null,
@@ -159,97 +283,117 @@ export async function safeFetch<T = unknown>(
         fromCache: false,
       };
     } catch (error) {
-      // Clear any pending timeouts
       if (timeoutId) clearTimeout(timeoutId);
-      
+      upstreamSignal?.removeEventListener('abort', abortFromUpstream);
+
+      const durationMs = Date.now() - startTime;
       lastError = error instanceof Error ? error : new Error(String(error));
-      
-      // Check if we should retry
-      if (attempt < maxRetries && retryOn(lastError)) {
-        // Calculate delay before retry
-        const delay = calculateDelay(
-          attempt,
-          baseDelayMs,
-          maxDelayMs,
-          jitter
-        );
-        
-        // Wait for delay before retrying
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
+
+      const retryable =
+        attemptIndex < maxRetries &&
+        retryOn(lastError, { statusCode: lastStatusCode, isTimeout: isTimeoutAbort });
+
+      if (!retryable) break;
+
+      const delayMs = calculateDelay({
+        attemptIndex,
+        baseDelayMs,
+        maxDelayMs,
+        jitter,
+      });
+
+      const projectedElapsed = Date.now() - startTime + delayMs;
+      if (projectedElapsed > totalRetryTimeoutMs) {
+        reportAppError('safe_fetch_retry_budget_exceeded_timeout_or_network', new Error('Retry budget exceeded'), {
+          traceId,
+          method,
+          url: urlString,
+          durationMs,
+          attempt: attemptIndex + 1,
+          delayMs,
+          attempts: maxRetries + 1,
+          isTimeout: isTimeoutAbort,
+        });
+
+        break;
       }
-      
-      // If we shouldn't retry or we've exhausted retries, break
-      break;
+
+      const retryReason = isTimeoutAbort
+        ? `timeout_abort:${timeoutMs}ms`
+        : `transient_error:${lastError.name || 'Error'}`;
+
+      reportAppEvent('safe_fetch_retry_scheduled', {
+        traceId,
+        method,
+        url: urlString,
+        statusCode: lastStatusCode,
+        durationMs,
+        attempt: attemptIndex + 1,
+        retryAttempt: attemptIndex + 1,
+        retryReason,
+        delayMs,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      continue;
     }
   }
-  
-  // If we got here, all retries failed
+
   const durationMs = Date.now() - startTime;
-  
-  // Log failed request
-  const { reportAppError } = await import('@/lib/logger');
-  reportAppError('safe_fetch_failed', lastError, {
+
+  reportAppError('safe_fetch_retry_final_failure', lastError ?? new Error('Unknown fetch error'), {
     traceId,
-    method: (options as SafeFetchOptions).method ?? 'GET',
-    url: input instanceof URL ? input.toString() : String(input),
+    method,
+    url: urlString,
     durationMs,
     attempts: maxRetries + 1,
+    lastStatusCode,
+    timeoutMs,
   });
-  
+
   return {
     data: null,
     error: lastError ?? new Error('Unknown fetch error'),
-    statusCode: null,
+    statusCode: lastStatusCode,
     traceId,
     durationMs,
     fromCache: false,
   };
 }
 
-// Provider-specific fetch with additional context
 export async function providerFetch<T = unknown>(
   provider: string,
   input: RequestInfo | URL,
   options: SafeFetchOptions = {}
 ): Promise<SafeFetchResult<T>> {
-  // Add provider context to trace ID
   const providerTraceId = `${provider}-${options.traceId ?? generateTraceId()}`;
-  
+
   return safeFetch<T>(input, {
     ...options,
     traceId: providerTraceId,
   });
 }
 
-// Batch fetch for multiple related requests
 export async function batchFetch<T = unknown>(
   requests: Array<{ input: RequestInfo | URL; options?: SafeFetchOptions }>
 ): Promise<SafeFetchResult<T>[]> {
   const traceId = generateTraceId();
-  
-  // Execute all requests in parallel
+
   const results = await Promise.allSettled(
-    requests.map(({ input, options = {} }) => 
+    requests.map(({ input, options = {} }) =>
       safeFetch<T>(input, {
         ...options,
         traceId: `${traceId}-${Math.random().toString(36).substring(2, 5)}`,
       })
     )
   );
-  
-  // Convert settled results to SafeFetchResult format
-  return results.map((result, index) => {
-    if (result.status === 'fulfilled') {
-      return result.value;
-    }
 
-    // Return error result for rejected promises (مطابق تماماً لـ SafeFetchResult<T>)
+  return results.map((result, index) => {
+    if (result.status === 'fulfilled') return result.value;
+
     const reason = result.reason;
     const error =
-      reason instanceof Error
-        ? reason
-        : new Error(typeof reason === 'string' ? reason : 'Request failed');
+      reason instanceof Error ? reason : new Error(typeof reason === 'string' ? reason : 'Request failed');
 
     const errorResult: SafeFetchResult<T> = {
       data: null,

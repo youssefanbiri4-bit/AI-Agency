@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { POST } from '@/app/api/tasks/execute/route';
+import type { DataResult } from '@/lib/data/types';
+import type { WorkspaceRecord } from '@/types/database';
 
 // Mock dependencies
 vi.mock('@/lib/n8n', () => ({
@@ -10,13 +12,44 @@ vi.mock('@/lib/data/workspaces-server', () => ({
   getWorkspace: vi.fn(),
 }));
 
+vi.mock('@/lib/data/tasks', () => ({
+  updateTaskExecutionState: vi.fn().mockResolvedValue({ data: { id: 'task-1' }, error: null }),
+  getTaskById: vi.fn().mockResolvedValue({ data: { id: 'task-1' }, error: null }),
+}));
+
 vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 100, resetAt: Date.now() + 900000 }),
+  checkRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    remaining: 100,
+    resetAt: Date.now() + 900000,
+  }),
 }));
 
 import { executeTask } from '@/lib/n8n';
 import { getWorkspace } from '@/lib/data/workspaces-server';
 import { checkRateLimit } from '@/lib/rate-limit';
+
+const executeTaskMock = vi.mocked(executeTask);
+const getWorkspaceMock = vi.mocked(getWorkspace);
+const checkRateLimitMock = vi.mocked(checkRateLimit);
+
+function makeWorkspaceRecord(id: string): WorkspaceRecord {
+  return {
+    id,
+    name: 'Mock Workspace',
+    slug: null,
+    owner_id: 'owner-123',
+    created_at: new Date('2020-01-01T00:00:00.000Z').toISOString(),
+    updated_at: new Date('2020-01-02T00:00:00.000Z').toISOString(),
+  };
+}
+
+function makeWorkspaceResult(
+  data: WorkspaceRecord | null | undefined,
+  isConfigured: boolean
+): DataResult<WorkspaceRecord | null | undefined> {
+  return { data, error: null, isConfigured };
+}
 
 describe('POST /api/tasks/execute', () => {
   const mockWorkspaceId = '550e8400-e29b-41d4-a716-446655440000';
@@ -27,18 +60,20 @@ describe('POST /api/tasks/execute', () => {
   });
 
   it('should execute task successfully with valid payload', async () => {
-    const mockWorkspace = {
-      data: { id: mockWorkspaceId },
-    };
+    const workspaceResult = makeWorkspaceResult(
+      makeWorkspaceRecord(mockWorkspaceId),
+      true
+    );
 
-    (getWorkspace as any).mockResolvedValue(mockWorkspace);
-    (executeTask as any).mockResolvedValue({ error: null, result: { success: true } });
+    getWorkspaceMock.mockResolvedValue(
+      workspaceResult as unknown as Awaited<ReturnType<typeof getWorkspace>>
+    );
+
+    executeTaskMock.mockResolvedValue({ success: true, error: undefined });
 
     const request = new Request('http://localhost:3000/api/tasks/execute', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         taskPayload: { action: 'test' },
         taskExecutionId: mockTaskExecutionId,
@@ -54,17 +89,18 @@ describe('POST /api/tasks/execute', () => {
   });
 
   it('should return 400 for invalid payload', async () => {
-    const mockWorkspace = {
-      data: { id: mockWorkspaceId },
-    };
+    const workspaceResult = makeWorkspaceResult(
+      makeWorkspaceRecord(mockWorkspaceId),
+      true
+    );
 
-    (getWorkspace as any).mockResolvedValue(mockWorkspace);
+    getWorkspaceMock.mockResolvedValue(
+      workspaceResult as unknown as Awaited<ReturnType<typeof getWorkspace>>
+    );
 
     const request = new Request('http://localhost:3000/api/tasks/execute', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         taskPayload: { action: 'test' },
         // Missing required fields
@@ -79,23 +115,24 @@ describe('POST /api/tasks/execute', () => {
   });
 
   it('should return 429 when rate limited', async () => {
-    (checkRateLimit as any).mockResolvedValueOnce({
+    checkRateLimitMock.mockResolvedValueOnce({
       allowed: false,
       remaining: 0,
       resetAt: Date.now() + 60000,
     });
 
-    const mockWorkspace = {
-      data: { id: mockWorkspaceId },
-    };
+    const workspaceResult = makeWorkspaceResult(
+      makeWorkspaceRecord(mockWorkspaceId),
+      true
+    );
 
-    (getWorkspace as any).mockResolvedValue(mockWorkspace);
+    getWorkspaceMock.mockResolvedValue(
+      workspaceResult as unknown as Awaited<ReturnType<typeof getWorkspace>>
+    );
 
     const request = new Request('http://localhost:3000/api/tasks/execute', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         taskPayload: { action: 'test' },
         taskExecutionId: mockTaskExecutionId,
@@ -108,13 +145,15 @@ describe('POST /api/tasks/execute', () => {
   });
 
   it('should return 400 when workspace not found', async () => {
-    (getWorkspace as any).mockResolvedValue({ data: null });
+    const workspaceResult = makeWorkspaceResult(undefined, false);
+
+    getWorkspaceMock.mockResolvedValue(
+      workspaceResult as unknown as Awaited<ReturnType<typeof getWorkspace>>
+    );
 
     const request = new Request('http://localhost:3000/api/tasks/execute', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         taskPayload: { action: 'test' },
         taskExecutionId: mockTaskExecutionId,
@@ -128,17 +167,19 @@ describe('POST /api/tasks/execute', () => {
 
   it('should return 400 when workspace ID mismatch', async () => {
     const differentWorkspaceId = '550e8400-e29b-41d4-a716-446655440002';
-    const mockWorkspace = {
-      data: { id: mockWorkspaceId },
-    };
 
-    (getWorkspace as any).mockResolvedValue(mockWorkspace);
+    const workspaceResult = makeWorkspaceResult(
+      makeWorkspaceRecord(mockWorkspaceId),
+      true
+    );
+
+    getWorkspaceMock.mockResolvedValue(
+      workspaceResult as unknown as Awaited<ReturnType<typeof getWorkspace>>
+    );
 
     const request = new Request('http://localhost:3000/api/tasks/execute', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         taskPayload: { action: 'test' },
         taskExecutionId: mockTaskExecutionId,

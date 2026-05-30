@@ -1,4 +1,7 @@
-import 'server-only';
+if (typeof window !== 'undefined') {
+  // Prevent accidental bundling/execution in client runtimes.
+  throw new Error('rate-limit.ts can only be used on the server');
+}
 
 interface RateLimitBucket {
   count: number;

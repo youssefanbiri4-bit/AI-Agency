@@ -5,8 +5,9 @@
  * WCAG 2.1 AA compliance examples
  */
 
+import { useState } from 'react';
+
 import {
-  ariaLabels,
   createButtonA11y,
   createInputA11y,
   createErrorA11y,
@@ -42,7 +43,7 @@ export function AccessibleSearchExample() {
  * Example: Accessible Form with Error Handling
  */
 export function AccessibleFormExample() {
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [errors] = useState<Record<string, string>>({});
 
   return (
     <form
@@ -180,7 +181,7 @@ function createDialogA11y(title: string, titleId: string) {
  * 10. Test with screen readers (NVDA, JAWS, VoiceOver)
  */
 
-export default {
+export const a11yExamples = {
   AccessibleSearchExample,
   AccessibleFormExample,
   AccessibleStatusBadgeExample,

@@ -3,11 +3,12 @@ import { Logger, LogLevel, reportAppError, reportAppEvent } from '@/lib/logger';
 
 describe('Logger', () => {
   let logger: Logger;
+  let infoSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     logger = new Logger('req-123', 'trace-456');
     vi.spyOn(console, 'debug').mockImplementation(() => {});
-    vi.spyOn(console, 'info').mockImplementation(() => {});
+    infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -64,8 +65,8 @@ describe('Logger', () => {
       logger.info('Request data', sensitiveData);
       expect(console.info).toHaveBeenCalled();
 
-      const calls = (console.info as any).mock.calls;
-      const logData = calls[calls.length - 1][0];
+      const calls = infoSpy.mock.calls;
+      const logData = calls[calls.length - 1][0] as unknown;
 
       // Check that sensitive fields are redacted
       expect(JSON.stringify(logData)).toContain('[REDACTED]');
@@ -77,8 +78,8 @@ describe('Logger', () => {
       };
 
       logger.info('User data', data);
-      const calls = (console.info as any).mock.calls;
-      const logData = calls[calls.length - 1][0];
+      const calls = infoSpy.mock.calls;
+      const logData = calls[calls.length - 1][0] as unknown;
       const output = JSON.stringify(logData);
 
       // Should contain redacted email but preserve domain
@@ -114,8 +115,8 @@ describe('Logger', () => {
       reportAppEvent('user_login', { userId: 'user-123' });
 
       expect(console.info).toHaveBeenCalled();
-      const calls = (console.info as any).mock.calls;
-      const lastCall = calls[calls.length - 1][0];
+      const calls = infoSpy.mock.calls;
+      const lastCall = calls[calls.length - 1][0] as unknown;
       expect(JSON.stringify(lastCall)).toContain('user_login');
     });
 

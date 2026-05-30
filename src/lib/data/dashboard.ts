@@ -81,8 +81,6 @@ export async function getDashboardData(
   }
     
   // Assuming catalogResult and tasksResult are fulfilled and have data
-  const { agents, departments } = catalogResult.status === 'fulfilled' ? catalogResult.value.data : { agents: [], departments: [] };
-  const actualTasks = tasksResult.status === 'fulfilled' ? tasksResult.value.data : [];
 
   let eventsQuery = client
     .from('task_events')
