@@ -75,6 +75,8 @@ describe('maybeMoveJobToDLQ', () => {
     expect(payload.attemptsMade).toBe(3);
     expect(payload.maxAttempts).toBe(3);
 
+    expect(payload.correlation_id).toBe('req-1');
+    // Backward-compat: requestId mirrors correlation_id for DLQ payload compatibility.
     expect(payload.requestId).toBe('req-1');
     expect(payload.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });

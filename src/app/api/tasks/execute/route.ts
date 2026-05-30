@@ -32,6 +32,7 @@ const taskExecuteSchema = z.object({
 export async function POST(req: Request) {
   const requestIdHeader = req.headers.get('X-Request-ID');
   const requestId = requestIdHeader ?? `req-${Math.random().toString(36).substring(2, 10)}`;
+  const correlationId = requestIdHeader ?? `corr-${crypto.randomUUID()}`;
   const log = logger.child(requestId);
 
   try {
@@ -86,13 +87,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { taskPayload, taskExecutionId, workspaceId } = validation.data as {
-      taskPayload: Record<string, unknown>;
-      taskExecutionId?: string | undefined;
-      task_id?: string | undefined;
-      taskId?: string | undefined;
-      workspaceId: string;
-    };
+    const { taskPayload, taskExecutionId, workspaceId } = validation.data;
 
     // Resolve canonical `taskId` (DB primary key) according to resolution order:
     // A) task_id
@@ -100,7 +95,7 @@ export async function POST(req: Request) {
     // C) taskExecutionId (only if a tasks row exists whose id matches it)
     let taskId: string | null = null;
     // prefer snake_case task_id
-    taskId = (validation.data as any).task_id ?? (validation.data as any).taskId ?? null;
+    taskId = validation.data.task_id ?? validation.data.taskId ?? null;
 
     // If still not resolved, we'll attempt to use taskExecutionId as the canonical id
     // only if it maps to an existing tasks row. We do this by attempting the
@@ -176,8 +171,8 @@ export async function POST(req: Request) {
     // If we reached here and the task wasn't already transitioned by the
     // tentative path above (i.e., we had a canonical task_id/taskId), perform
     // the processing transition now.
-    let markResult = { data: null, error: null } as any;
-    if (!(validation.data as any).taskExecutionId || (validation.data as any).task_id || (validation.data as any).taskId) {
+    let markResult: { data: unknown | null; error: unknown | null } = { data: null, error: null };
+    if (!validation.data.taskExecutionId || validation.data.task_id || validation.data.taskId) {
       markResult = await updateTaskExecutionState({
         taskId: taskId as string,
         workspaceId,
@@ -200,6 +195,7 @@ export async function POST(req: Request) {
       workspaceId,
       taskPayload,
       requestId,
+      correlation_id: correlationId,
     });
 
     return new Response(

@@ -5,6 +5,7 @@ import { redis, redisConnection } from '../redis';
 import { startTaskQueueEvents } from '@/lib/queue/events';
 import { dlqQueue } from '@/lib/queue/queues';
 import { startStaleProcessingRecovery } from '@/lib/queue/stale-recovery';
+import { increment, timing } from '@/lib/monitoring/metrics';
 import type { Job } from 'bullmq';
 import type { JsonObject } from '@/types';
 
@@ -13,7 +14,12 @@ type ExecuteTaskJobData = {
   task_id?: string | null;
   workspaceId: string;
   taskPayload: JsonObject;
+
+  // Backward-compatible identifiers:
+  // - requestId was previously used
+  // - correlation_id is the new canonical field
   requestId: string;
+  correlation_id: string;
 };
 
 const queueName = 'task-queue';
@@ -65,11 +71,13 @@ const isExecuteTaskJobData = (value: unknown): value is ExecuteTaskJobData => {
   const workspaceId = maybeRecord.workspaceId;
   const taskPayload = maybeRecord.taskPayload;
   const requestId = maybeRecord.requestId;
+  const correlation_id = maybeRecord.correlation_id;
   const task_id = maybeRecord.task_id;
 
   if (typeof taskExecutionId !== 'string') return false;
   if (typeof workspaceId !== 'string') return false;
   if (typeof requestId !== 'string') return false;
+  if (typeof correlation_id !== 'string') return false;
 
   if (task_id !== undefined && typeof task_id !== 'string' && task_id !== null) return false;
 
@@ -183,24 +191,53 @@ async function runWorker(): Promise<void> {
         throw new Error('Invalid job data');
       }
 
-      const { taskExecutionId, task_id, workspaceId, taskPayload, requestId } = data as ExecuteTaskJobData;
+      const { taskExecutionId, task_id, workspaceId, taskPayload, requestId, correlation_id } =
+        data as ExecuteTaskJobData;
 
-      log.info('Job started', { jobId: job.id, taskExecutionId, workspaceId, requestId });
+      const metricLabels = {
+        task_id: task_id ?? null,
+        workspace_id: workspaceId,
+        job_id: job.id,
+        correlation_id,
+      };
 
-      const result = await executeTask(taskPayload, taskExecutionId, workspaceId, task_id ?? null);
+      increment('worker_job_received_total', metricLabels);
+
+      log.info('Job started', { jobId: job.id, taskExecutionId, workspaceId, requestId, correlation_id });
+
+      const startedAt = Date.now();
+      const result = await executeTask(
+        taskPayload,
+        taskExecutionId,
+        workspaceId,
+        task_id ?? null,
+        correlation_id
+      );
+      timing('job_processing_duration_ms_total', Date.now() - startedAt, metricLabels);
 
       if (result.error) {
+        increment('worker_job_failed_total', metricLabels);
+
         log.error('Job execution failed', {
           jobId: job.id,
           taskExecutionId,
           workspaceId,
           requestId,
+          correlation_id,
           error: result.error,
         });
         throw new Error('Task execution failed');
       }
 
-      log.info('Job completed', { jobId: job.id, taskExecutionId, workspaceId, requestId });
+      increment('worker_job_success_total', metricLabels);
+
+      log.info('Job completed', {
+        jobId: job.id,
+        taskExecutionId,
+        workspaceId,
+        requestId,
+        correlation_id,
+      });
       return result;
     },
     {

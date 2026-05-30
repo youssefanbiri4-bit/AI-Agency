@@ -2,6 +2,7 @@ import type { Job } from 'bullmq';
 import { redis } from '@/lib/queue/redis';
 import { dlqQueue } from '@/lib/queue/queues';
 import { logger } from '@/lib/logger';
+import { increment } from '@/lib/monitoring/metrics';
 
 const log = logger.child('queue:maybe-dlq');
 
@@ -15,7 +16,12 @@ type MaybeDlqData = {
   taskExecutionId?: string | null;
   task_id?: string | null;
   workspaceId?: string | null;
+
+  // Backward-compat:
+  // - requestId previously used
+  // - correlation_id is the new canonical field
   requestId?: string | null;
+  correlation_id?: string | null;
 };
 
 type MaybeJobLike = Job<MaybeDlqData> & {
@@ -37,7 +43,13 @@ export async function maybeMoveJobToDLQ(job: MaybeJobLike, err: unknown) {
     const requestId = data.requestId ?? null;
 
     const queueName = job?.queueName ?? 'task-queue';
-    const correlationId = requestId ?? null;
+
+    // DLQ fallback chain (strict order):
+    // correlation_id -> requestId -> jobId
+    const correlationId =
+      (data as MaybeDlqData).correlation_id ??
+      requestId ??
+      String(job.id);
 
     const failureReason = getFailureReason(err);
     const timestamp = new Date().toISOString();
@@ -46,6 +58,13 @@ export async function maybeMoveJobToDLQ(job: MaybeJobLike, err: unknown) {
     const dlqKey = `dlq:job:${taskExecutionId ?? 'noexec'}:${job.id}`;
 
     // Explicit retry exhaustion signal
+    increment('dlq_retry_exhausted_total', {
+      task_id: taskId,
+      jobId: job?.id,
+      workspace_id: workspaceId,
+      request_id: correlationId,
+    });
+
     log.error('retry_exhausted', {
       event: 'retry_exhausted',
       level: 'error',
@@ -95,7 +114,17 @@ export async function maybeMoveJobToDLQ(job: MaybeJobLike, err: unknown) {
       maxAttempts,
 
       // Required correlation/request context
+      correlation_id: correlationId,
+
+      // Backward-compat field (leave in payload; do NOT treat as canonical)
       requestId: correlationId,
+    });
+
+    increment('dlq_inserted_total', {
+      task_id: taskId,
+      jobId: job.id,
+      workspace_id: workspaceId,
+      request_id: correlationId,
     });
 
     log.error('Job moved to DLQ', {

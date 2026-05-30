@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 import { listTasks, markStaleProcessingTaskFailed } from '@/lib/data/tasks';
+import { increment } from '@/lib/monitoring/metrics';
 
 const log = logger.child('queue:stale-recovery');
 
@@ -23,19 +24,45 @@ export async function runStaleProcessingRecoveryOnce(options?: { thresholdMs?: n
         if (Number.isNaN(updatedAt)) continue;
 
         if (updatedAt < now - thresholdMs) {
-          log.info('Stale processing task detected', { task_id: t.id, workspaceId: t.workspace_id });
+          const workspaceId =
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (t as any).workspace_id ??
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (t as any).workspaceId;
+
+          // correlation_id fallback for stale recovery:
+          // MUST NOT set correlation_id = task_id directly.
+          // Use a safe deterministic fallback that clearly indicates stale recovery context.
+          const correlation_id = `stale-${t.id}`;
+
+          increment('stale_detected_total', {
+            task_id: t.id,
+            workspace_id: workspaceId,
+            correlation_id,
+          });
+
+          log.info('Stale processing task detected', {
+            task_id: t.id,
+            workspaceId: workspaceId,
+            correlation_id,
+          });
 
           const staleBefore = new Date(now - thresholdMs).toISOString();
           const res = await markStaleProcessingTaskFailed({
             taskId: t.id,
-            workspaceId: t.workspace_id,
+            workspaceId,
             staleBefore,
             errorMessage: 'Stale processing task auto-failed by recovery worker',
           });
 
           if (!res.error && res.data) {
             changed += 1;
-            log.info('Stale processing task marked failed', { task_id: t.id, workspaceId: t.workspace_id });
+            increment('stale_marked_total', { task_id: t.id, workspace_id: workspaceId, correlation_id });
+            log.info('Stale processing task marked failed', {
+              task_id: t.id,
+              workspaceId: workspaceId,
+              correlation_id,
+            });
           } else {
             log.warn('Failed to mark stale task as failed', { task_id: t.id, error: res.error });
           }

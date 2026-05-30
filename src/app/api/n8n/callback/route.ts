@@ -15,6 +15,7 @@ import {
 } from '@/lib/n8n-callback-idempotency';
 import type { JsonObject, JsonValue, TaskStatus } from '@/types';
 import { genericServerSetupMessage, setupBlockerMessage } from '@/lib/safe-messages';
+import { increment } from '@/lib/monitoring/metrics';
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ success: false, error }, { status });
@@ -65,6 +66,7 @@ const n8nCallbackSchema = z
     status: z.enum(['completed', 'failed', 'processing']).optional(),
     result: z.unknown().optional(),
     error_message: z.string().optional(),
+    correlation_id: z.string().optional(),
   })
   .passthrough();
 
@@ -110,6 +112,14 @@ export async function POST(request: NextRequest) {
     const inferredTaskId = extractTaskId(body);
     rawPayloadForLogs.task_id = inferredTaskId;
 
+    const inferredCorrelationId =
+      body && typeof body === 'object' && !Array.isArray(body)
+        ? (body as Record<string, unknown>)['correlation_id']
+        : undefined;
+
+    const correlation_id =
+      typeof inferredCorrelationId === 'string' ? inferredCorrelationId : null;
+
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       reportAppError('n8n callback invalid payload shape', null, {
         task_id: inferredTaskId,
@@ -140,6 +150,16 @@ export async function POST(request: NextRequest) {
 
     const callbackStatus = readString(payload, 'status');
     rawPayloadForLogs.status = callbackStatus;
+
+    const payloadCorrelationId =
+      typeof payload.correlation_id === 'string' ? payload.correlation_id : correlation_id;
+
+    if (normalizedTaskId) {
+      increment('callback_received_total', {
+        task_id: normalizedTaskId,
+        correlation_id: payloadCorrelationId,
+      });
+    }
 
     // Basic suspicious callback detection: explicit failed/completed without expected fields.
     const errorMessage = readString(payload, 'error_message') || null;
@@ -226,6 +246,12 @@ export async function POST(request: NextRequest) {
           'stale_ignored'
         );
       }
+
+      increment('callback_ignored_total', {
+        task_id: task.id,
+        workspace_id: taskRecord.workspace_id,
+        correlation_id: payloadCorrelationId,
+      });
 
       const callbackLatencyMs = Date.now() - callbackReceiveAt;
       reportAppError('n8n callback stale ignored', null, {
@@ -317,6 +343,12 @@ export async function POST(request: NextRequest) {
       nextStatus,
       callbackLatencyMs,
       processingDurationMs: Date.now() - processStartAt,
+    });
+
+    increment('callback_success_total', {
+      task_id: task.id,
+      workspace_id: taskRecord.workspace_id,
+      correlation_id: payloadCorrelationId,
     });
 
     return NextResponse.json({

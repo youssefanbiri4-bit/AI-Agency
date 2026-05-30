@@ -12,6 +12,7 @@ import {
   buildN8nCallbackKey,
 } from '@/lib/n8n-callback-idempotency';
 import { genericServerSetupMessage, setupBlockerMessage } from '@/lib/safe-messages';
+import { increment } from '@/lib/monitoring/metrics';
 import type { JsonObject, JsonValue, TaskStatus } from '@/types';
 
 // Zod schema for validating n8n callback payload
@@ -20,6 +21,7 @@ const n8nCallbackSchema = z.object({
   status: z.enum(['completed', 'failed', 'processing']),
   result: z.unknown().optional(), // We'll validate this more specifically if needed
   error_message: z.string().optional(),
+  correlation_id: z.string().optional(),
   // Allow additional fields for flexibility
   // We're using .passthrough() to allow extra fields while validating the required ones
 }).passthrough();
@@ -103,6 +105,14 @@ export async function POST(request: NextRequest) {
     const callbackStatus = readString(payload, 'status');
     const errorMessage = readString(payload, 'error_message') || null;
 
+    const payloadCorrelationId =
+      typeof payload.correlation_id === 'string' ? payload.correlation_id : null;
+
+    // Best-effort: emit received once we have a stable task identifier.
+    if (taskId) {
+      increment('callback_received_total', { task_id: taskId, correlation_id: payloadCorrelationId });
+    }
+
     if (!taskId) {
       return jsonError('Task ID is required', 400);
     }
@@ -165,6 +175,12 @@ export async function POST(request: NextRequest) {
       if (callbackEvent.eventId) {
         await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'stale_ignored');
       }
+
+      increment('callback_ignored_total', {
+        task_id: task.id,
+        workspace_id: taskRecord.workspace_id,
+        correlation_id: payloadCorrelationId,
+      });
 
       return NextResponse.json({
         ok: true,
@@ -246,6 +262,12 @@ export async function POST(request: NextRequest) {
     if (callbackEvent.eventId) {
       await markN8nCallbackEvent(adminClient, callbackEvent.eventId, 'processed');
     }
+
+    increment('callback_success_total', {
+      task_id: task.id,
+      workspace_id: taskRecord.workspace_id,
+      correlation_id: payloadCorrelationId,
+    });
 
     return NextResponse.json({
       success: true,

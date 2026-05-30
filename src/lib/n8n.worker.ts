@@ -165,7 +165,8 @@ export async function executeTask(
   taskPayload: JsonObject,
   taskExecutionId: string | null,
   workspaceId: string,
-  taskId: string | null = null
+  taskId: string | null = null,
+  correlationId: string | null = null
 ): Promise<ApiResponse> {
   try {
     const readiness = await getN8nReadiness();
@@ -186,6 +187,9 @@ export async function executeTask(
       task_id: taskId ?? null,
       workspaceId,
       executeAt: new Date().toISOString(),
+
+      // correlation for request/job tracking
+      correlation_id: correlationId ?? null,
     };
 
     // Get workflow ID for this agent type
