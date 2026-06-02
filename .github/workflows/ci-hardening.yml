@@ -32,8 +32,27 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
         continue-on-error: false
 
+      - name: CI debug info (versions + dry typecheck)
+        run: |
+          mkdir -p ci-logs
+          node --version > ci-logs/env.log 2>&1 || true
+          npm --version >> ci-logs/env.log 2>&1 || true
+          npx tsc --version >> ci-logs/env.log 2>&1 || true
+          npm run typecheck >> ci-logs/env.log 2>&1 || true
+        continue-on-error: true
+
       - name: TypeScript type checking
-        run: npm run typecheck
+        run: |
+          mkdir -p ci-logs
+          set -o pipefail
+          npm run typecheck 2>&1 | tee ci-logs/typecheck.log
+
+      - name: Upload typecheck logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typecheck-logs
+          path: ci-logs/typecheck.log
 
       - name: Lint code
         run: npm run lint
