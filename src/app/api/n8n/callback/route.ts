@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'crypto';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import {
   createTaskEvent,
@@ -16,6 +16,11 @@ import {
 import type { JsonObject, JsonValue, TaskStatus } from '@/types';
 import { genericServerSetupMessage, setupBlockerMessage } from '@/lib/safe-messages';
 import { increment } from '@/lib/monitoring/metrics';
+import {
+  classifyStructuredOutputValidationError,
+  validateStructuredOutputFromCallbackResult,
+  N8N_STRUCTURED_OUTPUT_SCHEMA_VERSION,
+} from '@/lib/n8n-structured-output-validation';
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ success: false, error }, { status });
@@ -78,7 +83,7 @@ function extractTaskId(body: unknown): string | null {
   return taskId || null;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   const callbackReceiveAt = Date.now();
   const rawPayloadForLogs = { headers: null as unknown, task_id: null as unknown, status: null as unknown };
   try {
@@ -192,7 +197,7 @@ export async function POST(request: NextRequest) {
     const task = mapTaskRecordToTask(taskRecord);
     const processStartAt = Date.now();
     const failed = Boolean(errorMessage) || callbackStatus === 'failed';
-    const nextStatus: Extract<TaskStatus, 'needs_review' | 'failed'> = failed
+    let nextStatus: Extract<TaskStatus, 'needs_review' | 'failed'> = failed
       ? 'failed'
       : 'needs_review';
 
@@ -204,6 +209,54 @@ export async function POST(request: NextRequest) {
       status: callbackStatus,
       payload,
     });
+
+    // Safe compatibility mode validation: additive + non-destructive.
+    // Only augment tasks.result when a structuredOutput candidate exists but fails schema validation.
+    const structuredValidation = validateStructuredOutputFromCallbackResult(payload.result);
+    if (!structuredValidation.ok) {
+      const classification = classifyStructuredOutputValidationError(structuredValidation);
+      const timestamp = new Date().toISOString();
+
+      reportAppError('n8n structuredOutput validation failed', null, {
+        timestamp,
+        task_id: task.id,
+        workspace_id: taskRecord.workspace_id,
+        correlation_id: payloadCorrelationId,
+        schemaVersion: structuredValidation.schemaVersion,
+        validation: structuredValidation.error ?? null,
+        validationCategory: classification.validationCategory,
+      });
+
+      increment('callback_structured_output_validation_failed_total', {
+        task_id: task.id,
+        workspace_id: taskRecord.workspace_id,
+        correlation_id: payloadCorrelationId,
+        schema_version: structuredValidation.schemaVersion,
+        error_code: structuredValidation.error?.code ?? 'unknown',
+      });
+
+      increment('callback_structured_output_malformed_frequency_total', {
+        error_code: structuredValidation.error?.code ?? 'unknown',
+      });
+
+      // Preserve raw payload for debugging, while augmenting tasks.result with internal keys.
+      (result as Record<string, JsonValue>).rawcallbackjson =
+        payload.result as unknown as JsonValue;
+
+      (result as Record<string, JsonValue>).validationError =
+        structuredValidation.error as unknown as JsonValue;
+
+      (result as Record<string, JsonValue>).validationMeta = {
+        schemaVersion: structuredValidation.schemaVersion,
+        timestamp,
+        callbackStatus,
+        correlation_id: payloadCorrelationId,
+        originalResultType: payload.result === null ? 'null' : typeof payload.result,
+      };
+
+      // Validation failures should not silently discard data.
+      nextStatus = 'failed';
+    }
 
     const callbackEvent = await recordN8nCallback({
       supabase: adminClient,

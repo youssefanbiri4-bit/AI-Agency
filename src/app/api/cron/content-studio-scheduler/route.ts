@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'crypto';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import {
   CONTENT_STUDIO_SCHEDULER_BATCH_SIZE,
   runContentStudioScheduler,
@@ -25,7 +25,7 @@ function safeCompare(value: string, expected: string) {
   return timingSafeEqual(valueBuffer, expectedBuffer);
 }
 
-function isAuthorized(request: NextRequest) {
+function isAuthorized(request: Request) {
   const expectedSecret = process.env.CRON_SECRET?.trim() ?? '';
 
   if (!expectedSecret) {
@@ -60,7 +60,7 @@ function isAuthorized(request: NextRequest) {
   return { ok: true as const };
 }
 
-async function handleSchedulerRequest(request: NextRequest) {
+async function handleSchedulerRequest(request: Request) {
   const authorization = isAuthorized(request);
 
   if (!authorization.ok) {
@@ -86,10 +86,10 @@ async function handleSchedulerRequest(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   return handleSchedulerRequest(request);
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   return handleSchedulerRequest(request);
 }

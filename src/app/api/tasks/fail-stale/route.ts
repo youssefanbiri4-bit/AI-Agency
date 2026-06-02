@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import {
   createSupabaseServerClient,
   getActiveWorkspaceIdFromCookie,
@@ -31,7 +31,7 @@ function getStringBodyValue(body: unknown, keys: string[]) {
   return '';
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
     const taskId = getStringBodyValue(body, ['task_id', 'taskId']);
