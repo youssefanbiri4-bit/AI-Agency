@@ -1,13 +1,13 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { NextRequest } from 'next/server';
 
-// Mocks for dependencies used by the route
 vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: vi.fn().mockResolvedValue({ allowed: true, resetAt: Date.now() + 1000 }),
 }));
 
 const mockGetWorkspace = vi.fn();
 vi.mock('@/lib/data/workspaces-server', () => ({
-  getWorkspace: (...args: unknown[]) => mockGetWorkspace(...(args as any)),
+  getWorkspace: (...args: unknown[]) => mockGetWorkspace(...args),
 }));
 
 const mockUpdateTaskExecutionState = vi.fn();
@@ -16,14 +16,14 @@ vi.mock('@/lib/data/tasks', async () => {
   const actual = await vi.importActual('@/lib/data/tasks');
   return {
     ...actual,
-    updateTaskExecutionState: (...args: unknown[]) => mockUpdateTaskExecutionState(...(args as any)),
-    getTaskById: (...args: unknown[]) => mockGetTaskById(...(args as any)),
-  } as any;
+    updateTaskExecutionState: (...args: unknown[]) => mockUpdateTaskExecutionState(...args),
+    getTaskById: (...args: unknown[]) => mockGetTaskById(...args),
+  };
 });
 
 const mockAdd = vi.fn();
 vi.mock('@/lib/queue/queues', () => ({
-  taskQueue: { add: (...args: unknown[]) => mockAdd(...(args as any)) },
+  taskQueue: { add: (...args: unknown[]) => mockAdd(...args) },
 }));
 
 describe('POST /api/tasks/execute - lifecycle transition', () => {
@@ -44,11 +44,11 @@ describe('POST /api/tasks/execute - lifecycle transition', () => {
       workspaceId: 'workspace-1',
     };
 
-    const res = await POST(new Request('http://localhost/api/tasks/execute', {
+    const res = await POST(new NextRequest(new Request('http://localhost/api/tasks/execute', {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-    }));
+    }))); 
 
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -70,11 +70,11 @@ describe('POST /api/tasks/execute - lifecycle transition', () => {
       workspaceId: 'workspace-1',
     };
 
-    const res = await POST(new Request('http://localhost/api/tasks/execute', {
+    const res = await POST(new NextRequest(new Request('http://localhost/api/tasks/execute', {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-    }));
+    }))); 
 
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -99,11 +99,11 @@ describe('POST /api/tasks/execute - lifecycle transition', () => {
       workspaceId: 'workspace-1',
     };
 
-    const res = await POST(new Request('http://localhost/api/tasks/execute', {
+    const res = await POST(new NextRequest(new Request('http://localhost/api/tasks/execute', {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-    }));
+    }))); 
 
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -127,11 +127,11 @@ describe('POST /api/tasks/execute - lifecycle transition', () => {
       workspaceId: 'workspace-1',
     };
 
-    const res = await POST(new Request('http://localhost/api/tasks/execute', {
+    const res = await POST(new NextRequest(new Request('http://localhost/api/tasks/execute', {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-    }));
+    }))); 
 
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -153,11 +153,11 @@ describe('POST /api/tasks/execute - lifecycle transition', () => {
       workspaceId: 'workspace-1',
     };
 
-    const res = await POST(new Request('http://localhost/api/tasks/execute', {
+    const res = await POST(new NextRequest(new Request('http://localhost/api/tasks/execute', {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-    }));
+    }))); 
 
     expect(res.status).toBe(409);
     const json = await res.json();
@@ -176,11 +176,11 @@ describe('POST /api/tasks/execute - lifecycle transition', () => {
       workspaceId: 'workspace-1',
     };
 
-    const res = await POST(new Request('http://localhost/api/tasks/execute', {
+    const res = await POST(new NextRequest(new Request('http://localhost/api/tasks/execute', {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'application/json' },
-    }));
+    }))); 
 
     expect(res.status).toBe(409);
     const json = await res.json();

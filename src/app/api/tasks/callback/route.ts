@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { timingSafeEqual } from 'crypto';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { createTaskEvent, mapTaskRecordToTask, updateTaskExecutionState } from '@/lib/data/tasks';
 import { createNotification } from '@/lib/data/notifications';
@@ -66,7 +66,7 @@ function readString(record: Record<string, unknown>, key: string) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const expectedSecret = getN8nCallbackSecret();
 

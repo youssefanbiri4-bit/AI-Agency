@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'crypto';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import {
   createTaskEvent,
@@ -83,7 +83,7 @@ function extractTaskId(body: unknown): string | null {
   return taskId || null;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const callbackReceiveAt = Date.now();
   const rawPayloadForLogs = { headers: null as unknown, task_id: null as unknown, status: null as unknown };
   try {
