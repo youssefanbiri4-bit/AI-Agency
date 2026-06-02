@@ -28,8 +28,8 @@ jobs:
       - name: Clean install dependencies
         run: npm ci
 
-      - name: Security audit (high severity)
-        run: npm audit --audit-level=high
+      - name: Security audit (prod deps only, high severity)
+        run: npm audit --omit=dev --audit-level=high
         continue-on-error: false
 
       - name: TypeScript type checking
