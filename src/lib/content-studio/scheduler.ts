@@ -168,11 +168,12 @@ function mapReadinessStateToAttemptStatus(state: string): ContentStudioPublishAt
   switch (state) {
     case 'setup_required':
     case 'approval_pending':
-    case 'quota_limit':
     case 'token_missing':
     case 'manual_only':
     case 'unsupported':
       return state;
+    case 'quota_limit':
+      return 'billing_required';
     default:
       return 'error';
   }

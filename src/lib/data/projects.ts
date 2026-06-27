@@ -10,9 +10,10 @@ import type {
 } from '@/types/database';
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
 import { buildGitHubRepoUrl, parseGitHubRepoUrl } from '@/lib/github-url';
+import { logger } from '@/lib/logger';
 
 type ProjectClient = SupabaseClient<Database>;
-const PROJECT_DATA_TRACE_PREFIX = '[project-data]';
+const projectDataLog = logger.child('data:projects');
 
 export interface ProjectDeploymentMetadata extends JsonObject {
   next_actions: string[];
@@ -313,13 +314,13 @@ export async function listProjectsForWorkspace(
   client: ProjectClient = supabase as ProjectClient,
   options: { limit?: number } = {}
 ): Promise<DataResult<ProjectRecord[]>> {
-  console.info(PROJECT_DATA_TRACE_PREFIX, 'before list projects', {
+  projectDataLog.info('before list projects', {
     workspaceId,
     limit: options.limit ?? null,
   });
 
   if (!isSupabaseConfigured) {
-    console.warn(PROJECT_DATA_TRACE_PREFIX, 'Supabase is not configured');
+    projectDataLog.warn('Supabase is not configured');
     return emptyDataResult([], false);
   }
 
@@ -334,7 +335,7 @@ export async function listProjectsForWorkspace(
   }
 
   const { data, error } = await query;
-  console.info(PROJECT_DATA_TRACE_PREFIX, 'after list projects', {
+  projectDataLog.info('after list projects', {
     workspaceId,
     count: data?.length ?? 0,
     error: error?.message ?? null,

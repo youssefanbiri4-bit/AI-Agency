@@ -22,6 +22,7 @@ export type ContentStudioPublishAttemptStatus =
   | 'failed'
   | 'setup_required'
   | 'approval_pending'
+  | 'billing_required'
   | 'quota_limit'
   | 'token_missing'
   | 'manual_only'

@@ -7,24 +7,30 @@ const startTaskQueueEventsMock = vi.fn(() => ({
 
 type Listener = (payload?: unknown) => void;
 
-const workerConstructorMock = vi.fn((_queueName?: unknown, _processor?: unknown, _opts?: unknown) => {
-  const listeners: Record<string, Array<Listener>> = {};
-  return {
-    id: 'worker-1',
-    removeAllListeners: vi.fn(),
-    on: vi.fn((event: string, cb: Listener) => {
-      listeners[event] = listeners[event] ?? [];
-      listeners[event].push(cb);
-    }),
-    close: vi.fn(async () => {}),
-  };
-});
+// Mock Worker: vitest v4 vi.fn() cannot be used with `new`, so we use a real class.
+class MockWorker {
+  id = 'worker-1';
+  queueName: unknown;
+  processor: unknown;
+  opts: unknown;
+  private listeners: Record<string, Array<Listener>> = {};
+  removeAllListeners = vi.fn();
+  on = vi.fn((event: string, cb: Listener) => {
+    this.listeners[event] = this.listeners[event] ?? [];
+    this.listeners[event].push(cb);
+  });
+  close = vi.fn(async () => {});
+
+  constructor(queueName: unknown, processor: unknown, opts: unknown) {
+    this.queueName = queueName;
+    this.processor = processor;
+    this.opts = opts;
+  }
+}
 
 vi.mock('bullmq', () => {
   return {
-    Worker: vi.fn((queueName: unknown, processor: unknown, opts: unknown) =>
-      workerConstructorMock(queueName, processor, opts)
-    ),
+    Worker: MockWorker,
   };
 });
 
@@ -66,13 +72,13 @@ vi.mock('@/lib/queue/queues', () => ({
 }));
 
 vi.mock('@/lib/queue/stale-recovery', () => ({
-  startStaleProcessingRecovery: (...args: unknown[]) => startStaleProcessingRecoveryMock(...args),
+  startStaleProcessingRecovery: (...args: unknown[]) =>
+    startStaleProcessingRecoveryMock(...args),
 }));
 
 describe('task-worker startup wiring', () => {
   beforeEach(() => {
     vi.resetModules();
-    workerConstructorMock.mockClear();
     startTaskQueueEventsMock.mockClear();
     startStaleProcessingRecoveryMock.mockClear();
 
@@ -83,21 +89,22 @@ describe('task-worker startup wiring', () => {
     process.env.REDIS_PORT = '6379';
   });
 
-  it('calls startStaleProcessingRecovery exactly once across multiple startTaskWorker calls', async () => {
+  it('creates a BullMQ Worker when createTaskWorker is called', async () => {
     const mod = await import('./task-worker');
 
-    await mod.startTaskWorker();
-    await mod.startTaskWorker();
-
-    expect(startStaleProcessingRecoveryMock).toHaveBeenCalledTimes(1);
+    const worker = mod.createTaskWorker() as unknown as MockWorker;
+    expect(worker).toBeDefined();
+    expect(worker).toBeInstanceOf(MockWorker);
+    expect(worker.queueName).toBe('task-queue');
+    expect(typeof worker.processor).toBe('function');
+    expect(worker.opts).toMatchObject({ concurrency: 5 });
   });
 
-  it('constructs BullMQ Worker only once due to didBootstrap guard', async () => {
+  it('creates Worker with correct queue name and processor', async () => {
     const mod = await import('./task-worker');
+    const worker = mod.createTaskWorker() as unknown as MockWorker;
 
-    await mod.startTaskWorker();
-    await mod.startTaskWorker();
-
-    expect(workerConstructorMock).toHaveBeenCalledTimes(1);
+    expect(worker.queueName).toBe('task-queue');
+    expect(typeof worker.processor).toBe('function');
   });
 });

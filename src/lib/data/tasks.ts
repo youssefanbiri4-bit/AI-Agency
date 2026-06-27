@@ -3,8 +3,9 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase-client';
 import type { AgentType, JsonObject, Task, TaskStatus } from '@/types';
 import type { Database, TaskEventRecord, TaskPriority, TaskRecord } from '@/types/database';
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
+import { logger } from '@/lib/logger';
 
-const TASK_DATA_TRACE_PREFIX = '[task-data]';
+const taskDataLog = logger.child('data:tasks');
 
 export interface ListTasksOptions {
   workspaceId?: string;
@@ -82,7 +83,7 @@ export async function listTasks(
   options: ListTasksOptions = {},
   client: SupabaseClient<Database> = supabase as SupabaseClient<Database>
 ): Promise<DataResult<Task[]>> {
-  console.info(TASK_DATA_TRACE_PREFIX, 'before list tasks', {
+  taskDataLog.info('before list tasks', {
     workspaceId: options.workspaceId ?? null,
     agentType: options.agentType ?? null,
     status: options.status ?? null,
@@ -90,7 +91,7 @@ export async function listTasks(
   });
 
   if (!isSupabaseConfigured) {
-    console.warn(TASK_DATA_TRACE_PREFIX, 'Supabase is not configured');
+    taskDataLog.warn('Supabase is not configured');
     return emptyDataResult([], false);
   }
 
@@ -118,7 +119,7 @@ export async function listTasks(
   }
 
   const { data, error } = await query;
-  console.info(TASK_DATA_TRACE_PREFIX, 'after list tasks', {
+  taskDataLog.info('after list tasks', {
     workspaceId: options.workspaceId ?? null,
     count: data?.length ?? 0,
     error: error?.message ?? null,

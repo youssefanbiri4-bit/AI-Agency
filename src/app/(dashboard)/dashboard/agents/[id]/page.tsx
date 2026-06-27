@@ -51,7 +51,7 @@ export default async function AgentDetailPage({
   const relatedTasks = tasksResult.data;
   const taskStats = getTaskStats(relatedTasks);
   const resultCount = relatedTasks.filter((task) => task.result).length;
-  const n8nReadiness = getN8nReadiness();
+  const n8nReadiness = await getN8nReadiness();
 
   if (!agent) {
     return (

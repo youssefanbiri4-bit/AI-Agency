@@ -6,6 +6,7 @@ import {
 } from '@/lib/content-studio/scheduler';
 import { reportAppError } from '@/lib/logger';
 import { setupBlockerMessage } from '@/lib/safe-messages';
+import { getRequestId, nowISO } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -61,10 +62,19 @@ function isAuthorized(request: NextRequest) {
 }
 
 async function handleSchedulerRequest(request: NextRequest) {
+  const requestId = getRequestId(request);
   const authorization = isAuthorized(request);
 
   if (!authorization.ok) {
-    return jsonError(authorization.error, authorization.status);
+    return NextResponse.json({
+      success: false,
+      error: authorization.error,
+      requestId,
+      timestamp: nowISO(),
+    }, {
+      status: authorization.status,
+      headers: { 'X-Request-ID': requestId },
+    });
   }
 
   try {
@@ -74,7 +84,11 @@ async function handleSchedulerRequest(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      requestId,
+      timestamp: nowISO(),
       data: summary,
+    }, {
+      headers: { 'X-Request-ID': requestId },
     });
   } catch (error) {
     reportAppError('Content Studio scheduler route failed', error);

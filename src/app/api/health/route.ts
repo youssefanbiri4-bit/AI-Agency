@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getN8nReadiness } from '@/lib/n8n';
 import { reportAppError } from '@/lib/logger';
+import { getRequestId, createApiSuccess, createApiError } from '@/lib/api-response';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 type ServiceStatus = 'unknown' | 'ok' | 'error';
 
@@ -23,14 +24,32 @@ type HealthStatus = {
 };
 
 async function canWriteTmp(): Promise<boolean> {
-  // ESM-safe dynamic import instead of require()
   const fs = await import('node:fs');
   fs.accessSync('/tmp', fs.constants.W_OK);
   return true;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const startTime = Date.now();
+  const requestId = getRequestId(req);
+
+  // Lightweight rate limiting: 60 req/min per IP
+  const clientIp =
+    req.headers.get('x-forwarded-for') || req.headers.get('cf-connecting-ip') || 'unknown';
+  const rateLimitResult = await checkRateLimit({
+    key: `api:health:${clientIp}`,
+    limit: 60,
+    windowMs: 60_000,
+  });
+  if (!rateLimitResult.allowed) {
+    return createApiError('Rate limit exceeded', {
+      status: 429,
+      requestId,
+      extra: {
+        retryAfter: Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000),
+      },
+    });
+  }
 
   const status: HealthStatus = {
     status: 'ok',
@@ -73,7 +92,7 @@ export async function GET() {
     status.services.database.status = status.services.supabase.status;
 
     try {
-      const n8nReadiness = getN8nReadiness();
+      const n8nReadiness = await getN8nReadiness();
 
       if (!n8nReadiness.canExecute) {
         status.services.n8n.status = 'error';
@@ -104,7 +123,9 @@ export async function GET() {
     status.status = allServicesOk ? 'ok' : 'degraded';
 
     const responseTime = Date.now() - startTime;
-    return NextResponse.json(status, {
+
+    return createApiSuccess(status, {
+      requestId,
       status: allServicesOk ? 200 : 503,
       headers: {
         'X-Response-Time': `${responseTime}ms`,
@@ -113,13 +134,14 @@ export async function GET() {
   } catch (caughtError) {
     reportAppError('Health check endpoint failed', caughtError);
 
-    return NextResponse.json(
-      {
+    return createApiError('Health check failed', {
+      status: 500,
+      requestId,
+      extra: {
         status: 'error',
         timestamp: new Date().toISOString(),
         services: status.services,
       },
-      { status: 500 }
-    );
+    });
   }
 }

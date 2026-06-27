@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { createTaskEvent, mapTaskRecordToTask, updateTaskExecutionState } from '@/lib/data/tasks';
 import { createNotification } from '@/lib/data/notifications';
-import { reportAppError } from '@/lib/logger';
+import { logger, reportAppError } from '@/lib/logger';
 import { getN8nCallbackSecret } from '@/lib/n8n';
 import {
   markN8nCallbackEvent,
@@ -13,7 +13,11 @@ import {
 } from '@/lib/n8n-callback-idempotency';
 import { genericServerSetupMessage, setupBlockerMessage } from '@/lib/safe-messages';
 import { increment } from '@/lib/monitoring/metrics';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
+import { getRequestId, nowISO } from '@/lib/api-response';
 import type { JsonObject, JsonValue, TaskStatus } from '@/types';
+import { isJsonObject } from '@/lib/utils';
 
 // Zod schema for validating n8n callback payload
 const n8nCallbackSchema = z.object({
@@ -26,8 +30,8 @@ const n8nCallbackSchema = z.object({
   // We're using .passthrough() to allow extra fields while validating the required ones
 }).passthrough();
 
-function jsonError(error: string, status: number) {
-  return NextResponse.json({ success: false, error }, { status });
+function jsonError(error: string, status: number, requestId?: string) {
+  return NextResponse.json({ success: false, error, requestId: requestId ?? null, timestamp: new Date().toISOString() }, { status, headers: requestId ? { 'X-Request-ID': requestId } : undefined });
 }
 
 function safeCompare(value: string, expected: string) {
@@ -40,11 +44,6 @@ function safeCompare(value: string, expected: string) {
 
   return timingSafeEqual(valueBuffer, expectedBuffer);
 }
-
-function isJsonObject(value: unknown): value is JsonObject {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
 function toResultObject(result: unknown, errorMessage: string | null): JsonObject {
   if (errorMessage) {
     return { error_message: errorMessage };
@@ -67,15 +66,48 @@ function readString(record: Record<string, unknown>, key: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = getRequestId(request);
   try {
+    // Payload size check
+    const sizeCheck = await checkPayloadSize(request, PAYLOAD_LIMITS.callback);
+    if (!sizeCheck.ok) return sizeCheck.response;
+
+    // Rate limiting: 100 callback requests per IP per minute
+    const clientIp =
+      request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown';
+    const rateLimitResult = await checkRateLimit({
+      key: `api:tasks:callback:${clientIp}`,
+      limit: 100,
+      windowMs: 60_000,
+    });
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({
+        success: false,
+        error: 'Rate limit exceeded',
+        requestId,
+        timestamp: nowISO(),
+      }, {
+        status: 429,
+        headers: { 'X-Request-ID': requestId },
+      });
+    }
+
     const expectedSecret = getN8nCallbackSecret();
 
     if (!expectedSecret) {
-      return jsonError(setupBlockerMessage({
-        missing: 'N8N_CALLBACK_SECRET',
-        reason: 'callbacks cannot be trusted without the server-side shared secret',
-        next: 'add N8N_CALLBACK_SECRET in Vercel, redeploy, and retry the callback',
-      }), 500);
+      return NextResponse.json({
+        success: false,
+        error: setupBlockerMessage({
+          missing: 'N8N_CALLBACK_SECRET',
+          reason: 'callbacks cannot be trusted without the server-side shared secret',
+          next: 'add N8N_CALLBACK_SECRET in Vercel, redeploy, and retry the callback',
+        }),
+        requestId,
+        timestamp: nowISO(),
+      }, {
+        status: 500,
+        headers: { 'X-Request-ID': requestId },
+      });
     }
 
     const callbackSecret = request.headers.get('x-callback-secret')?.trim() ?? '';
@@ -93,9 +125,9 @@ export async function POST(request: NextRequest) {
     // Validate the callback payload using Zod schema
     const validationResult = n8nCallbackSchema.safeParse(body);
     if (!validationResult.success) {
-      reportAppError('Invalid n8n callback payload', null, {
+      logger.warn('Invalid n8n callback payload', {
         errors: validationResult.error.format(),
-        payload: body
+        taskId: body?.task_id ?? body?.taskId ?? null,
       });
       return jsonError('Invalid callback payload format', 400);
     }

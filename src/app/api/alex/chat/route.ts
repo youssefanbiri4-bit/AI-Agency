@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { getAlexWorkspaceContext } from '@/lib/alex/alex-context';
 import { ALEX_SYSTEM_PROMPT, ALEX_CONTEXT_INSTRUCTION, ALEX_TEMPLATE_INSTRUCTION } from '@/lib/alex/alex-system-prompt';
@@ -7,6 +8,8 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
+import { getRequestId, nowISO } from '@/lib/api-response';
 import {
   formatRecommendationContextForAlex,
   recommendAgentTemplates,
@@ -27,8 +30,24 @@ const OPENAI_CHAT_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const ALEX_CHAT_RATE_LIMIT = 20;
 const ALEX_CHAT_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
-function jsonError(error: string, category: string, status: number) {
-  return NextResponse.json({ error, category }, { status });
+// Zod schema for Alex chat request body
+const alexChatSchema = z.object({
+  message: z.string().min(1, 'Message is required').max(4000, 'Message is too long'),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string(),
+      })
+    )
+    .max(10)
+    .optional()
+    .default([]),
+  selectedTemplateId: z.string().max(120).optional().nullable(),
+});
+
+function jsonError(error: string, category: string, status: number, requestId?: string) {
+  return NextResponse.json({ error, category, requestId: requestId ?? null, timestamp: nowISO() }, { status });
 }
 
 function getOpenAIKey(): string | null {
@@ -47,10 +66,6 @@ function trimText(value: string, limit = 300) {
   const cleaned = value.replace(/\s+/g, ' ').trim();
   if (cleaned.length <= limit) return cleaned;
   return cleaned.slice(0, Math.max(0, limit - 1)).trim() + '…';
-}
-
-function readOptionalString(value: unknown) {
-  return typeof value === 'string' ? value.trim().slice(0, 120) : null;
 }
 
 function isKnowledgeIntent(message: string) {
@@ -166,9 +181,22 @@ async function getKnowledgeContextForAlex(message: string) {
 }
 
 export async function POST(request: Request) {
+  const requestId = getRequestId(request);
   try {
     if (!isAlexEnabled()) {
-      return NextResponse.json({ error: 'Alex Assistant is disabled.', category: 'disabled' }, { status: 503 });
+      return NextResponse.json({ error: 'Alex Assistant is disabled.', category: 'disabled', requestId, timestamp: nowISO() }, { status: 503 });
+    }
+
+    // Payload size check
+    const sizeCheck = await checkPayloadSize(request, PAYLOAD_LIMITS.alexChat);
+    if (!sizeCheck.ok) {
+      const res = sizeCheck.response as NextResponse;
+      return NextResponse.json({ 
+        error: 'Payload too large', 
+        category: 'bad_request', 
+        requestId, 
+        timestamp: nowISO() 
+      }, { status: 413, headers: Object.fromEntries(res.headers.entries()) });
     }
 
     const supabase = await createSupabaseServerClient();
@@ -180,7 +208,8 @@ export async function POST(request: Request) {
       return jsonError(
         'خاصك تسجل الدخول باش تستعمل Alex. Authentication is required.',
         'unauthorized',
-        401
+        401,
+        requestId
       );
     }
 
@@ -191,7 +220,8 @@ export async function POST(request: Request) {
       return jsonError(
         'تعذر التحقق من مساحة العمل. Workspace access could not be verified.',
         'workspace_error',
-        403
+        403,
+        requestId
       );
     }
 
@@ -199,7 +229,8 @@ export async function POST(request: Request) {
       return jsonError(
         'ما عندكش مساحة عمل مفعلة أو صلاحية للوصول. Active workspace access is required.',
         'workspace_required',
-        403
+        403,
+        requestId
       );
     }
 
@@ -213,7 +244,8 @@ export async function POST(request: Request) {
       return jsonError(
         'تعذر التحقق من صلاحيات مساحة العمل. Workspace access could not be verified.',
         'workspace_error',
-        403
+        403,
+        requestId
       );
     }
 
@@ -223,7 +255,8 @@ export async function POST(request: Request) {
       return jsonError(
         'ما عندكش صلاحية للوصول لهذه المساحة. Workspace access is required.',
         'workspace_forbidden',
-        403
+        403,
+        requestId
       );
     }
 
@@ -237,7 +270,8 @@ export async function POST(request: Request) {
       return jsonError(
         'وصلتي للحد المؤقت لرسائل Alex. عاود المحاولة بعد شوية.',
         'rate_limited',
-        429
+        429,
+        requestId
       );
     }
 
@@ -250,17 +284,24 @@ export async function POST(request: Request) {
           next: 'add OPENAI_API_KEY in Vercel server environment variables, redeploy, and retry Alex',
         }),
         category: 'missing_key',
+        requestId,
+        timestamp: nowISO(),
       }, { status: 200 });
     }
 
+    // Zod validation for the request body
     const body = await request.json().catch(() => null);
-    if (!body || typeof body.message !== 'string' || body.message.trim().length < 1) {
-      return NextResponse.json({ error: 'Message is required.', category: 'bad_request' }, { status: 400 });
+    const validation = alexChatSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ 
+        error: 'Message is required.', 
+        category: 'bad_request',
+        requestId,
+        timestamp: nowISO(),
+      }, { status: 400 });
     }
 
-    const userMessage = body.message.trim().slice(0, 4000);
-    const history = Array.isArray(body.history) ? body.history.slice(-4) : [];
-    const selectedTemplateId = readOptionalString(body.selectedTemplateId);
+    const { message: userMessage, history, selectedTemplateId } = validation.data;
 
     const context = await getAlexWorkspaceContext();
     const knowledgeContext = await getKnowledgeContextForAlex(userMessage);
@@ -277,7 +318,7 @@ export async function POST(request: Request) {
     const usageResult = await getTemplateUsageSummaryAction();
     const recommendations = recommendAgentTemplates({
       userMessage,
-      selectedTemplateId,
+      selectedTemplateId: selectedTemplateId ?? null,
       usageSummary: usageResult.data,
       maxResults: 5,
     });
@@ -369,40 +410,42 @@ export async function POST(request: Request) {
           missing: 'valid OpenAI server key',
           reason: 'OpenAI rejected the configured server credential',
           next: 'rotate or correct OPENAI_API_KEY in Vercel, then redeploy',
-        }), category: 'invalid_key' }, { status: 200 });
+        }), category: 'invalid_key', requestId, timestamp: nowISO() }, { status: 200 });
       }
       if (statusCode === 429 || code === 'insufficient_quota' || message.includes('quota')) {
         return NextResponse.json({ error: setupBlockerMessage({
           missing: 'OpenAI quota or billing capacity',
           reason: 'OpenAI rate/quota limits prevent a safe response',
           next: 'review OpenAI billing/quota and try again after capacity is restored',
-        }), category: 'quota_required' }, { status: 200 });
+        }), category: 'quota_required', requestId, timestamp: nowISO() }, { status: 200 });
       }
       if (statusCode === 404 || code === 'model_not_found' || message.includes('model')) {
         return NextResponse.json({ error: setupBlockerMessage({
           missing: 'available OpenAI model access',
           reason: 'the configured model is not available to this OpenAI account',
           next: 'set OPENAI_MODEL to an available model or enable access in OpenAI',
-        }), category: 'model_not_found' }, { status: 200 });
+        }), category: 'model_not_found', requestId, timestamp: nowISO() }, { status: 200 });
       }
       if (statusCode === 429) {
-        return NextResponse.json({ error: 'OpenAI is temporarily rate limited. Blocked because the provider asked us to slow down. Next: wait a moment and retry. / OpenAI محدود مؤقتاً، انتظر قليلاً ثم أعد المحاولة.', category: 'rate_limited' }, { status: 200 });
+        return NextResponse.json({ error: 'OpenAI is temporarily rate limited. Blocked because the provider asked us to slow down. Next: wait a moment and retry. / OpenAI محدود مؤقتاً، انتظر قليلاً ثم أعد المحاولة.', category: 'rate_limited', requestId, timestamp: nowISO() }, { status: 200 });
       }
       return NextResponse.json({ error: setupBlockerMessage({
         missing: 'healthy OpenAI provider response',
         reason: 'OpenAI did not return a usable response',
         next: 'check OpenAI key, model access, quota, billing, and provider status, then retry',
-      }), category: 'provider_error' }, { status: 200 });
+      }), category: 'provider_error', requestId, timestamp: nowISO() }, { status: 200 });
     }
 
     const content = payload?.choices?.[0]?.message?.content?.trim() || '';
     if (!content) {
-      return NextResponse.json({ error: 'OpenAI returned an empty response.', category: 'empty_response' }, { status: 200 });
+      return NextResponse.json({ error: 'OpenAI returned an empty response.', category: 'empty_response', requestId, timestamp: nowISO() }, { status: 200 });
     }
 
     return NextResponse.json({
       answer: content,
       category: 'answered',
+      requestId,
+      timestamp: nowISO(),
       toolsUsed: toolSummary.toolsUsed.map((tool) => ({
         toolId: tool.toolId,
         toolName: tool.toolName,
@@ -417,12 +460,12 @@ export async function POST(request: Request) {
   } catch (err) {
     const isTimeout = err instanceof Error && (err.name === 'AbortError' || err.message.includes('timeout'));
     if (isTimeout) {
-      return NextResponse.json({ error: 'Request timed out. Please try again.', category: 'timeout' }, { status: 200 });
+      return NextResponse.json({ error: 'Request timed out. Please try again.', category: 'timeout', requestId, timestamp: nowISO() }, { status: 200 });
     }
     return NextResponse.json({ error: setupBlockerMessage({
       missing: 'healthy OpenAI provider response',
       reason: 'Alex could not complete the server-side OpenAI request safely',
       next: 'check OpenAI key, model access, quota, billing, and provider status, then retry',
-    }), category: 'provider_error' }, { status: 200 });
+    }), category: 'provider_error', requestId, timestamp: nowISO() }, { status: 200 });
   }
 }

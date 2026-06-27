@@ -13,6 +13,7 @@ import { defaultWorkspaceTheme } from '@/lib/theme';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
+import { logger } from '@/lib/logger';
 
 export const maxDuration = 120;
 
@@ -23,15 +24,14 @@ const DASHBOARD_LAYOUT_TIMEOUTS = {
   shellData: 2_000,        // Reduced from 2.5s to 2s for parallel operations
 } as const;
 
-const DASHBOARD_LAYOUT_TRACE_PREFIX = '[dashboard-layout]';
+const dashboardLayoutLog = logger.child('dashboard:layout');
 
 function traceDashboardLayout(message: string, details?: Record<string, unknown>) {
   if (details) {
-    console.info(DASHBOARD_LAYOUT_TRACE_PREFIX, message, details);
+    dashboardLayoutLog.info(message, details);
     return;
   }
-
-  console.info(DASHBOARD_LAYOUT_TRACE_PREFIX, message);
+  dashboardLayoutLog.info(message);
 }
 
 function timeoutMessage(sectionName: string): string {
@@ -73,9 +73,7 @@ async function withLayoutTimeout<T>(
   traceDashboardLayout(`before ${sectionName}`);
   const timeout = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
-      console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'timeout', sectionName, {
-        durationMs: Date.now() - startedAt,
-      });
+      dashboardLayoutLog.warn('timeout', { sectionName, durationMs: Date.now() - startedAt });
       reject(new Error(timeoutMessage(sectionName)));
     }, timeoutMs);
   });
@@ -83,7 +81,7 @@ async function withLayoutTimeout<T>(
   try {
     const result = await Promise.race([
       promise.catch((error: unknown) => {
-        console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'failed', sectionName, error);
+        dashboardLayoutLog.warn('failed', { sectionName, error: error instanceof Error ? error.message : String(error) });
         throw error;
       }),
       timeout,
@@ -104,7 +102,7 @@ export default async function DashboardLayout({
 }) {
   traceDashboardLayout('render start');
   if (!isSupabaseServerConfigured) {
-    console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'redirect login: Supabase not configured');
+    dashboardLayoutLog.warn('redirect login: Supabase not configured');
     redirect('/auth/login?message=Supabase is not configured yet');
   }
 
@@ -121,7 +119,7 @@ export default async function DashboardLayout({
   const user = authResult.data.user;
 
   if (!user) {
-    console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'redirect login: no user');
+    dashboardLayoutLog.warn('redirect login: no user');
     redirect('/auth/login?redirectTo=/dashboard');
   }
 
@@ -139,7 +137,7 @@ export default async function DashboardLayout({
   }));
 
   if (!workspaceResult.data) {
-    console.warn(DASHBOARD_LAYOUT_TRACE_PREFIX, 'redirect onboarding: no workspace', {
+    dashboardLayoutLog.warn('redirect onboarding: no workspace', {
       error: workspaceResult.error,
     });
     redirect('/onboarding');

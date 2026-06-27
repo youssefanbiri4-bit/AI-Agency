@@ -6,7 +6,7 @@ import {
   mapTaskRecordToTask,
   updateTaskExecutionState,
 } from '@/lib/data/tasks';
-import { reportAppError } from '@/lib/logger';
+import { logger, reportAppError } from '@/lib/logger';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import {
   markN8nCallbackEvent,
@@ -16,14 +16,17 @@ import {
 import type { JsonObject, JsonValue, TaskStatus } from '@/types';
 import { genericServerSetupMessage, setupBlockerMessage } from '@/lib/safe-messages';
 import { increment } from '@/lib/monitoring/metrics';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
+import { getRequestId, nowISO } from '@/lib/api-response';
 import {
   classifyStructuredOutputValidationError,
   validateStructuredOutputFromCallbackResult,
-  N8N_STRUCTURED_OUTPUT_SCHEMA_VERSION,
 } from '@/lib/n8n-structured-output-validation';
+import { isJsonObject } from '@/lib/utils';
 
-function jsonError(error: string, status: number) {
-  return NextResponse.json({ success: false, error }, { status });
+function jsonError(error: string, status: number, requestId?: string) {
+  return NextResponse.json({ success: false, error, requestId: requestId ?? null, timestamp: new Date().toISOString() }, { status, headers: requestId ? { 'X-Request-ID': requestId } : undefined });
 }
 
 function safeCompare(value: string, expected: string) {
@@ -35,10 +38,6 @@ function safeCompare(value: string, expected: string) {
   }
 
   return timingSafeEqual(valueBuffer, expectedBuffer);
-}
-
-function isJsonObject(value: unknown): value is JsonObject {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function toResultObject(result: unknown, errorMessage: string | null): JsonObject {
@@ -84,21 +83,51 @@ function extractTaskId(body: unknown): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = getRequestId(request);
   const callbackReceiveAt = Date.now();
   const rawPayloadForLogs = { headers: null as unknown, task_id: null as unknown, status: null as unknown };
   try {
+    // Payload size check
+    const sizeCheck = await checkPayloadSize(request, PAYLOAD_LIMITS.callback);
+    if (!sizeCheck.ok) return sizeCheck.response;
+
+    // Rate limiting: 100 callback requests per IP per minute
+    const clientIp =
+      request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown';
+    const rateLimitResult = await checkRateLimit({
+      key: `api:n8n:callback:${clientIp}`,
+      limit: 100,
+      windowMs: 60_000,
+    });
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({
+        success: false,
+        error: 'Rate limit exceeded',
+        requestId,
+        timestamp: nowISO(),
+      }, {
+        status: 429,
+        headers: { 'X-Request-ID': requestId },
+      });
+    }
+
     const incomingSecret = request.headers.get('x-n8n-callback-secret')?.trim();
     const expectedSecret = process.env.N8N_CALLBACK_SECRET?.trim();
 
     if (!expectedSecret) {
-      return jsonError(
-        setupBlockerMessage({
+      return NextResponse.json({
+        success: false,
+        error: setupBlockerMessage({
           missing: 'N8N_CALLBACK_SECRET',
           reason: 'callbacks cannot be trusted without the server-side shared secret',
           next: 'add N8N_CALLBACK_SECRET in Vercel, redeploy, and retry the callback',
         }),
-        500
-      );
+        requestId,
+        timestamp: nowISO(),
+      }, {
+        status: 500,
+        headers: { 'X-Request-ID': requestId },
+      });
     }
 
     if (!incomingSecret || !safeCompare(incomingSecret, expectedSecret)) {
@@ -108,7 +137,8 @@ export async function POST(request: NextRequest) {
 
       return jsonError(
         'Callback blocked: the callback secret is missing or invalid. Next: verify the n8n HTTP Request header without exposing the secret. / تم حظر الكالباك لأن السر غير صحيح.',
-        401
+        401,
+        requestId
       );
     }
 
@@ -130,7 +160,7 @@ export async function POST(request: NextRequest) {
         task_id: inferredTaskId,
       });
 
-      return jsonError('Invalid callback payload', 400);
+      return jsonError('Invalid callback payload', 400, requestId);
     }
 
     const validationResult = n8nCallbackSchema.safeParse(body);
@@ -140,7 +170,7 @@ export async function POST(request: NextRequest) {
         errors: validationResult.error.format(),
       });
 
-      return jsonError('Invalid callback payload format', 400);
+      return jsonError('Invalid callback payload format', 400, requestId);
     }
 
     const payload = validationResult.data as Record<string, unknown>;
@@ -150,7 +180,7 @@ export async function POST(request: NextRequest) {
       reportAppError('n8n callback missing task id after validation', null, {
         task_id: inferredTaskId,
       });
-      return jsonError('Task ID is required', 400);
+      return jsonError('Task ID is required', 400, requestId);
     }
 
     const callbackStatus = readString(payload, 'status');
@@ -391,7 +421,7 @@ export async function POST(request: NextRequest) {
     }
 
     const callbackLatencyMs = Date.now() - callbackReceiveAt;
-    reportAppError('n8n callback processed', null, {
+    logger.info('n8n callback processed', {
       task_id: task.id,
       nextStatus,
       callbackLatencyMs,

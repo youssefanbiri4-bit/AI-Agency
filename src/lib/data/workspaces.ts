@@ -6,17 +6,16 @@ import type {
   WorkspaceRecord,
 } from '@/types/database';
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
+import { logger } from '@/lib/logger';
 
 export const ACTIVE_WORKSPACE_COOKIE = 'ai-agency-active-workspace-id';
-const WORKSPACE_TRACE_PREFIX = '[workspace-data]';
-
+const workspaceLog = logger.child('data:workspaces');
 function traceWorkspaceData(message: string, details?: Record<string, unknown>) {
   if (details) {
-    console.info(WORKSPACE_TRACE_PREFIX, message, details);
+    workspaceLog.info(message, details);
     return;
   }
-
-  console.info(WORKSPACE_TRACE_PREFIX, message);
+  workspaceLog.info(message);
 }
 
 export interface WorkspaceContextData {

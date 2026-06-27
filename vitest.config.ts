@@ -23,8 +23,8 @@ export default defineConfig({
       reportsDirectory: './coverage',
     },
 
-    // Strictly include only project tests (no vendor/dependency suites)
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/*.spec.ts', 'src/**/*.spec.tsx'],
+    // Include project tests from both src/ and tests/ directories
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/*.spec.ts', 'src/**/*.spec.tsx', 'tests/**/*.test.ts', 'tests/**/*.test.tsx'],
 
     // Explicitly exclude everything outside the project scope
     exclude: [

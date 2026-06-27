@@ -1,4 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
+import { registerGracefulShutdown, registerShutdownable, asShutdownable } from '@/lib/graceful-shutdown';
+import { redis } from '@/lib/queue/redis';
+import { stopTaskQueueEvents } from '@/lib/queue/events';
 
 export async function register() {
   const commonConfig = {
@@ -14,5 +17,22 @@ export async function register() {
 
   if (process.env.NEXT_RUNTIME === 'edge') {
     Sentry.init(commonConfig);
+  }
+
+  // Register graceful shutdown handlers for production
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    registerGracefulShutdown();
+
+    registerShutdownable(
+      asShutdownable('redis', async () => {
+        await redis.quit();
+      })
+    );
+
+    registerShutdownable(
+      asShutdownable('task-queue-events', async () => {
+        await stopTaskQueueEvents();
+      })
+    );
   }
 }

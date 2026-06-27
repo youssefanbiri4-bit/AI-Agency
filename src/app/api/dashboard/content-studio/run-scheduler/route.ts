@@ -10,12 +10,14 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { canRunScheduler, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { setupBlockerMessage } from '@/lib/safe-messages';
+import { getRequestId, nowISO } from '@/lib/api-response';
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ success: false, error }, { status });
 }
 
-async function handleRunScheduler() {
+async function handleRunScheduler(request?: Request) {
+  const requestId = getRequestId(request);
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -93,7 +95,11 @@ async function handleRunScheduler() {
 
     return NextResponse.json({
       success: true,
+      requestId,
+      timestamp: nowISO(),
       data: summary,
+    }, {
+      headers: { 'X-Request-ID': requestId },
     });
   } catch (error) {
     reportAppError('Manual content studio scheduler run failed', error, {
@@ -101,18 +107,26 @@ async function handleRunScheduler() {
       userId: user.id,
     });
 
-    return jsonError(setupBlockerMessage({
-      missing: 'completed scheduler run',
-      reason: 'the server could not safely complete the manual scheduler operation',
-      next: 'check server logs, provider readiness, and scheduler configuration, then retry',
-    }), 500);
+    return NextResponse.json({
+      success: false,
+      error: setupBlockerMessage({
+        missing: 'completed scheduler run',
+        reason: 'the server could not safely complete the manual scheduler operation',
+        next: 'check server logs, provider readiness, and scheduler configuration, then retry',
+      }),
+      requestId,
+      timestamp: nowISO(),
+    }, {
+      status: 500,
+      headers: { 'X-Request-ID': requestId },
+    });
   }
 }
 
-export async function POST() {
-  return handleRunScheduler();
+export async function POST(request: Request) {
+  return handleRunScheduler(request);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   return jsonError('Scheduler controls are only available from the dashboard.', 403);
 }

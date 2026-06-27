@@ -1,86 +1,62 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { reportAppError } from '@/lib/logger';
+import { getWorkspaceAccessContext } from '@/lib/workspace-permissions';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 export const dynamic = 'force-dynamic';
 
 export default async function OperationalDashboardLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  let caughtError: unknown;
-  let workspaceData:
-    | {
-        workspaceId: string;
-        userRole: string;
-      }
-    | null = null;
+  let allowed = false;
+  let failureMessage: string | null = null;
 
   try {
-    const supabase = await createSupabaseServerClient();
-    const workspaceResult = await getCurrentUserWorkspace(supabase, undefined);
+    const access = await getWorkspaceAccessContext();
 
-    if (workspaceResult.error) {
-      throw workspaceResult.error;
-    }
-
-    if (!workspaceResult.data) {
-      workspaceData = null;
+    if ('error' in access && access.error) {
+      failureMessage = 'Operational dashboard unavailable.';
+      allowed = false;
+    } else if (!access.data) {
+      failureMessage = 'Operational dashboard unavailable.';
+      allowed = false;
     } else {
-      const { data: workspace, error: workspaceError } = workspaceResult;
-      if (workspaceError) throw workspaceError;
+      const { role } = access.data;
 
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-
-      if (!userId) {
-        workspaceData = null;
-      } else {
-
-        const { data: member, error: memberError } = await supabase
-          .from('workspace_members')
-          .select('role')
-          .eq('workspace_id', workspace.id)
-          .eq('user_id', userId)
-          .single();
-
-        if (memberError) throw memberError;
-
-        if (!member || !('role' in member)) {
-          workspaceData = null;
-        } else {
-          workspaceData = {
-            workspaceId: workspace.id,
-            userRole: (member as { role: string }).role,
-          };
-        }
-
-      }
-
+      // Admin-only enforcement (owner/admin). No role-system changes.
+      allowed = role === 'owner' || role === 'admin';
+      if (!allowed) failureMessage = 'Forbidden: admin access required.';
     }
   } catch (error) {
-    caughtError = error;
+    reportAppError('Operational dashboard layout error', error);
+    failureMessage = 'Error loading operational dashboard. Please try again later.';
+    allowed = false;
   }
 
-  if (caughtError) {
-    reportAppError('Operational dashboard layout error', caughtError);
+  if (!allowed) {
     return (
-      <div>
-        <p>Error loading operational dashboard. Please try again later.</p>
-        <a href="/dashboard">Go to Dashboard</a>
+      <div className="-mx-4 -my-6 min-h-screen bg-[var(--theme-background,#F1F7F7)] px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <section className="mx-auto max-w-2xl rounded-2xl border border-black/7 bg-white/90 p-8 shadow-[0_24px_70px_rgba(93,107,107,0.08)]">
+          <h1 className="text-xl font-black text-[#5D6B6B]">
+            {failureMessage === 'Forbidden: admin access required.' ? 'Access Restricted' : 'Operational Dashboard'}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-black/58">
+            {failureMessage ?? 'Forbidden'}
+          </p>
+          <div className="mt-6">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-lg border border-[#F7CBCA]/15 bg-white/78 px-4 py-2 text-sm font-bold text-black shadow-sm transition-colors hover:bg-[#F7CBCA]/10"
+            >
+              ← Go to Dashboard
+            </Link>
+          </div>
+        </section>
       </div>
     );
   }
 
-  if (!workspaceData) {
-    return (
-      <div>
-        <p>No active workspace found. Please select a workspace.</p>
-        <a href="/dashboard">Go to Dashboard</a>
-      </div>
-    );
-  }
-
-  // If we reached here, workspaceData exists (userRole is admin/owner).
   return <>{children}</>;
 }

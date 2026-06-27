@@ -1,4 +1,7 @@
 import NodeCache from 'node-cache';
+import { logger } from '@/lib/logger';
+
+const cacheLog = logger.child('data:cache');
 
 // Basic in-memory cache for provider states
 // Key format: provider-${providerName}-workspace-${workspaceId}
@@ -13,18 +16,18 @@ export async function getProviderState<T>(
   const cachedData = providerCache.get(cacheKey) as T | undefined;
 
   if (cachedData) {
-    console.log(`[ProviderCache] Cache hit for ${providerName} (${workspaceId})`);
+    cacheLog.info('Cache hit', { provider: providerName, workspaceId });
     return { data: cachedData, error: null };
   }
 
-  console.log(`[ProviderCache] Cache miss for ${providerName} (${workspaceId}). Fetching...`);
+  cacheLog.info('Cache miss', { provider: providerName, workspaceId });
   try {
     const data = await fetchFn();
     // Cache for a reasonable duration, e.g., 5 minutes
     providerCache.set(cacheKey, data, 300); 
     return { data, error: null };
   } catch (error: unknown) {
-    console.error(`[ProviderCache] Error fetching provider state for ${providerName} (${workspaceId}):`, error);
+    cacheLog.error('Error fetching provider state', { provider: providerName, workspaceId, error: error instanceof Error ? error.message : String(error) });
     return { data: null, error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -33,10 +36,10 @@ export function clearProviderCache(providerName?: string, workspaceId?: string):
   if (providerName && workspaceId) {
     const cacheKey = `provider-${providerName}-workspace-${workspaceId}`;
     providerCache.del(cacheKey);
-    console.log(`[ProviderCache] Cleared cache for ${providerName} (${workspaceId})`);
+    cacheLog.info('Cleared cache', { provider: providerName, workspaceId });
   } else {
     providerCache.flushAll();
-    console.log('[ProviderCache] Cleared all provider cache');
+    cacheLog.info('Cleared all provider cache');
   }
 }
 

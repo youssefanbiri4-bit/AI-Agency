@@ -49,6 +49,7 @@ import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/schedul
 import {
   checkOpenAITextProviderReadiness,
 } from '@/lib/ai/text-provider';
+import { logger } from '@/lib/logger';
 import { buttonStyles } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Notice } from '@/components/ui/Notice';
@@ -116,17 +117,16 @@ const readinessBadgeStatuses: Record<ReadinessState, Parameters<typeof StatusBad
 
 const DASHBOARD_SECTION_TIMEOUT_MS = 3500;
 const DASHBOARD_PROVIDER_TIMEOUT_MS = 2500;
-const DASHBOARD_TRACE_PREFIX = '[workspace-route]';
+const dashboardPageLog = logger.child('dashboard:page');
 
 export const dynamic = 'force-dynamic';
 
 function traceWorkspace(message: string, details?: Record<string, unknown>) {
   if (details) {
-    console.info(DASHBOARD_TRACE_PREFIX, message, details);
+    dashboardPageLog.info(message, details);
     return;
   }
-
-  console.info(DASHBOARD_TRACE_PREFIX, message);
+  dashboardPageLog.info(message);
 }
 
 function buildEmptyDashboardData(): DashboardData {
@@ -159,14 +159,13 @@ async function withDashboardTimeout<T>(
 ): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const startedAt = Date.now();
-  traceWorkspace(`before ${sectionName}`);
-  const guardedPromise = promise.catch((error: unknown) => {
-    console.warn(DASHBOARD_TRACE_PREFIX, `failed ${sectionName}`, error);
+  traceWorkspace(`before ${sectionName}`);    const guardedPromise = promise.catch((error: unknown) => {
+    dashboardPageLog.warn(`failed ${sectionName}`, { error: error instanceof Error ? error.message : String(error) });
     throw error;
   });
   const timeout = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
-      console.warn(DASHBOARD_TRACE_PREFIX, `timeout ${sectionName}`, {
+      dashboardPageLog.warn(`timeout ${sectionName}`, {
         durationMs: Date.now() - startedAt,
       });
       reject(new Error(timeoutMessage(sectionName)));
@@ -622,7 +621,7 @@ async function DashboardContent() {
     supabase.auth.getUser(),
     DASHBOARD_PROVIDER_TIMEOUT_MS
   ).catch((error: unknown) => {
-    console.warn(DASHBOARD_TRACE_PREFIX, 'auth timeout', error);
+    dashboardPageLog.warn('auth timeout', { error: error instanceof Error ? error.message : String(error) });
     return {
       data: { user: null },
       error,

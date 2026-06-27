@@ -12,6 +12,8 @@ import {
 } from '@/lib/ads/meta';
 import { upsertMetaConnection } from '@/lib/data/ad-connections';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { getRequestId, nowISO } from '@/lib/api-response';
 import type { JsonObject } from '@/types';
 
 export const runtime = 'nodejs';
@@ -52,6 +54,19 @@ function buildTokenExpiresAt(expiresIn: number | null) {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting: 20 OAuth callback requests per IP per minute
+  const clientIp =
+    request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown';
+  const rateLimitResult = await checkRateLimit({
+    key: `api:ads:meta:callback:${clientIp}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!rateLimitResult.allowed) {
+    // Rate limited — redirect with error
+    return redirectToCampaigns(request, 'error', 'rate_limited');
+  }
+
   const queryState = request.nextUrl.searchParams.get('state');
   const cookieState = request.cookies.get(META_OAUTH_STATE_COOKIE)?.value;
 

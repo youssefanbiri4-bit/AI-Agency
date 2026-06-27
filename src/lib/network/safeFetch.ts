@@ -260,7 +260,10 @@ export async function safeFetch<T = unknown>(
         try {
           data = (await response.json()) as T;
         } catch (parseError) {
-          console.warn(`[safeFetch:${traceId}] JSON parsing failed`, parseError);
+          reportAppError('safe_fetch_json_parse_failed', parseError instanceof Error ? parseError : new Error(String(parseError)), {
+            traceId,
+            url: urlString,
+          });
         }
       }
 

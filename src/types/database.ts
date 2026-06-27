@@ -21,6 +21,7 @@ export type ContentStudioPublishAttemptStatus =
   | 'failed'
   | 'setup_required'
   | 'approval_pending'
+  | 'billing_required'
   | 'quota_limit'
   | 'token_missing'
   | 'manual_only'
@@ -217,6 +218,43 @@ export type AgentTemplateUsageActionType =
   | 'export_workflow_playbook';
 export type AgentTemplateUsageSourcePage = 'agent_library' | 'alex' | 'content_studio';
 export type AgentWorkflowPlaybookStatus = 'draft' | 'ready' | 'archived';
+
+// ===== Missing Table Types (defined in DB but not in existing types) =====
+
+export type BackupRecordStatus = 'created' | 'previewed' | 'failed' | 'archived';
+
+export type SafePatchPlanChangeType =
+  | 'bug_fix'
+  | 'ui_update'
+  | 'feature'
+  | 'refactor'
+  | 'security'
+  | 'database_migration'
+  | 'provider_update'
+  | 'docs'
+  | 'deployment'
+  | 'stabilization';
+
+export type SafePatchPlanPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export type SafePatchPlanRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
+export type SafePatchPlanStatus =
+  | 'draft'
+  | 'needs_review'
+  | 'approved_to_prompt'
+  | 'copied_to_codex'
+  | 'implemented_externally'
+  | 'rejected'
+  | 'archived';
+
+export type PullRequestReviewRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
+export type PullRequestReviewRecommendation =
+  | 'safe_to_merge_after_tests'
+  | 'request_changes'
+  | 'needs_manual_review'
+  | 'do_not_merge_yet';
 
 export interface Database {
   public: {
@@ -1468,6 +1506,248 @@ export interface Database {
         };
         Relationships: [];
       };
+      // ===== Missing Table Definitions (DB tables without TypeScript types) =====
+      backup_records: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          created_by: string | null;
+          backup_type: string;
+          categories: string[];
+          record_counts: JsonObject;
+          file_name: string | null;
+          file_size_bytes: number | null;
+          status: BackupRecordStatus;
+          warnings: string | null;
+          metadata: JsonObject;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          created_by?: string | null;
+          backup_type?: string;
+          categories?: string[];
+          record_counts?: JsonObject;
+          file_name?: string | null;
+          file_size_bytes?: number | null;
+          status?: BackupRecordStatus;
+          warnings?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
+        };
+        Update: {
+          backup_type?: string;
+          categories?: string[];
+          record_counts?: JsonObject;
+          file_name?: string | null;
+          file_size_bytes?: number | null;
+          status?: BackupRecordStatus;
+          warnings?: string | null;
+          metadata?: JsonObject;
+        };
+        Relationships: [];
+      };
+      github_issue_task_links: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          project_id: string;
+          task_id: string;
+          github_owner: string;
+          github_repo: string;
+          github_issue_number: number;
+          github_issue_url: string;
+          github_issue_title: string | null;
+          github_issue_state: string | null;
+          github_labels: string[];
+          metadata: JsonObject;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          project_id: string;
+          task_id: string;
+          github_owner: string;
+          github_repo: string;
+          github_issue_number: number;
+          github_issue_url: string;
+          github_issue_title?: string | null;
+          github_issue_state?: string | null;
+          github_labels?: string[];
+          metadata?: JsonObject;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          github_issue_title?: string | null;
+          github_issue_state?: string | null;
+          github_labels?: string[];
+          metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      provider_readiness_cache: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          provider: string;
+          readiness_state: string;
+          message: string | null;
+          missing: string[] | null;
+          last_checked_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          provider: string;
+          readiness_state: string;
+          message?: string | null;
+          missing?: string[] | null;
+          last_checked_at?: string;
+          expires_at: string;
+        };
+        Update: {
+          readiness_state?: string;
+          message?: string | null;
+          missing?: string[] | null;
+          last_checked_at?: string;
+          expires_at?: string;
+        };
+        Relationships: [];
+      };
+      pull_request_reviews: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          project_id: string;
+          created_by: string | null;
+          github_owner: string;
+          github_repo: string;
+          pr_number: number;
+          pr_url: string;
+          pr_title: string | null;
+          pr_state: string | null;
+          source_branch: string | null;
+          target_branch: string | null;
+          risk_level: PullRequestReviewRiskLevel;
+          recommendation: PullRequestReviewRecommendation;
+          review_summary: string | null;
+          files_changed: string | null;
+          potential_issues: string | null;
+          security_notes: string | null;
+          testing_checklist: string | null;
+          release_notes_draft: string | null;
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          project_id: string;
+          created_by?: string | null;
+          github_owner: string;
+          github_repo: string;
+          pr_number: number;
+          pr_url: string;
+          pr_title?: string | null;
+          pr_state?: string | null;
+          source_branch?: string | null;
+          target_branch?: string | null;
+          risk_level?: PullRequestReviewRiskLevel;
+          recommendation?: PullRequestReviewRecommendation;
+          review_summary?: string | null;
+          files_changed?: string | null;
+          potential_issues?: string | null;
+          security_notes?: string | null;
+          testing_checklist?: string | null;
+          release_notes_draft?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          risk_level?: PullRequestReviewRiskLevel;
+          recommendation?: PullRequestReviewRecommendation;
+          review_summary?: string | null;
+          files_changed?: string | null;
+          potential_issues?: string | null;
+          security_notes?: string | null;
+          testing_checklist?: string | null;
+          release_notes_draft?: string | null;
+          metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      safe_patch_plans: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          project_id: string | null;
+          created_by: string | null;
+          title: string;
+          change_request: string;
+          change_type: SafePatchPlanChangeType;
+          priority: SafePatchPlanPriority;
+          risk_level: SafePatchPlanRiskLevel;
+          status: SafePatchPlanStatus;
+          affected_files: string | null;
+          implementation_plan: string | null;
+          safety_constraints: string | null;
+          test_checklist: string | null;
+          rollback_plan: string | null;
+          suggested_prompt: string | null;
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          project_id?: string | null;
+          created_by?: string | null;
+          title: string;
+          change_request: string;
+          change_type?: SafePatchPlanChangeType;
+          priority?: SafePatchPlanPriority;
+          risk_level?: SafePatchPlanRiskLevel;
+          status?: SafePatchPlanStatus;
+          affected_files?: string | null;
+          implementation_plan?: string | null;
+          safety_constraints?: string | null;
+          test_checklist?: string | null;
+          rollback_plan?: string | null;
+          suggested_prompt?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          change_request?: string;
+          change_type?: SafePatchPlanChangeType;
+          priority?: SafePatchPlanPriority;
+          risk_level?: SafePatchPlanRiskLevel;
+          status?: SafePatchPlanStatus;
+          affected_files?: string | null;
+          implementation_plan?: string | null;
+          safety_constraints?: string | null;
+          test_checklist?: string | null;
+          rollback_plan?: string | null;
+          suggested_prompt?: string | null;
+          metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -1518,3 +1798,12 @@ export type ContentStudioItemAssetRecord =
   Database['public']['Tables']['content_studio_item_assets']['Row'];
 export type ContentStudioPublishAttemptRecord =
   Database['public']['Tables']['content_studio_publish_attempts']['Row'];
+
+export type BackupRecord = Database['public']['Tables']['backup_records']['Row'];
+export type GitHubIssueTaskLinkRecord =
+  Database['public']['Tables']['github_issue_task_links']['Row'];
+export type ProviderReadinessCacheRecord =
+  Database['public']['Tables']['provider_readiness_cache']['Row'];
+export type PullRequestReviewRecord =
+  Database['public']['Tables']['pull_request_reviews']['Row'];
+export type SafePatchPlanRecord = Database['public']['Tables']['safe_patch_plans']['Row'];

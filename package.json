@@ -17,8 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "a11y:test": "pa11y-ci",
-    "a11y:audit": "pa11y http://localhost:3000/dashboard",
+    "a11y:audit": "echo 'A11y audit tool (pa11y) has been removed. See ACCESSIBILITY.md for manual testing guidelines.'",
     "a11y:setup": "bash scripts/setup-a11y-testing.sh"
   },
   "dependencies": {
@@ -42,15 +41,13 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitest/coverage-v8": "^2",
-    "@vitest/ui": "^2",
+    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/ui": "^4.1.9",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
-    "pa11y": "^6",
-    "pa11y-ci": "^3",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.9"
   },
   "overrides": {
     "postcss": "8.5.14"

@@ -1,4 +1,13 @@
+import type { JsonObject } from '@/types';
 import clsx, { type ClassValue } from 'clsx';
+
+/**
+ * Check if a value is a non-null, non-array object (JsonObject-compatible).
+ * Shared utility to avoid duplication across multiple files.
+ */
+export function isJsonObject(value: unknown): value is JsonObject {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
 export function cn(...classes: ClassValue[]) {
   return clsx(classes);

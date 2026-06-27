@@ -5,6 +5,7 @@ import { getWorkspace } from '@/lib/data/workspaces-server';
 import { getTaskById, updateTaskExecutionState } from '@/lib/data/tasks';
 import { createErrorResponse, AppError, ErrorLevel } from '@/lib/error-handler';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
 
 const jsonValueSchema: z.ZodType<import('@/types').JsonValue> = z.lazy(() =>
   z.union([
@@ -36,7 +37,12 @@ export async function POST(req: Request) {
   const log = logger.child(requestId);
 
   try {
-    const body = await req.json();
+    // Payload size check
+    const sizeCheck = await checkPayloadSize(req, PAYLOAD_LIMITS.taskExecute);
+    if (!sizeCheck.ok) return sizeCheck.response;
+    const safeReq = sizeCheck.request;
+
+    const body = await safeReq.json();
     const validation = taskExecuteSchema.safeParse(body);
 
     // Rate limiting check (must happen before workspace resolution/business logic)
@@ -203,6 +209,7 @@ export async function POST(req: Request) {
         success: true,
         queued: true,
         requestId,
+        timestamp: new Date().toISOString(),
         jobId: job.id,
       }),
       {

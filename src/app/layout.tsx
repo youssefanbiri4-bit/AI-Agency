@@ -1,7 +1,14 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import { headers } from 'next/headers';
 import Script from 'next/script';
 import './globals.css';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 import { RouteAwareFooter } from '@/components/layout/RouteAwareFooter';
 import { ToastProvider } from '@/components/ui/toast';
 import { LanguageProvider, type Translations } from '@/i18n/context';
@@ -50,7 +57,7 @@ export default async function RootLayout({
       <head>
         <Script src="/agentflow-language-init.js" strategy="beforeInteractive" nonce={nonce} />
       </head>
-      <body className="h-full flex flex-col bg-transparent text-foreground">
+      <body className={`${inter.variable} h-full flex flex-col bg-transparent text-foreground`}>
         <SentrySetup />
         <LanguageProvider translations={allTranslations}>
           <ToastProvider>

@@ -11,6 +11,8 @@ import {
   getGoogleAdsReadOnlyScopes,
 } from '@/lib/ads/google-ads';
 import { upsertGoogleAdsConnection } from '@/lib/data/ad-connections';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { getRequestId, nowISO } from '@/lib/api-response';
 import type { JsonObject } from '@/types';
 
 export const runtime = 'nodejs';
@@ -72,6 +74,18 @@ function getGrantedScopes(scope: string | null) {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting: 20 OAuth callback requests per IP per minute
+  const clientIp =
+    request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip') || 'unknown';
+  const rateLimitResult = await checkRateLimit({
+    key: `api:ads:google:callback:${clientIp}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!rateLimitResult.allowed) {
+    return redirectToCampaigns(request, 'error', 'rate_limited');
+  }
+
   const readiness = getGoogleAdsConfigReadiness();
 
   if (!readiness.isConfigured) {

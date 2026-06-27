@@ -153,10 +153,13 @@ export async function uploadCreativeAssetVideo({
     };
   }
 
+  // Use signed URL instead of public URL since the bucket is private
+  const signedUrlResult = await createCreativeAssetSignedUrl(client, storagePath);
+
   return {
-    publicUrl: createCreativeAssetPublicUrl(storagePath),
+    publicUrl: signedUrlResult.signedUrl,
     storagePath,
-    error: null,
+    error: signedUrlResult.error,
   };
 }
 

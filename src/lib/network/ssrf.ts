@@ -3,8 +3,6 @@ if (typeof window !== 'undefined') {
   throw new Error('This module must only run on the server');
 }
 
-type AllowedHostsInput = string | undefined;
-
 function readAllowedHosts(): Set<string> {
   const raw = (process.env.N8N_WEBHOOK_HOST_ALLOWLIST ?? '').trim();
   if (!raw) return new Set();

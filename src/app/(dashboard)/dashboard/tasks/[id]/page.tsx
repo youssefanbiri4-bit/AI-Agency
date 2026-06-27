@@ -62,7 +62,7 @@ export default async function TaskDetailsPage({
 
   const agent = agentsResult.data.find((item) => item.id === task.agent_type);
   const inputEntries = Object.entries(task.input_data || {});
-  const n8nReadiness = getN8nReadiness();
+  const n8nReadiness = await getN8nReadiness();
   const githubInput =
     task.input_data?.source === 'github_issue' &&
     task.input_data.github &&

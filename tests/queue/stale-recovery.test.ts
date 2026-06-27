@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Task, TaskStatus } from '@/types';
 
 vi.mock('@/lib/data/tasks', () => ({
   listTasks: vi.fn(),
@@ -21,12 +22,51 @@ describe('stale processing recovery', () => {
     const old = new Date(now - 20 * 60 * 1000).toISOString(); // 20 minutes ago
     const recent = new Date(now - 2 * 60 * 1000).toISOString(); // 2 minutes ago
 
-    mockedList.mockResolvedValue({ data: [
-      { id: 't-old', workspace_id: 'w-1', updated_at: old },
-      { id: 't-recent', workspace_id: 'w-1', updated_at: recent },
-    ], error: null, isConfigured: true } as any);
+    const processingStatus: TaskStatus = 'processing';
 
-    mockedMark.mockResolvedValue({ data: { id: 't-old' }, error: null } as any);
+    const oldTask: Task = {
+      id: 't-old',
+      user_id: 'u-1',
+      agent_type: 'strategy_planner',
+      title: 'T1',
+      description: 'D1',
+      input_data: {},
+      status: processingStatus,
+      priority: 'Normal',
+      result: null,
+      n8n_execution_id: null,
+      created_at: old,
+      updated_at: old,
+      completed_at: null,
+    };
+
+    const recentTask: Task = {
+      id: 't-recent',
+      user_id: 'u-1',
+      agent_type: 'strategy_planner',
+      title: 'T2',
+      description: 'D2',
+      input_data: {},
+      status: processingStatus,
+      priority: 'Normal',
+      result: null,
+      n8n_execution_id: null,
+      created_at: recent,
+      updated_at: recent,
+      completed_at: null,
+    };
+
+    mockedList.mockResolvedValue({
+      data: [oldTask, recentTask],
+      error: null,
+      isConfigured: true,
+    });
+
+    mockedMark.mockResolvedValue({
+      data: oldTask,
+      error: null,
+      isConfigured: true,
+    });
 
     const res = await runStaleProcessingRecoveryOnce({ thresholdMs: 10 * 60 * 1000 });
 

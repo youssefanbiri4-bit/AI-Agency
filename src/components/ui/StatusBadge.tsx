@@ -29,6 +29,7 @@ interface StatusBadgeProps {
     | 'setup_required'
     | 'token_missing'
     | 'quota_limit'
+    | 'billing_required'
     | 'manual_only'
     | 'unsupported'
     | 'needs_fix'
@@ -176,6 +177,13 @@ const statusConfig = {
   quota_limit: {
     label: 'Provider Quota Required',
     labelKey: 'status.quotaLimit',
+    className: 'border-[#D5E5E5] bg-[#D5E5E5]/64 text-[#5D6B6B]',
+    dot: 'bg-[#E7F5DC]',
+    icon: AlertCircle,
+  },
+  billing_required: {
+    label: 'Billing Required',
+    labelKey: 'status.billingRequired',
     className: 'border-[#D5E5E5] bg-[#D5E5E5]/64 text-[#5D6B6B]',
     dot: 'bg-[#E7F5DC]',
     icon: AlertCircle,
