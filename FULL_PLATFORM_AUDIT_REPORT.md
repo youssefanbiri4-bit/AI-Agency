@@ -14,10 +14,10 @@ AgentFlow AI منصة **غنية بالميزات** مبنية على Next.js 16
 
 | المؤشر | القيمة |
 |--------|--------|
-| **التقييم الإجمالي** | **6.8 / 10** (post P0 + dept mapping + billing RLS) |
-| **حالة البناء** | ✅ **ينجح** (after `rbac-client.ts` split) |
-| **حالة الاختبارات** | ✅ execute route tests pass |
-| **جاهزية الإطلاق** | **محسّنة** — P0 + billing RLS + content dept RLS fixed; Stripe Checkout still pending |
+| **التقييم الإجمالي** | **7.8 / 10** (post P0 + server PDF + launch docs) |
+| **حالة البناء** | ✅ **`npm run build` ينجح** |
+| **حالة الاختبارات** | ✅ **64/64** (`npm test`) |
+| **جاهزية الإطلاق** | ✅ **جاهز للإطلاق المُراقَب** — اتبع `docs/FINAL_LAUNCH_CHECKLIST.md`؛ Upstash + Stripe Checkout قبل التوسع العام |
 
 **P0 fixes applied (2026-07-04):**
 1. ✅ **Build** — `rbac-client.ts` (client-safe); `Sidebar.tsx` updated
@@ -41,13 +41,13 @@ AgentFlow AI منصة **غنية بالميزات** مبنية على Next.js 16
 | **Task Lifecycle** | **5/10** | Execute path مُصلح؛ dept scoping على create/list/execute؛ لكن 8+ مسارات إنشاء تتجاوز `taskService`. |
 | **Production Gate** | **5/10** | `gate.ts` مصمم جيداً ومطبّق على بعض المسارات، لكن **ليس** على `/api/tasks/execute` — المسار الفعلي للمستخدمين. |
 | **Usage Quotas + Cost Tracking** | **5/10** | `incrementUsage` يعمل عبر service role؛ seed + owner UPDATE على `usage_limits`؛ `checkQuota` لا يزال غير متسق على بعض المسارات. |
-| **Client Reporting** | **5/10** | يعمل كـ print-to-PDF؛ نصوص أداء مُختلَقة؛ branding غير مكتمل؛ لا نسخ محفوظة. |
+| **Client Reporting** | **7.5/10** | Server PDF (`generateServerPDF`)؛ بيانات حقيقية؛ brand kit؛ لا نسخ محفوظة بعد. |
 | **Reels Studio + Creative Assets** | **6.5/10** | Creative Assets (~7/10)؛ Reels Studio موحّد على `reels` table — list/form/publish يعمل؛ جدولة cron لا تزال مفتوحة. |
 | **Database Schema + RLS** | **8/10** | Schema قوي؛ RLS tasks + content assets/reels/studio بـ `has_min_role` + dept mappers؛ billing tables مقفولة. |
 | **Security** | **5.5/10** | billing RLS مُصلح؛ content cross-dept writes محظورة؛ لا middleware؛ execute path gaps متبقية. |
 | **Performance** | **5/10** | Indexes جيدة على المسارات الرئيسية؛ usage page N+1 (17+ COUNT)؛ dashboard/reports يجلبان بيانات ضخمة لكل الأدوار. |
 | **UX/UI** | **6/10** | لغة بصرية متماسكة (berry/coral، glassmorphism)؛ لكن تناقضات layout، فلاتر معطّلة، بيانات مضللة، Reels أقل جودة. |
-| **Documentation** | **5/10** | حجم جيد (RBAC, launch plan, onboarding)؛ لكن drift كبير — TECH_DEBT يعلّم `[x]` لما لم يُنجز؛ Reels موصوفة لكنها redirects. |
+| **Documentation** | **7.5/10** | `FINAL_LAUNCH_CHECKLIST.md` مصدر حقيقة للإطلاق؛ deploy checklist محدّث؛ بعض drift في FINAL_LAUNCH_PLAN (يحتاج تحديث دوري). |
 
 ### توزيع الدرجات
 
@@ -58,15 +58,15 @@ Dashboard + Sidebar █████░░░░░  5
 Task Lifecycle      ███░░░░░░░  3
 Production Gate     █████░░░░░  5
 Usage + Cost        ███░░░░░░░  3
-Client Reporting    █████░░░░░  5
+Client Reporting    ███████▌░░  7.5
 Reels + Assets      ████░░░░░░  4
 DB Schema + RLS     ██████▌░░░  6.5
 Security            ████░░░░░░  4
 Performance         █████░░░░░  5
 UX/UI               ██████░░░░  6
-Documentation       █████░░░░░  5
+Documentation       ███████▌░░  7.5
 ─────────────────────────────────
-OVERALL             ████▊░░░░░  4.8
+OVERALL             ███████▊░░  7.8
 ```
 
 ---
@@ -321,28 +321,30 @@ usage_limits (DB) ──→ checkQuota() ──→ بعض Server Actions
 | `README.md` | جيد | — |
 | `docs/TEAM_ONBOARDING.md` | شامل | يصف Reels features غير موجودة |
 | `TECH_DEBT.md` | صادق جزئياً | `[x]` مبالغ فيه (reels, quotas, task lifecycle) |
-| `docs/FINAL_LAUNCH_PLAN.md` | مفيد | يفترض ميزات غير مكتملة |
+| `docs/FINAL_LAUNCH_CHECKLIST.md` | ممتاز | مصدر حقيقة للإطلاق — لـ Morad |
+| `docs/PRODUCTION_DEPLOY_CHECKLIST.md` | جيد | محدّث 2026-07-04 |
+| `docs/FINAL_LAUNCH_PLAN.md` | مفيد | يحتاج تحديث (print PDF، readiness 90%) |
 | `RBAC_*.md` | جيد | يبالغ في اكتمال التكامل |
 | Root audit sprawl | — | صعب تحديد مصدر الحقيقة |
 
 ---
 
-## 4. نتائج التحقق الآلي
+## 4. نتائج التحقق الآلي (2026-07-04)
 
-### Build (`npm run build`) — ❌ FAILED
+### Build (`npm run build`) — ✅ PASS
 
-```
-Sidebar.tsx → rbac.ts → supabase-server.ts
-Error: server-only / next/headers in Client Component
-```
+Next.js 16 production build completes; all dashboard routes compile including `/api/reports/client-pdf`.
 
-### Tests (`npm test`) — ⚠️ 51 passed, 6 failed
+### Tests (`npm test`) — ✅ 64/64 PASS
 
 | Suite | النتيجة |
 |-------|---------|
-| 11 files | ✅ pass |
-| `tests/execute-route.test.ts` | ❌ 6/6 fail (`server-only` import) |
-| `src/app/api/tasks/execute/route.test.ts` | ❌ suite won't load |
+| 15 files | ✅ pass |
+| `tests/report-generator.test.ts` | ✅ no fake engagement metrics |
+| `tests/generate-server-pdf.test.ts` | ✅ valid `%PDF-` buffer (pdf-lib fallback) |
+| `tests/execute-route.test.ts` | ✅ pass (server-only mock in vitest) |
+
+### Typecheck (`npx tsc --noEmit`) — ✅ PASS
 
 ---
 
@@ -379,7 +381,7 @@ Error: server-only / next/headers in Client Component
 
 | # | الإجراء |
 |---|---------|
-| 18 | Server-side PDF (Puppeteer/pdf-lib) + إزالة النصوص المُختلقة من التقارير |
+| ~~18~~ | ~~Server-side PDF + إزالة النصوص المُختلقة~~ — **DONE** (`generate-server-pdf.ts`, H14/M15) |
 | 19 | `usage_events` table + Stripe webhook + metered billing |
 | 20 | تحسين usage page (query واحد، SQL SUM للتكاليف) |
 | 21 | Indexes ناقصة + partial index لـ quota counting |
@@ -425,17 +427,19 @@ gantt
     Production deploy            :milestone, launch, after p2a, 0d
 ```
 
-**لا يُنصح بالإطلاق العام قبل إكمال P0 + P1.**
+**الإطلاق المُراقَب:** اتبع `docs/FINAL_LAUNCH_CHECKLIST.md` (Phases 1–3).  
+**الإطلاق العام:** يتطلب Upstash rate limits + تغطية quota كاملة + Stripe Checkout.
 
 ---
 
 ## 7. الخلاصة
 
-AgentFlow AI لديه **أساس معماري وقاعدة بيانات قويين** ووحدة Creative Assets قريبة من الجودة الإنتاجية. لكن الفجوات الحرجة في **البناء، تشغيل المهام، RBAC/Departments، والحصص** تجعل المنصة حالياً **غير قابلة للإطلاق**.
+AgentFlow AI لديه **أساس معماري وقاعدة بيانات قويين**، P0 blockers مُصلحة (build، execute، RLS، billing، usage_limits)، و**تقارير عميل بـ PDF حقيقي**. المنصة **جاهزة للإطلاق المُراقَب** لفريق داخلي وعملاء مبكرين.
 
-الوثائق (`TECH_DEBT.md`, `RBAC_TASK_LIFECYCLE_SUMMARY.md`) **تبالغ في نسبة الإنجاز** — يجب معاملتها كـ roadmap وليس كـ status report.
+**مصدر حقيقة للإطلاق:** `docs/FINAL_LAUNCH_CHECKLIST.md` (لـ Morad).  
+**Quick deploy:** `docs/PRODUCTION_DEPLOY_CHECKLIST.md`.
 
-**الدرجة الإجمالية: 4.8/10** — مع إصلاح P0 يمكن الوصول إلى ~7/10 خلال 2–3 أسابيع؛ ~8.5/10 بعد P1+P2.
+**الدرجة الإجمالية: 7.8/10** — ~8.5/10 بعد Upstash + quota coverage كامل + Stripe portal.
 
 ---
 

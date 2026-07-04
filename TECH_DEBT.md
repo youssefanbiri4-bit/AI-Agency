@@ -1,6 +1,6 @@
 # AgentFlow AI — Tech Debt & Improvements
 
-> Last updated: 2026-07-04 (Reels Studio unified — H1)
+> Last updated: 2026-07-04 (Final Launch Checklist + server PDF reporting)
 
 ## Database / Migrations
 
@@ -108,10 +108,20 @@
 - [ ] Full coverage across all entry points (alex, campaigns auto-create etc.)
 - [ ] Persist agent_dept on task row at creation for reliable filtering
 
-See also: `RBAC_SUMMARY.md`, `docs/RBAC_IMPLEMENTATION.md`, `docs/FINAL_LAUNCH_PLAN.md` (full analysis + launch plan)
+## Launch & Operations Documentation
 
-**Post Final Review (2026-07-02):**
-- Readiness scored at 90/100.
-- Major remaining: persistent rate limits, server PDF + billing metering, deeper Reels/asset previews.
-- Launch plan created with phased checklist, monitoring, risks, and 30-day recs.
-- Recommend following `docs/FINAL_LAUNCH_PLAN.md` exactly before production exposure.
+- [x] **`docs/FINAL_LAUNCH_CHECKLIST.md`** — single source of truth for Morad: Vercel, Supabase, env, cron, pre/post launch, rollback
+- [x] **`docs/PRODUCTION_DEPLOY_CHECKLIST.md`** — updated operator quick sheet per deploy
+- [x] `docs/PRODUCTION_LAUNCH_CHECKLIST.md` — schema-focused verification
+- [x] `docs/FINAL_LAUNCH_PLAN.md` — architecture analysis + 30-day roadmap
+- [x] `docs/TEAM_ONBOARDING.md` — post-launch team setup
+- [ ] CI pipeline to set `PRODUCTION_AUDIT_*` env vars automatically on release
+- [ ] Vercel `PUPPETEER_EXECUTABLE_PATH` or `@sparticuz/chromium` for branded HTML PDFs in serverless
+
+See also: `RBAC_SUMMARY.md`, `docs/RBAC_IMPLEMENTATION.md`, `FULL_PLATFORM_AUDIT_REPORT.md`
+
+**Launch readiness (2026-07-04):**
+- Controlled production deploy: **ready** (internal team + early clients) per `docs/FINAL_LAUNCH_CHECKLIST.md`
+- P0 blockers (build, execute, RLS, billing, usage_limits, server PDF, fake report metrics): **resolved**
+- Before public scale: persistent rate limits (Upstash), full quota coverage on all create paths, Stripe Checkout
+- Recommend: Morad completes `docs/FINAL_LAUNCH_CHECKLIST.md` Phases 1–3 before client exposure
