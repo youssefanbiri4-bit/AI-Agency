@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, ClipboardCheck, CopyPlus, ExternalLink, FileText, GitBranch, Workflow, Zap } from 'lucide-react';
-import { RunTaskButton } from './RunTaskButton';
+import { RunTaskButton } from '@/components/tasks/RunTaskButton';
+import { buildTaskExecutionPayload } from '@/lib/tasks/execution-payload';
 import { TaskProcessingPoller } from './TaskProcessingPoller';
 import { ReviewForm } from '../../review/ReviewForm';
 import {
@@ -22,6 +23,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { getN8nReadiness } from '@/lib/n8n';
 import { formatDateTime } from '@/lib/utils';
+import { ClientReportButton } from '@/components/reports/ClientReportButton';
+import { getRBACContext } from '@/lib/auth/rbac';
+import { hasPermission } from '@/lib/auth/rbac-client';
 
 export default async function TaskDetailsPage({
   params,
@@ -63,6 +67,14 @@ export default async function TaskDetailsPage({
   const agent = agentsResult.data.find((item) => item.id === task.agent_type);
   const inputEntries = Object.entries(task.input_data || {});
   const n8nReadiness = await getN8nReadiness();
+
+  // RBAC for this task view
+  const rbacCtx = await getRBACContext();
+  const userRole = rbacCtx.data?.rbacRole || 'viewer';
+  const canExecute = hasPermission(userRole, 'operator');
+  const canReview = hasPermission(userRole, 'operator');
+  const canManage = hasPermission(userRole, 'admin');
+
   const githubInput =
     task.input_data?.source === 'github_issue' &&
     task.input_data.github &&
@@ -103,6 +115,14 @@ export default async function TaskDetailsPage({
               <CopyPlus className="h-4 w-4" />
               Create Similar
             </Link>
+            <ClientReportButton
+              workspaceId={workspaceId || ''}
+              workspaceName={workspaceResult.data?.name || 'Workspace'}
+              taskIds={[task.id]}
+              label="Download Task PDF"
+              variant="outline"
+              compact
+            />
           </div>
         }
       />
@@ -242,10 +262,19 @@ export default async function TaskDetailsPage({
         </div>
 
         <div className="space-y-8">
-          {task.status === 'needs_review' && (
+          {task.status === 'needs_review' && canReview && (
             <Card className="h-fit">
               <CardHeader title="Review Actions" description="Approve this task or request changes with feedback." />
               <ReviewForm taskId={task.id} />
+            </Card>
+          )}
+
+          {task.status === 'needs_review' && !canReview && (
+            <Card className="h-fit">
+              <CardHeader title="Review Actions" description="RBAC restricted" />
+              <Notice tone="warning" title="Insufficient permissions">
+                Only operators and above can review tasks.
+              </Notice>
             </Card>
           )}
 
@@ -287,12 +316,20 @@ export default async function TaskDetailsPage({
               }
             />
             {task.status === 'pending' || task.status === 'failed' ? (
-              <RunTaskButton
-                taskId={task.id}
-                mode={task.status === 'failed' ? 'retry' : 'run'}
-                disabled={!n8nReadiness.canExecute}
-                disabledReason={!n8nReadiness.canExecute ? n8nReadiness.message : undefined}
-              />
+              canExecute ? (
+                <RunTaskButton
+                  taskId={task.id}
+                  workspaceId={workspaceId || ''}
+                  taskPayload={buildTaskExecutionPayload(task)}
+                  mode={task.status === 'failed' ? 'retry' : 'run'}
+                  disabled={!n8nReadiness.canExecute}
+                  disabledReason={!n8nReadiness.canExecute ? n8nReadiness.message : undefined}
+                />
+              ) : (
+                <Notice tone="warning" title="RBAC restricted">
+                  Only operators and above can execute tasks.
+                </Notice>
+              )
             ) : task.status === 'processing' ? (
               <TaskProcessingPoller taskId={task.id} updatedAt={task.updated_at} />
             ) : (

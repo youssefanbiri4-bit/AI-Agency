@@ -53,6 +53,7 @@ import {
   OperationalReportClient,
   type PublishAttemptTimelineItem,
 } from './OperationalReportClient';
+import { ClientReportButton } from '@/components/reports/ClientReportButton';
 import {
   MonthlyAgencyReportClient,
   type MonthlyProviderStatus,
@@ -1404,6 +1405,31 @@ export default async function ReportsPage() {
           generatedCount={generatedReportsResult.data.reports.length}
           reportText={reportText}
         />
+
+        <ReportsCard
+          title="Client-Ready Reports"
+          description="Server-generated PDF with cover page, table of contents, branding, and real workspace metrics."
+          action={null}
+        >
+          <div className="space-y-4">
+            <div className="grid gap-3 text-sm text-black/62 sm:grid-cols-3">
+              <SmallMetric label="Tasks in report data" value={tasks.length} />
+              <SmallMetric label="Generated outputs" value={generatedReportsResult.data.reports.length} />
+              <SmallMetric label="Reviews logged" value={reportResult.data.reviewCount} />
+            </div>
+            <p className="text-sm leading-6 text-black/58">
+              Pulls real data from tasks, reels, creative assets, and brand kit settings. No fabricated
+              engagement or ad performance metrics.
+            </p>
+            <ClientReportButton
+              workspaceId={workspaceId || ''}
+              workspaceName={workspaceResult.data?.name || 'Client'}
+              label="Download Client PDF"
+              showTemplatePicker
+              showPasswordField
+            />
+          </div>
+        </ReportsCard>
 
         <ReportsCard
           title="Production Setup Checklist"
