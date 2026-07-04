@@ -79,7 +79,7 @@ const workspaceTables = [
 ];
 
 const secretScanFiles = [
-  'src/proxy.ts',
+  'src/middleware.ts',
   'src/app/api/alex/chat/route.ts',
   'src/app/api/cron/content-studio-scheduler/route.ts',
   'src/app/api/dashboard/content-studio/run-scheduler/route.ts',
@@ -290,7 +290,7 @@ export async function buildSecurityCenterSummary({
 
   const [proxyFile, schedulerRoute, cronRoute, assistantActions, settingsActions] =
     await Promise.all([
-      readIfExists(sourcePath('proxy.ts')),
+      readIfExists(sourcePath('middleware.ts')),
       readIfExists(sourcePath('app/api/dashboard/content-studio/run-scheduler/route.ts')),
       readIfExists(sourcePath('app/api/cron/content-studio-scheduler/route.ts')),
       readIfExists(sourcePath('app/(dashboard)/dashboard/assistant/actions.ts')),
@@ -307,7 +307,10 @@ export async function buildSecurityCenterSummary({
     ]);
 
   const checks = {
-    proxyAuth: proxyFile.includes("pathname.startsWith('/dashboard')") && proxyFile.includes('supabase.auth.getUser'),
+    proxyAuth:
+      proxyFile.includes("pathname.startsWith('/dashboard')") &&
+      proxyFile.includes('supabase.auth.getUser') &&
+      proxyFile.includes('evaluatePageAccess'),
     activeWorkspace: settingsActions.includes('getActiveWorkspaceIdFromCookie') && settingsActions.includes('getCurrentUserWorkspace'),
     adminSettings: settingsActions.includes("role !== 'owner'") && settingsActions.includes("role !== 'admin'"),
     // Avoid runtime-reading next.config.ts from dashboard routes; Turbopack traces that
@@ -356,7 +359,7 @@ export async function buildSecurityCenterSummary({
   }
 
   const cards: SecurityCard[] = [
-    { title: 'Authentication', status: checks.proxyAuth ? 'ready' : 'critical', detail: checks.proxyAuth ? 'Dashboard/onboarding routes are protected in proxy.' : 'Dashboard proxy auth was not verified.', checksReady: checks.proxyAuth ? 1 : 0, checksTotal: 1 },
+    { title: 'Authentication', status: checks.proxyAuth ? 'ready' : 'critical', detail: checks.proxyAuth ? 'Dashboard routes are protected in proxy (edge) with auth + RBAC.' : 'Dashboard proxy auth was not verified.', checksReady: checks.proxyAuth ? 1 : 0, checksTotal: 1 },
     { title: 'Workspace Access', status: checks.activeWorkspace ? 'ready' : 'critical', detail: checks.activeWorkspace ? 'Active workspace checks are present in settings actions.' : 'Active workspace validation needs review.', checksReady: checks.activeWorkspace ? 1 : 0, checksTotal: 1 },
     { title: 'Supabase RLS', status: rlsSummary.missingRls.length === 0 ? 'ready' : 'needs_review', detail: `${rlsSummary.tablesWithRls.length}/${rlsSummary.reviewedTables.length} reviewed workspace tables have RLS enable statements in migrations.`, checksReady: rlsSummary.tablesWithRls.length, checksTotal: rlsSummary.reviewedTables.length },
     { title: 'API Routes / Server Actions', status: checks.adminSettings && checks.manualSchedulerAuth ? 'ready' : 'needs_review', detail: 'Settings and manual scheduler validate user/workspace/role for sensitive actions.', checksReady: [checks.adminSettings, checks.manualSchedulerAuth].filter(Boolean).length, checksTotal: 2 },
@@ -375,7 +378,7 @@ export async function buildSecurityCenterSummary({
     {
       title: 'Authentication & Session',
       items: [
-        { label: 'Dashboard routes require auth', status: checks.proxyAuth ? 'ready' : 'critical', evidence: 'src/proxy.ts' },
+        { label: 'Dashboard routes require auth + RBAC', status: checks.proxyAuth ? 'ready' : 'critical', evidence: 'src/middleware.ts' },
         { label: 'Server actions validate authenticated user', status: checks.activeWorkspace ? 'ready' : 'needs_review', evidence: 'Settings/assistant actions call Supabase auth.' },
         { label: 'Owner/admin checks for sensitive settings', status: checks.adminSettings ? 'ready' : 'needs_review', evidence: 'Settings actions check owner/admin before theme/branding/provider changes.' },
       ],

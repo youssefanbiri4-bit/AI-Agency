@@ -1,6 +1,6 @@
 # AgentFlow AI — Tech Debt & Improvements
 
-> Last updated: 2026-07-04 (Final Launch Checklist + server PDF reporting)
+> Last updated: 2026-07-04 (middleware route protection H9)
 
 ## Database / Migrations
 
@@ -12,6 +12,19 @@
 - [x] Billing tables locked: `subscriptions` + `billing_customers` — SELECT owner/admin only; no client INSERT/UPDATE (service role + webhook)
 - [x] `usage_limits` seeded in `handle_new_workspace_owner` trigger; owner UPDATE policy; server increments via service role
 - [ ] Dedicated `usage_events` table for metered billing (see Usage Quotas section below)
+
+## Route protection (middleware)
+
+- [x] **`src/middleware.ts`** — edge entry (auth + workspace + RBAC/department on `/dashboard/*`)
+- [x] **`src/lib/auth/require-page-access.ts`** — shared `evaluatePageAccess` / `buildPageAccessContext` (edge + server)
+- [x] **`src/lib/auth/dashboard-edge-auth.ts`** — edge handler (CSP, Supabase session, membership query)
+- [x] Dashboard layout defense-in-depth via `PATHNAME_HEADER` + `evaluatePageAccess`
+- [x] `requirePageAccess()` server helper in `rbac.ts`
+- [x] Unit tests: `tests/require-page-access.test.ts`
+- [x] Edge handler extracted to `dashboard-edge-auth.ts` (CSP + Supabase session + membership)
+- [ ] Migrate to `proxy.ts` export when dropping `middleware.ts` filename (Next.js 16 deprecation warning only)
+- [ ] Extend `requirePageAccess` with per-route minimum role map (settings/billing/production)
+- [ ] Align Sidebar fail-open (`!role → true`) with middleware fail-closed behavior
 
 ## P0 Blockers (2026-07-04 fix)
 

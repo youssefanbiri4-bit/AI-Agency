@@ -8,8 +8,19 @@ import { countUnreadNotifications } from '@/lib/data/notifications';
 import { getBrandingForWorkspace } from '@/lib/data/branding';
 import { defaultWorkspaceBranding } from '@/lib/data/branding';
 import { getWorkspaceTheme } from '@/lib/data/theme';
-import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
+import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { defaultWorkspaceTheme } from '@/lib/theme';
+import {
+  buildPageAccessContext,
+  evaluatePageAccess,
+  normalizeRole,
+  PATHNAME_HEADER,
+  RBAC_DEPT_COOKIE,
+} from '@/lib/auth/rbac';
+import type { DashboardRBACProfile } from '@/components/layout/DashboardContext';
+import type { Department, RBACRole } from '@/types/auth';
+import { isDepartment } from '@/types/auth';
+import { cookies, headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
@@ -123,6 +134,9 @@ export default async function DashboardLayout({
     redirect('/auth/login?redirectTo=/dashboard');
   }
 
+  // Auth + RBAC route checks are enforced in src/middleware.ts (edge); layout repeats page access
+  // using the pathname header for defense in depth on server-rendered dashboard routes.
+
   traceDashboardLayout('before active workspace cookie');
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
   traceDashboardLayout('after active workspace cookie', { activeWorkspaceId });
@@ -144,7 +158,15 @@ export default async function DashboardLayout({
   }
 
   traceDashboardLayout('before shell data batch', { workspaceId: workspaceResult.data.id });
-  const [unreadCountResult, brandingResult, themeResult] = await Promise.allSettled([
+
+  // Fetch membership for RBAC (role + department) - additive, non-blocking if fails
+  const membershipPromise = getCurrentWorkspaceMembership(
+    supabase,
+    workspaceResult.data.id,
+    user.id
+  ).catch(() => ({ data: null, error: 'membership fetch failed' } as const));
+
+  const [unreadCountResult, brandingResult, themeResult, membershipResult] = await Promise.allSettled([
     withLayoutTimeout(
       'notification count',
       countUnreadNotifications(
@@ -166,6 +188,7 @@ export default async function DashboardLayout({
       getWorkspaceTheme(supabase, workspaceResult.data.id),
       DASHBOARD_LAYOUT_TIMEOUTS.shellData
     ),
+    membershipPromise,
   ]);
   traceDashboardLayout('after shell data batch');
 
@@ -182,9 +205,63 @@ export default async function DashboardLayout({
       ? themeResult.value.data
       : defaultWorkspaceTheme;
 
+  // Build RBAC profile from membership (defensive)
+  let rbacProfile: DashboardRBACProfile | undefined;
+  if (membershipResult.status === 'fulfilled' && membershipResult.value.data) {
+    const m = membershipResult.value.data;
+    const rawRole = (m as any).role as string | null;
+    const rawDept = (m as any).department as string | null;
+    const rbacRole = normalizeRole(rawRole) as RBACRole;
+    const dept: Department | null = isDepartment(rawDept) ? rawDept : null;
+
+    // Read possible RBAC dept cookie server-side for initial personalization (client also reads it)
+    const cookieStore = await cookies();
+    const cookieDeptRaw = cookieStore.get(RBAC_DEPT_COOKIE)?.value;
+    const cookieDept: Department | null = isDepartment(cookieDeptRaw) ? cookieDeptRaw : null;
+
+    rbacProfile = {
+      role: rbacRole,
+      department: dept,
+      isAdminOrHigher: rbacRole === 'admin' || rbacRole === 'owner',
+    };
+
+    const headersList = await headers();
+    const pathname =
+      headersList.get(PATHNAME_HEADER) ??
+      headersList.get('x-url') ??
+      headersList.get('next-url') ??
+      '';
+
+    if (pathname.startsWith('/dashboard')) {
+      const accessCtx = buildPageAccessContext({
+        role: rbacRole,
+        assignedDepartment: dept,
+        cookieDepartment: cookieDept,
+      });
+
+      if (accessCtx) {
+        const access = evaluatePageAccess(pathname, accessCtx);
+        if (!access.allowed) {
+          dashboardLayoutLog.warn('redirect access denied', {
+            pathname,
+            area: access.area,
+            role: rbacRole,
+            department: accessCtx.effectiveDepartment,
+          });
+          const params = new URLSearchParams({ access_denied: '1' });
+          if (pathname !== '/dashboard') {
+            params.set('from', pathname);
+          }
+          redirect(`/dashboard?${params.toString()}`);
+        }
+      }
+    }
+  }
+
   traceDashboardLayout('render shell', {
     workspaceId: workspaceResult.data.id,
     unreadCount,
+    hasRBAC: !!rbacProfile,
   });
 
   return (
@@ -206,6 +283,7 @@ export default async function DashboardLayout({
           logoAltText: branding.logo_alt_text,
         },
       }}
+      rbac={rbacProfile}
       initialNotifications={[]}
       initialUnreadCount={unreadCount}
       theme={theme}

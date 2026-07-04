@@ -35,7 +35,7 @@ AgentFlow AI منصة **غنية بالميزات** مبنية على Next.js 16
 
 | المجال | الدرجة | الملخص |
 |--------|--------|--------|
-| **Architecture** | **5/10** | هيكل App Router نظيف، Server Actions منظمة، لكن ازدواجية صلاحيات، استيراد server في client، ولا `middleware.ts`. |
+| **Architecture** | **6.5/10** | App Router + `middleware.ts` لحماية `/dashboard/*`؛ لا يزال ازدواجية صلاحيات legacy + RBAC. |
 | **RBAC + Departments** | **6/10** | `DEPARTMENT_MAP` يربط catalog ↔ RBAC؛ task scoping يعمل؛ لكن لا UI لتعيين department وSidebar ≠ route protection. |
 | **Dashboard + Sidebar** | **5/10** | UI جميل، RBAC nav، لكن dashboard مزدوج، إحصائيات وهمية، 30+ عنصر nav، والبناء مكسور بسبب Sidebar. |
 | **Task Lifecycle** | **5/10** | Execute path مُصلح؛ dept scoping على create/list/execute؛ لكن 8+ مسارات إنشاء تتجاوز `taskService`. |
@@ -44,7 +44,7 @@ AgentFlow AI منصة **غنية بالميزات** مبنية على Next.js 16
 | **Client Reporting** | **7.5/10** | Server PDF (`generateServerPDF`)؛ بيانات حقيقية؛ brand kit؛ لا نسخ محفوظة بعد. |
 | **Reels Studio + Creative Assets** | **6.5/10** | Creative Assets (~7/10)؛ Reels Studio موحّد على `reels` table — list/form/publish يعمل؛ جدولة cron لا تزال مفتوحة. |
 | **Database Schema + RLS** | **8/10** | Schema قوي؛ RLS tasks + content assets/reels/studio بـ `has_min_role` + dept mappers؛ billing tables مقفولة. |
-| **Security** | **5.5/10** | billing RLS مُصلح؛ content cross-dept writes محظورة؛ لا middleware؛ execute path gaps متبقية. |
+| **Security** | **6.5/10** | middleware RBAC على dashboard؛ billing RLS مُصلح؛ execute path gaps متبقية. |
 | **Performance** | **5/10** | Indexes جيدة على المسارات الرئيسية؛ usage page N+1 (17+ COUNT)؛ dashboard/reports يجلبان بيانات ضخمة لكل الأدوار. |
 | **UX/UI** | **6/10** | لغة بصرية متماسكة (berry/coral، glassmorphism)؛ لكن تناقضات layout، فلاتر معطّلة، بيانات مضللة، Reels أقل جودة. |
 | **Documentation** | **7.5/10** | `FINAL_LAUNCH_CHECKLIST.md` مصدر حقيقة للإطلاق؛ deploy checklist محدّث؛ بعض drift في FINAL_LAUNCH_PLAN (يحتاج تحديث دوري). |
@@ -52,7 +52,7 @@ AgentFlow AI منصة **غنية بالميزات** مبنية على Next.js 16
 ### توزيع الدرجات
 
 ```
-Architecture        █████░░░░░  5
+Architecture        ██████▌░░░  6.5
 RBAC + Departments  ████░░░░░░  4
 Dashboard + Sidebar █████░░░░░  5
 Task Lifecycle      ███░░░░░░░  3
@@ -99,7 +99,7 @@ OVERALL             ███████▊░░  7.8
 | H6 | **AI Studio بدون `checkQuota`** | `ai-studio/actions.ts` | تجاوز حدود التوليد |
 | H7 | **`gatedCreateTask` / `gatedExecuteTask` بدون RBAC** | `src/actions/tasks.ts` | مسارات gated أضعف من المسارات الرئيسية |
 | H8 | **اختبارات execute route فاشلة (6/6)** + suite واحدة لا تُحمّل | `tests/execute-route.test.ts`, `route.test.ts` | لا CI safety net للمسار الحرج |
-| H9 | **لا `middleware.ts`** — حماية dashboard فقط في layout | `src/app/(dashboard)/layout.tsx` | URL مباشر يتجاوز sidebar RBAC |
+| ~~H9~~ | ~~**لا middleware/route protection**~~ — **FIXED** — `middleware.ts` + `require-page-access.ts` enforce RBAC/dept on direct URLs | `middleware.ts`, `dashboard-edge-auth.ts` | ✅ |
 | H10 | **`fail-stale` بدون فحص دور operator** | `api/tasks/fail-stale/route.ts` | أي member يعلّم مهام failed |
 | ~~H11~~ | ~~**Metadata key خاطئ في asset sync**~~ — **FIXED** — `resolveAssetVideoUrl` handles both keys | `reels/actions.ts` | ✅ |
 | ~~H12~~ | ~~**Redeclaration coverAssetId/videoAssetId**~~ — **FIXED** via `syncUrlsFromLinkedAssets` helper | `reels/actions.ts` | ✅ |
@@ -369,7 +369,7 @@ Next.js 16 production build completes; all dashboard routes compile including `/
 |---|---------|
 | 9 | توحيد Reels: إما استعادة UI على `reels` table أو حذف الكود الميت وتحديث كل الوثائق |
 | 10 | توجيه كل مسارات إنشاء المهام عبر `taskService.createTask` |
-| 11 | إضافة `middleware.ts` أو `requirePageAccess()` لكل dashboard routes |
+| ~~11~~ | ~~إضافة `middleware.ts`~~ — **DONE** (`require-page-access.ts` + layout defense-in-depth) |
 | 12 | توسيع roles UI: department selector + `updateMemberRBAC` |
 | 13 | تطبيق `has_min_role()` في RLS policies للكتابة |
 | 14 | إضافة `checkQuota` لـ ai-studio, content-studio, campaigns |
