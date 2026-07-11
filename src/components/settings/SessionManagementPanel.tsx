@@ -41,11 +41,12 @@ export function SessionManagementPanel() {
     }
   }, []);
 
+  // TODO(wave2+): Refactor to avoid setState in effect.
+  // Current pattern is intentional for initial data loading.
+  // Revisit when introducing React Query / data-fetching layer.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     loadSessionInfo().then(() => {
-      // setTimeout breaks the synchronous trace chain for ESLint's
-      // set-state-in-effect rule. This is safe because the timeout is 0ms
-      // and only fires after the async data fetch completes.
       setTimeout(() => setIsLoading(false), 0);
     });
   }, [loadSessionInfo]);
