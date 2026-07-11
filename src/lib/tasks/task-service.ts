@@ -165,7 +165,6 @@ export class TaskService {
     const task = taskRes.data;
     const { rbacRole, department: userDept } = rbacRes.data;
     const catalogRef =
-      resolveCatalogDepartmentId(task.agent_department ?? null) ??
       (await this.resolveAgentCatalogRef(task.agent_type as AgentType, client));
 
     if (

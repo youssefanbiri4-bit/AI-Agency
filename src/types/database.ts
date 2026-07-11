@@ -314,6 +314,7 @@ export interface Database {
           workspace_id: string;
           user_id: string;
           role: WorkspaceRole;
+          department: string | null;
           permissions: JsonObject;
           created_at: string;
           updated_at: string;
@@ -322,12 +323,14 @@ export interface Database {
           workspace_id: string;
           user_id: string;
           role?: WorkspaceRole;
+          department?: string | null;
           permissions?: JsonObject;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           role?: WorkspaceRole;
+          department?: string | null;
           permissions?: JsonObject;
           updated_at?: string;
         };
@@ -575,6 +578,35 @@ export interface Database {
           template_category?: string;
           action_type?: AgentTemplateUsageActionType;
           source_page?: AgentTemplateUsageSourcePage;
+          metadata?: JsonObject;
+        };
+        Relationships: [];
+      };
+      usage_events: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string | null;
+          event_type: string;
+          quota_type: string;
+          amount: number;
+          metadata: JsonObject;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id?: string | null;
+          event_type: string;
+          quota_type: string;
+          amount?: number;
+          metadata?: JsonObject;
+          created_at?: string;
+        };
+        Update: {
+          event_type?: string;
+          quota_type?: string;
+          amount?: number;
           metadata?: JsonObject;
         };
         Relationships: [];
@@ -839,22 +871,21 @@ export interface Database {
       user_preferences: {
         Row: {
           id: string;
-          workspace_id: string;
           user_id: string;
-          preferences: JsonObject;
-          created_at: string;
+          key: string;
+          value: JsonObject;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          workspace_id: string;
-          user_id?: string;
-          preferences?: JsonObject;
-          created_at?: string;
+          user_id: string;
+          key: string;
+          value?: JsonObject;
           updated_at?: string;
         };
         Update: {
-          preferences?: JsonObject;
+          key?: string;
+          value?: JsonObject;
           updated_at?: string;
         };
         Relationships: [];
@@ -1502,6 +1533,85 @@ export interface Database {
           error_message?: string | null;
           provider_external_id?: string | null;
           created_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      saved_reports: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          created_by: string | null;
+          title: string;
+          template: string;
+          period_label: string | null;
+          filename: string;
+          storage_path: string;
+          file_size_bytes: number | null;
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          created_by?: string | null;
+          title: string;
+          template?: string;
+          period_label?: string | null;
+          filename: string;
+          storage_path: string;
+          file_size_bytes?: number | null;
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          template?: string;
+          period_label?: string | null;
+          filename?: string;
+          storage_path?: string;
+          file_size_bytes?: number | null;
+          metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      report_share_links: {
+        Row: {
+          id: string;
+          report_id: string;
+          workspace_id: string;
+          created_by: string | null;
+          token: string;
+          expires_at: string;
+          password_hash: string | null;
+          access_count: number;
+          max_access_count: number | null;
+          is_revoked: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          report_id: string;
+          workspace_id: string;
+          created_by?: string | null;
+          token: string;
+          expires_at: string;
+          password_hash?: string | null;
+          access_count?: number;
+          max_access_count?: number | null;
+          is_revoked?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          password_hash?: string | null;
+          access_count?: number;
+          max_access_count?: number | null;
+          is_revoked?: boolean;
           updated_at?: string;
         };
         Relationships: [];

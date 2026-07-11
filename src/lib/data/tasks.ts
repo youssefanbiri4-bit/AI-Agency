@@ -12,6 +12,8 @@ export interface ListTasksOptions {
   agentType?: AgentType;
   status?: TaskStatus;
   limit?: number;
+  userId?: string;
+  departmentScope?: unknown[] | null;
 }
 
 export interface CreateTaskDraftInput {
@@ -22,6 +24,7 @@ export interface CreateTaskDraftInput {
   description: string;
   priority?: TaskPriority;
   inputData?: JsonObject;
+  agentDepartment?: string | null;
 }
 
 export interface UpdateTaskReviewStatusInput {

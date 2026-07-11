@@ -129,7 +129,7 @@ export async function listReels(
 
 export async function listReelsForWorkspace(
   workspaceId: string,
-  userId: string,
+  userId?: string,
   client: SupabaseClient<Database> = supabase as SupabaseClient<Database>
 ): Promise<DataResult<ReelRecord[]>> {
   return listReels({ workspaceId, userId }, client);
@@ -266,6 +266,28 @@ export async function updateReel(
   }
 
   return emptyDataResult(data, true);
+}
+
+export async function deleteReel(
+  workspaceId: string,
+  reelId: string,
+  client: SupabaseClient<Database> = supabase as SupabaseClient<Database>
+): Promise<DataResult<null>> {
+  if (!isSupabaseConfigured) {
+    return emptyDataResult(null, false);
+  }
+
+  const { error } = await client
+    .from('reels')
+    .delete()
+    .eq('id', reelId)
+    .eq('workspace_id', workspaceId);
+
+  if (error) {
+    return errorDataResult(null, error.message);
+  }
+
+  return emptyDataResult(null, true);
 }
 
 export async function markReelReady(
