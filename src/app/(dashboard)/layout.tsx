@@ -209,8 +209,8 @@ export default async function DashboardLayout({
   let rbacProfile: DashboardRBACProfile | undefined;
   if (membershipResult.status === 'fulfilled' && membershipResult.value.data) {
     const m = membershipResult.value.data;
-    const rawRole = (m as any).role as string | null;
-    const rawDept = (m as any).department as string | null;
+    const rawRole = (m as unknown as { role: string | null }).role;
+    const rawDept = (m as unknown as { department: string | null }).department;
     const rbacRole = normalizeRole(rawRole) as RBACRole;
     const dept: Department | null = isDepartment(rawDept) ? rawDept : null;
 

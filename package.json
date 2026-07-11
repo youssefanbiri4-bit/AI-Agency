@@ -11,7 +11,7 @@
     "build": "bash scripts/next-node20.sh build --webpack",
     "build:turbo": "bash scripts/next-node20.sh build --turbopack",
     "start": "bash scripts/next-node20.sh start",
-    "lint": "eslint",
+    "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "security:audit": "node scripts/security-audit.mjs",
     "test": "vitest run",
