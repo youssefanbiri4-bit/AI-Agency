@@ -8,6 +8,9 @@ type CallbackOutcome = 'accepted' | 'processed' | 'duplicate' | 'stale_ignored' 
 
 interface CallbackEventInput {
   supabase: SupabaseClient<Database>;
+  // DEPRECATED: '/api/tasks/callback' sourceRoute is deprecated since 2026-07-11.
+  // All new callbacks should use '/api/n8n/callback'. The legacy route is a thin
+  // wrapper that delegates to the canonical handler and will be removed in a future wave.
   sourceRoute: '/api/n8n/callback' | '/api/tasks/callback';
   taskId: string;
   workspaceId: string;

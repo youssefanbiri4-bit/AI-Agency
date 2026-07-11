@@ -8,6 +8,7 @@ import {
 } from '@/lib/data/tasks';
 import { logger, reportAppError } from '@/lib/logger';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { createNotification } from '@/lib/data/notifications';
 import {
   markN8nCallbackEvent,
   recordN8nCallback,
@@ -414,6 +415,28 @@ export async function POST(request: NextRequest) {
       });
 
       return jsonError(eventResult.error, 500);
+    }
+
+    // Best-effort notification: must never block the stable callback response.
+    try {
+      await createNotification(
+        {
+          workspaceId: taskRecord.workspace_id,
+          userId: taskRecord.user_id,
+          type: failed ? 'task_failed' : 'task_needs_review',
+          title: failed ? 'Task failed' : 'Task needs review',
+          message: failed
+            ? `${task.title} failed during automation.`
+            : `${task.title} is ready for review.`,
+          metadata: {
+            task_id: task.id,
+            source: 'n8n_callback',
+          },
+        },
+        adminClient
+      );
+    } catch {
+      // Notifications must never block the stable n8n callback response.
     }
 
     if (callbackEvent.eventId) {

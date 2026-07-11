@@ -57,7 +57,7 @@ vi.mock('@/lib/n8n', () => ({
   getN8nCallbackSecret: () => process.env.N8N_CALLBACK_SECRET,
 }));
 
-describe('POST /api/tasks/callback - ignored when not processing', () => {
+describe('POST /api/tasks/callback (deprecated wrapper) — delegates to canonical handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Record callback returns success, not duplicate
@@ -91,6 +91,10 @@ describe('POST /api/tasks/callback - ignored when not processing', () => {
     const json = await res.json();
     expect(json.ignored).toBe(true);
     expect(json.data.status).toBe('pending');
+
+    // Verify deprecation headers are present
+    expect(res.headers.get('X-Deprecated')).toBe('true');
+    expect(res.headers.get('X-Deprecation-Notice')).toContain('/api/n8n/callback');
   });
 
   it('processes callback when task status is processing', async () => {
@@ -99,10 +103,26 @@ describe('POST /api/tasks/callback - ignored when not processing', () => {
 
     const { POST } = await import('@/app/api/tasks/callback/route');
 
+    // Include a valid structuredOutput so the canonical route's validation passes.
     const body = {
       task_id: '550e8400-e29b-41d4-a716-446655440001',
       status: 'completed',
-      result: { success: true },
+      result: {
+        callbackPayload: {
+          structuredOutput: {
+            summary: 'Test summary',
+            recommendations: ['Test recommendation'],
+            nextActions: [{ title: 'Review', description: 'Review the output', priority: 'medium' as const }],
+            metadata: {
+              taskId: '550e8400-e29b-41d4-a716-446655440001',
+              workspaceId: '550e8400-e29b-41d4-a716-446655440010',
+              departmentKey: 'test',
+              agentName: 'Test Agent',
+              agentId: 'test_agent',
+            },
+          },
+        },
+      },
     };
 
     const res = await POST(new NextRequest('http://localhost/api/tasks/callback', {
@@ -115,5 +135,30 @@ describe('POST /api/tasks/callback - ignored when not processing', () => {
     const json = await res.json();
     expect(json.success).toBe(true);
     expect(json.data.status).toBe('needs_review');
+
+    // Verify deprecation headers are present
+    expect(res.headers.get('X-Deprecated')).toBe('true');
+    expect(res.headers.get('X-Deprecation-Notice')).toContain('/api/n8n/callback');
+  });
+
+  it('maps legacy x-callback-secret header to canonical x-n8n-callback-secret', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: { id: '550e8400-e29b-41d4-a716-446655440001', workspace_id: '550e8400-e29b-41d4-a716-446655440010', user_id: '550e8400-e29b-41d4-a716-446655440020', title: 'T', status: 'pending' } });
+
+    const { POST } = await import('@/app/api/tasks/callback/route');
+
+    const body = {
+      task_id: '550e8400-e29b-41d4-a716-446655440001',
+      status: 'completed',
+    };
+
+    const res = await POST(new NextRequest('http://localhost/api/tasks/callback', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      // Only legacy header, no canonical header
+      headers: { 'Content-Type': 'application/json', 'x-callback-secret': 'test-secret' },
+    }));
+
+    // Should succeed (not 401) because wrapper mapped the legacy header
+    expect(res.status).toBe(200);
   });
 });
