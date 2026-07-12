@@ -16,7 +16,8 @@ import { allBackupCategories, backupCategoryLabels } from '@/lib/backup-center';
 import { listBackupRecordsForWorkspace } from '@/lib/data/backup-records';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { AccessDenied } from '@/components/auth/AccessDenied';
-import { canManageBackups, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
+import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
+import { hasPermission } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
@@ -45,7 +46,7 @@ export default async function BackupCenterPage() {
     const membership = await getCurrentWorkspaceMembership(supabase, workspaceResult.data.id, user.id);
     const currentRole = normalizeWorkspaceRole(membership.data?.role, workspaceResult.data, user.id);
 
-    if (!canManageBackups(currentRole)) {
+    if (!hasPermission(currentRole, 'admin')) {
       await logSecurityAuditEvent({
         supabase,
         workspaceId: workspaceResult.data.id,

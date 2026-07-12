@@ -27,7 +27,7 @@ import { CodeInline } from '@/components/ui/TextSafety';
 import { cn } from '@/lib/utils';
 import { SystemHealthCopyButton } from './SystemHealthCopyButton';
 import { AccessDenied } from '@/components/auth/AccessDenied';
-import { getWorkspaceAccessContext, canManageSecurity } from '@/lib/workspace-permissions';
+import { getRBACContext, hasPermission } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 
 const badgeStatus: Record<HealthStatus, Parameters<typeof StatusBadge>[0]['status']> = {
@@ -97,13 +97,13 @@ function safeDashboardHref(href: string) {
 }
 
 export default async function SystemHealthPage() {
-  const access = await getWorkspaceAccessContext();
+  const access = await getRBACContext();
 
   if (access.error || !access.data) {
     return <AccessDenied />;
   }
 
-  if (!canManageSecurity(access.data.role)) {
+  if (!hasPermission(access.data.role, 'admin')) {
     await logSecurityAuditEvent({
       supabase: access.data.supabase,
       workspaceId: access.data.workspace.id,

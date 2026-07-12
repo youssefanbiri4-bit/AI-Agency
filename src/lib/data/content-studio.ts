@@ -23,6 +23,8 @@ const contentStudioLog = logger.child('data:content-studio');
 
 export interface ListContentStudioItemsOptions {
   limit?: number;
+  /** @deprecated Not used in the query yet — reserved for RBAC scoping */
+  departmentScope?: unknown;
 }
 
 export interface ContentStudioItemWithAssets extends ContentStudioItemRecord {

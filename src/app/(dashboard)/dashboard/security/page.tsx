@@ -12,7 +12,8 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { AccessDenied } from '@/components/auth/AccessDenied';
-import { canManageSecurity, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
+import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
+import { hasPermission } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { buildSecurityCenterSummary, buildSecurityReport, type SecurityStatus } from '@/lib/security-center';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -79,7 +80,7 @@ export default async function SecurityCenterPage() {
   const membership = await getCurrentWorkspaceMembership(supabase, workspaceResult.data.id, user.id);
   const currentRole = normalizeWorkspaceRole(membership.data?.role, workspaceResult.data, user.id);
 
-  if (!canManageSecurity(currentRole)) {
+  if (!hasPermission(currentRole, 'admin')) {
     await logSecurityAuditEvent({
       supabase,
       workspaceId: workspaceResult.data.id,

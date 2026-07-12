@@ -6,11 +6,10 @@ import 'server-only';
 import { assertProductionGate } from '@/lib/production/gate';
 import { generateImageAction as originalGenerate } from '@/app/(dashboard)/dashboard/creative-assets/actions';
 import { checkQuota, incrementUsage } from '@/lib/usage/quotas';
-import { getWorkspaceAccessContext } from '@/lib/workspace-permissions';
-import { requireWorkspaceAccessWithRBAC } from '@/lib/auth/rbac';
+import { getRBACContext, requireWorkspaceAccessWithRBAC } from '@/lib/auth/rbac';
 
-export async function gatedGenerateImage(assetIdOrForm: unknown) {
-  const access = await getWorkspaceAccessContext();
+export async function gatedGenerateImage(assetIdOrForm: string | FormData) {
+  const access = await getRBACContext();
   const workspaceId = access.data?.workspace?.id;
 
   if (workspaceId) {

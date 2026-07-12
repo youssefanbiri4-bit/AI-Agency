@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getWorkspaceAccessContext, canManageRoles, workspaceRoles, type StrictWorkspaceRole } from '@/lib/workspace-permissions';
+import { getRBACContext, hasPermission } from '@/lib/auth/rbac';
+import { workspaceRoles, type StrictWorkspaceRole } from '@/lib/permissions-matrix';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 
 export interface RoleChangeState {
@@ -22,13 +23,13 @@ export async function updateWorkspaceMemberRoleAction(
   _state: RoleChangeState,
   formData: FormData
 ): Promise<RoleChangeState> {
-  const access = await getWorkspaceAccessContext();
+  const access = await getRBACContext();
 
   if (access.error || !access.data) {
     return { error: 'Authentication and workspace access are required.' };
   }
 
-  if (!canManageRoles(access.data.role)) {
+  if (!hasPermission(access.data.role, 'owner')) {
     await logSecurityAuditEvent({
       supabase: access.data.supabase,
       workspaceId: access.data.workspace.id,

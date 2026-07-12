@@ -8,10 +8,8 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { checkRateLimit } from '@/lib/rate-limit';
-import {
-  canUseAIGeneration,
-  normalizeWorkspaceRole,
-} from '@/lib/workspace-permissions';
+import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
+import { hasPermission } from '@/lib/auth/rbac';
 import {
   createCreativeAsset,
   getCreativeAssetById,
@@ -174,7 +172,7 @@ async function getWorkspaceContext(redirectTo = '/dashboard/ai-studio', rateLimi
   const membershipResult = await getCurrentWorkspaceMembership(supabase, workspaceResult.data.id, user.id);
   const role = normalizeWorkspaceRole(membershipResult.data?.role, workspaceResult.data, user.id);
 
-  if (membershipResult.error || !membershipResult.data || !canUseAIGeneration(role)) {
+  if (membershipResult.error || !membershipResult.data || !hasPermission(role, 'editor')) {
     throw new Error('ما عندكش صلاحية لاستعمال AI Studio. AI generation is restricted for your workspace role.');
   }
 

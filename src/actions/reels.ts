@@ -7,8 +7,7 @@ import 'server-only';
 import { assertProductionGate } from '@/lib/production/gate';
 import { requireWorkspaceAccessWithRBAC, getRBACContext, hasPermission } from '@/lib/auth/rbac';
 // Note: workspace context resolved inside the delegated actions for RBAC/dept
-import { publishReelAction as originalPublishReelAction } from '@/app/(dashboard)/dashboard/reels/actions';
-import { createReelAction as originalCreate } from '@/app/(dashboard)/dashboard/reels/actions';
+import { publishReelAction as originalPublishReelAction, createReelAction as originalCreate, type ReelActionState } from '@/app/(dashboard)/dashboard/reels/actions';
 
 export async function gatedCreateReel(state: unknown, formData: FormData) {
   const rbac = await requireWorkspaceAccessWithRBAC({ minRole: 'operator' });
@@ -24,7 +23,7 @@ export async function gatedCreateReel(state: unknown, formData: FormData) {
     }
   }
   // delegated action will assert gate
-  return originalCreate(state, formData);
+  return originalCreate(state as ReelActionState, formData);
 }
 
 export async function gatedPublishReel(reelId: string, state: unknown) {
@@ -33,5 +32,5 @@ export async function gatedPublishReel(reelId: string, state: unknown) {
     return { error: rbac.error || 'Operator role required to publish.' };
   }
   // Assume context inside
-  return originalPublishReelAction(reelId, state);
+  return originalPublishReelAction(reelId, state as ReelActionState);
 }

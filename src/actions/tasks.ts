@@ -7,7 +7,7 @@ import 'server-only';
 import { assertProductionGate } from '@/lib/production/gate';
 import { requireWorkspaceAccessWithRBAC } from '@/lib/auth/rbac';
 import { taskService } from '@/lib/tasks/task-service';
-import { createTask as dataCreateTask } from '@/lib/data/tasks';
+import { createTask as dataCreateTask, type CreateTaskDraftInput } from '@/lib/data/tasks';
 import { checkQuota, incrementUsage } from '@/lib/usage/quotas';
 
 export async function gatedCreateTask(input: unknown) {
@@ -30,7 +30,7 @@ export async function gatedCreateTask(input: unknown) {
 
   await assertProductionGate(workspaceId);
 
-  const result = await dataCreateTask(input);
+  const result = await dataCreateTask(input as CreateTaskDraftInput);
 
   if (result.data) {
     await incrementUsage(workspaceId, 'tasks', 1);

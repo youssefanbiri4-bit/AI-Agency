@@ -29,9 +29,9 @@ describe('content-security-policy', () => {
     expect(csp).toContain("font-src 'self' data:");
   });
 
-  it('includes report-uri and report-to directives for violation monitoring', () => {
+  it('excludes report-uri and report-to directives until endpoint is implemented', () => {
     const csp = buildContentSecurityPolicy();
-    expect(csp).toContain('report-uri /api/csp-violation');
-    expect(csp).toContain('report-to csp-endpoint');
+    expect(csp).not.toContain('report-uri');
+    expect(csp).not.toContain('report-to');
   });
 });

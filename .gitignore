@@ -48,6 +48,10 @@ tmp/
 .env.development
 .env.production
 .env.test
+.env.staging
+.env.*.backup
+.env.*.old
+.env.*.bak
 !.env.example
 
 # vercel

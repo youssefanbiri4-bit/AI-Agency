@@ -44,12 +44,13 @@ export function SessionManagementPanel() {
   // TODO(wave2+): Refactor to avoid setState in effect.
   // Current pattern is intentional for initial data loading.
   // Revisit when introducing React Query / data-fetching layer.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     loadSessionInfo().then(() => {
       setTimeout(() => setIsLoading(false), 0);
     });
   }, [loadSessionInfo]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleRefreshSession = async () => {
     setIsProcessing(true);

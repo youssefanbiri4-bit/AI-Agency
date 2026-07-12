@@ -5,37 +5,40 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { buttonStyles } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
 import { Card, CardHeader } from '@/components/ui/Card';
-import { getWorkspaceAccessContext, canManageRoles, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
+import { getRBACContext, hasPermission } from '@/lib/auth/rbac';
+import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { RolesPermissionsSection } from '../RolesPermissionsSection';
 import { MemberRoleForm } from './MemberRoleForm';
 
 export default async function RolesSettingsPage() {
-  const access = await getWorkspaceAccessContext();
+  const access = await getRBACContext();
 
   if (access.error || !access.data) {
     return <AccessDenied />;
   }
 
-  if (!canManageRoles(access.data.role)) {
+  const ctx = access.data;
+
+  if (!hasPermission(ctx.role, 'owner')) {
     await logSecurityAuditEvent({
-      supabase: access.data.supabase,
-      workspaceId: access.data.workspace.id,
-      userId: access.data.user.id,
+      supabase: ctx.supabase,
+      workspaceId: ctx.workspace.id,
+      userId: ctx.user.id,
       eventType: 'permission_denied',
       severity: 'warning',
       entityType: 'roles',
       message: 'Blocked Roles & Permissions page access.',
-      metadata: { role: access.data.role },
+      metadata: { role: ctx.role },
     });
 
     return <AccessDenied />;
   }
 
-  const { data: members } = await access.data.supabase
+  const { data: members } = await ctx.supabase
     .from('workspace_members')
     .select('user_id, role, created_at, updated_at')
-    .eq('workspace_id', access.data.workspace.id)
+    .eq('workspace_id', ctx.workspace.id)
     .order('created_at', { ascending: true });
 
   return (
@@ -57,10 +60,10 @@ export default async function RolesSettingsPage() {
       </Notice>
 
       <RolesPermissionsSection
-        currentRole={access.data.role}
-        isOwner={access.data.isOwner}
-        isAdmin={access.data.isAdmin}
-        memberCount={access.data.memberCount}
+        currentRole={ctx.role}
+        isOwner={ctx.isOwner}
+        isAdmin={ctx.isAdmin}
+        memberCount={ctx.memberCount}
       />
 
       <Card>
@@ -79,8 +82,8 @@ export default async function RolesSettingsPage() {
             </thead>
             <tbody>
               {(members ?? []).map((member) => {
-                const role = normalizeWorkspaceRole(member.role, access.data.workspace, member.user_id);
-                const isWorkspaceOwner = member.user_id === access.data.workspace.owner_id;
+                const role = normalizeWorkspaceRole(member.role, ctx.workspace, member.user_id);
+                const isWorkspaceOwner = member.user_id === ctx.workspace.owner_id;
 
                 return (
                   <tr key={member.user_id} className="border-b border-black/6 align-top">

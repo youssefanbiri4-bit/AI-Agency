@@ -44,8 +44,19 @@ export function resolveEffectiveDepartment(options: {
   assignedDepartment: Department | null;
   role: RBACRole;
   cookieDepartment?: string | null;
+  preferenceDepartment?: string | null;
 }): Department | null {
   const { assignedDepartment, role, cookieDepartment } = options;
+
+  // preferenceDepartment overrides everything when explicitly provided
+  if ('preferenceDepartment' in options) {
+    const prefDept = options.preferenceDepartment;
+    if (prefDept !== undefined && prefDept !== null && isDepartment(prefDept)) {
+      return prefDept;
+    }
+    // Explicit null/undefined means "clear preference" — skip cookie override
+    return assignedDepartment;
+  }
 
   if (hasPermission(role, 'admin') && isDepartment(cookieDepartment)) {
     return cookieDepartment;

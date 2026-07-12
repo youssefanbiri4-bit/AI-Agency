@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ContentStudioPlatform, ContentStudioType } from '@/types/database';
 import type { Database } from '@/types/database';
-import type { StrictWorkspaceRole } from '@/lib/workspace-permissions';
+import type { StrictWorkspaceRole } from '@/lib/permissions-matrix';
 
 export type ProviderReadinessState =
   | 'ready'

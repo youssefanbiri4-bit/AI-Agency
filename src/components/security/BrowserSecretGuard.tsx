@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { getBrowserSupabaseEnvStatus } from '@/lib/supabase-client';
+import { validatePublicSupabaseEnv } from '@/lib/security/supabase-public-env';
 
 /**
  * Dev/runtime guard: surfaces misconfigured NEXT_PUBLIC_SUPABASE_ANON_KEY in the browser.
@@ -9,7 +9,7 @@ import { getBrowserSupabaseEnvStatus } from '@/lib/supabase-client';
  */
 export function BrowserSecretGuard() {
   useEffect(() => {
-    const status = getBrowserSupabaseEnvStatus();
+    const status = validatePublicSupabaseEnv('browser');
     if (!status.ok && status.message) {
       console.error(`[AgentFlow Security] ${status.message}`);
     }

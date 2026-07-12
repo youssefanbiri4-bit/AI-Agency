@@ -28,6 +28,8 @@ const creativeAssetsLog = logger.child('data:creative-assets');
 export interface ListCreativeAssetsOptions {
   limit?: number;
   includeSignedUrls?: boolean;
+  /** @deprecated Not used in the query yet — reserved for RBAC scoping */
+  departmentScope?: unknown;
 }
 
 export interface CreateCreativeAssetInput {

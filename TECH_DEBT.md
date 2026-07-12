@@ -1,6 +1,6 @@
 # AgentFlow AI — Tech Debt & Improvements
 
-> Last updated: 2026-07-04 (middleware route protection H9)
+> Last updated: 2026-07-12 (Wave 2 Full Merge)
 
 ## Database / Migrations
 
@@ -12,6 +12,32 @@
 - [x] Billing tables locked: `subscriptions` + `billing_customers` — SELECT owner/admin only; no client INSERT/UPDATE (service role + webhook)
 - [x] `usage_limits` seeded in `handle_new_workspace_owner` trigger; owner UPDATE policy; server increments via service role
 - [ ] Dedicated `usage_events` table for metered billing (see Usage Quotas section below)
+
+## Wave 2 — Security & Consistency ✅
+
+### Completed in Wave 2
+
+- [x] **W2-T2: CSP Violation Endpoint Resolution** — Removed `report-uri` and `report-to` directives pointing to non-existent `/api/csp-violation` endpoint
+- [x] **W2-T4: Standardize API Error Envelope + Request IDs** — Unified error shape `{ success: false, error, message, requestId, timestamp }` across 7+ routes (auth/login, auth/signup, auth/refresh, auth/logout, n8n/callback, tasks/fail-stale, rate-limit handler)
+- [x] **W2-T6: Deprecate Dual n8n Callback Route** — `/api/tasks/callback` became thin deprecation wrapper; `/api/n8n/callback` is canonical; backward compatibility maintained with deprecation headers
+- [x] **W2-R2: Harden Health Endpoint** — Two-tier response: public gets `{ status, timestamp }` only; authenticated users see full diagnostics
+- [x] **W2-R3: Billing Decision** — Option B: Keep scaffold; `docs/BILLING_STATUS.md` created with comprehensive gap analysis
+- [x] **W2-R4: RBAC Dual Systems Documentation** — Legacy files marked `@deprecated`; architecture table + migration plan added to TECH_DEBT.md
+
+### Not Started (Critical Gap)
+
+- [ ] **W2-T1: Secret Hygiene** — Rotate keys in `.env.example`, sanitize template to placeholders, scan git history
+
+### All Wave 2 Reports
+| Report | Location |
+|--------|----------|
+| W2-T2 (CSP) | `docs/orchestrator/reports/W2-T2-csp.md` |
+| W2-T4 (API Envelope) | `docs/orchestrator/reports/W2-T4-api-envelope.md` |
+| W2-T6 (n8n callback) | `docs/orchestrator/reports/W2-T6-n8n-callback.md` |
+| W2-R2 (Health) | `docs/orchestrator/reports/W2-R2-health.md` |
+| W2-R3 (Billing) | `docs/orchestrator/reports/W2-R3-billing.md` |
+| W2-R4 (RBAC) | `docs/orchestrator/reports/W2-R4-rbac.md` |
+| W2-R6 (QA) | `docs/orchestrator/reports/W2-R6-qa.md` |
 
 ## Route protection (middleware)
 
@@ -37,13 +63,33 @@
 - [x] `agent_department` column on `tasks` + department-aware RLS (`has_min_role` + `user_can_access_task_department`)
 - [x] `TasksClient` + dashboard use server-side department-filtered task lists
 
-## RBAC + Personalization
+## RBAC / Dual Systems
+
+> **Source of truth:** `@/lib/auth/rbac` (`rbac.ts`) with client-safe helpers in `@/lib/auth/rbac-client.ts`.
+> **Legacy layer:** `@/lib/workspace-permissions` — still used by ~22 call sites; new code must NOT import from it.
+
+### Architecture
+
+| Layer | File | Role |
+|-------|------|------|
+| **Current (source of truth)** | `src/lib/auth/rbac.ts` | Server-side context (`RBACContext`), guards (`requireRole`, `requireDepartment`, `requireWorkspaceAccessWithRBAC`), page access (`requirePageAccess`), membership updates |
+| **Client-safe helpers** | `src/lib/auth/rbac-client.ts` | Pure role/department helpers (`hasPermission`, `normalizeRole`, `canAccessDepartment`, `canViewArea`, catalog↔RBAC mapping) — safe for Client Components |
+| **Page access rules** | `src/lib/auth/require-page-access.ts` | Edge-safe page access evaluation (`evaluatePageAccess`, `buildPageAccessContext`) — used by middleware and server |
+| **Legacy foundation** | `src/lib/workspace-permissions.ts` | Legacy role normalization + individual `canX()` functions. **Imported by `rbac.ts`** for backwards compat. Has no department awareness |
+| **Legacy role types** | `src/lib/permissions-matrix.ts` | `StrictWorkspaceRole` type + `permissionsMatrix` table. Shared by both systems (identical values to `RBACRole`) |
+| **Canonical types** | `src/types/auth.ts` | `RBACRole`, `Department`, `ROLE_HIERARCHY`, `DEPARTMENT_FEATURES`, labels — single source of truth for type definitions |
+
+### Migration Plan
 
 - [x] Core RBAC + Departments implemented (server + types + guards)
 - [x] Client-safe RBAC helpers in `src/lib/auth/rbac-client.ts` for Sidebar and other Client Components
 - [x] Sidebar filtering + Department badge + Switcher (in Topbar + Sidebar)
 - [x] Enhanced DashboardContext with cookie support for effective department view (admins)
 - [x] PersonalizedDashboard component (My Tasks, Dept Stats, Role-based Quick Actions, Welcome)
+- [x] **W2-R4: Dual RBAC systems documented** — legacy files marked `@deprecated` with TODOs
+- [ ] **Migrate all `workspace-permissions` imports** — replace `getWorkspaceAccessContext()` with `getRBACContext()`, and individual `canX()` calls with `requireWorkspaceAccessWithRBAC()` + `hasPermission()` (~22 call sites)
+- [ ] Deprecation warning or console.warn on legacy import (post-migration)
+- [ ] Remove `src/lib/workspace-permissions.ts` entirely (post-migration)
 - [ ] **Future**: Persist selected department preference server-side (user_preferences or dedicated table)
 - [x] Filter tasks server-side by department (`taskService.listTasksForCurrentUser`, dashboard scoped tasks)
 - [x] RLS blocks cross-dept writes on assets/reels/content studio (DB layer); server-side list filtering still optional
@@ -133,8 +179,8 @@
 
 See also: `RBAC_SUMMARY.md`, `docs/RBAC_IMPLEMENTATION.md`, `FULL_PLATFORM_AUDIT_REPORT.md`
 
-**Launch readiness (2026-07-04):**
-- Controlled production deploy: **ready** (internal team + early clients) per `docs/FINAL_LAUNCH_CHECKLIST.md`
-- P0 blockers (build, execute, RLS, billing, usage_limits, server PDF, fake report metrics): **resolved**
-- Before public scale: persistent rate limits (Upstash), full quota coverage on all create paths, Stripe Checkout
-- Recommend: Morad completes `docs/FINAL_LAUNCH_CHECKLIST.md` Phases 1–3 before client exposure
+**Launch readiness (2026-07-12):**
+- Controlled production deploy: **conditionally ready** (internal team + early clients)
+- **Must complete W2-T1 (Secret Hygiene) before confident production claims**
+- Wave 2 (CSP, API envelopes, health hardening, n8n callback, billing decision, RBAC documentation): **complete**
+- Next: Wave 3 — performance (indexes, aggregates, code-splitting)

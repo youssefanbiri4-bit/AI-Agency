@@ -6,13 +6,9 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
-import {
-  canDeleteContent,
-  canEditContent,
-  canUseAIGeneration,
-  normalizeWorkspaceRole,
-  type StrictWorkspaceRole,
-} from '@/lib/workspace-permissions';
+import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
+import { hasPermission } from '@/lib/auth/rbac';
+import type { StrictWorkspaceRole } from '@/lib/permissions-matrix';
 import { checkRateLimit } from '@/lib/rate-limit';
 import {
   buildBrandKitGenerationContext,
@@ -382,13 +378,13 @@ async function getCurrentWorkspaceContext() {
 }
 
 function assertCanEditAssets(role: StrictWorkspaceRole) {
-  if (!canEditContent(role)) {
+  if (!hasPermission(role, 'editor')) {
     throw new Error('ما عندكش صلاحية لتعديل الأصول الإبداعية. Creative asset editing is restricted for your workspace role.');
   }
 }
 
 function assertCanGenerateAssets(role: StrictWorkspaceRole) {
-  if (!canUseAIGeneration(role)) {
+  if (!hasPermission(role, 'editor')) {
     throw new Error('ما عندكش صلاحية لاستعمال توليد الذكاء الاصطناعي. AI generation is restricted for your workspace role.');
   }
 }
@@ -406,7 +402,7 @@ async function assertCreativeGenerationLimit(workspaceId: string, userId: string
 }
 
 function assertCanDeleteAssets(role: StrictWorkspaceRole) {
-  if (!canDeleteContent(role)) {
+  if (!hasPermission(role, 'admin')) {
     throw new Error('ما عندكش صلاحية لحذف الأصول الإبداعية. Deleting creative assets is restricted to workspace owners and admins.');
   }
 }

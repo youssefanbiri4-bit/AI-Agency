@@ -7,7 +7,8 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { canRunScheduler, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
+import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
+import { hasPermission } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { setupBlockerMessage } from '@/lib/safe-messages';
 import { getRequestId, nowISO } from '@/lib/api-response';
@@ -50,7 +51,7 @@ async function handleRunScheduler(request?: Request) {
 
   const currentRole = normalizeWorkspaceRole(membershipResult.data?.role, workspaceResult.data, user.id);
 
-  if (!canRunScheduler(currentRole)) {
+  if (!hasPermission(currentRole, 'admin')) {
     await logSecurityAuditEvent({
       supabase,
       workspaceId: workspaceResult.data.id,

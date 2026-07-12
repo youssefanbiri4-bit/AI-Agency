@@ -9,7 +9,7 @@ import {
   getTaskById,
   updateTaskReviewStatus,
 } from '@/lib/data/tasks';
-import { canReviewTasks, getWorkspaceAccessContext } from '@/lib/workspace-permissions';
+import { getRBACContext, hasPermission } from '@/lib/auth/rbac';
 
 export interface ReviewTaskState {
   error: string | null;
@@ -52,7 +52,7 @@ export async function reviewTaskAction(
     return { error: 'Feedback is required when requesting changes.' };
   }
 
-  const access = await getWorkspaceAccessContext();
+  const access = await getRBACContext();
 
   if (!access.data && access.error === 'Authentication is required.') {
     redirect(`/auth/login?redirectTo=${encodeURIComponent(`/dashboard/review?taskId=${taskId}`)}`);
@@ -68,7 +68,7 @@ export async function reviewTaskAction(
 
   const { supabase, user, workspace, role } = access.data;
 
-  if (!canReviewTasks(role)) {
+  if (!hasPermission(role, 'editor')) {
     return { error: 'ما عندكش صلاحية لمراجعة المهام. Task review is restricted for your workspace role.' };
   }
 

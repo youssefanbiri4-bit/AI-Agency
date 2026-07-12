@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -47,13 +46,11 @@ import { buttonStyles } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { cn, formatDateTime } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils';
 import {
   CopyOperationalReportButton,
   OperationalReportClient,
-  type PublishAttemptTimelineItem,
 } from './OperationalReportClient';
-import { ClientReportButton } from '@/components/reports/ClientReportButton';
 import {
   MonthlyAgencyReportClient,
   type MonthlyProviderStatus,
@@ -62,582 +59,96 @@ import {
   AdvancedAnalyticsClient,
   type AdvancedAnalyticsData,
 } from './AdvancedAnalyticsClient';
-import type { ContentStudioItemWithAssets } from '@/lib/data/content-studio';
+import { ClientReportButton } from '@/components/reports/ClientReportButton';
 import type {
   ContentStudioPlatform,
   ContentStudioPublishAttemptRecord,
   ContentStudioStatus,
-  CreativeAssetRecord,
   ProjectRecord,
   ReleaseRecord,
-  TaskReviewRecord,
 } from '@/types/database';
-import type { JsonObject, TaskReview } from '@/types';
+import type { TaskReview } from '@/types';
+import type { ReadinessState } from './types';
+import {
+  countBy,
+  readObject,
+  safeString,
+  safeText,
+  isVideoAsset,
+  hasAssetMediaUrl,
+  isManualOnlyItem,
+  sanitizeSummary,
+  summarizeJson,
+  getReadinessState,
+  setupItem,
+  getPercent,
+  safeDashboardHref,
+  formatReportAgentPrompt,
+  mapAttemptTimeline,
+  buildReportText,
+  contentStatuses,
+  attemptStatuses,
+  rowString,
+  rowNullableString,
+  rowNumber,
+  rowBoolean,
+  rowStringArray,
+  reportAgentIds,
+  readinessBadgeStatuses,
+} from './utils';
+import { listPublishAttempts, listWorkspaceTaskReviews, listOptionalWorkspaceRows } from './data';
+import {
+  ReportsCard,
+  ReportsMetricCard,
+  ProgressRow,
+  SmallMetric,
+  ProviderReadinessList,
+  RecentOperationalReports,
+} from './components';
 
-type ReadinessState =
-  | 'ready'
-  | 'setup_required'
-  | 'approval_pending'
-  | 'quota_limit'
-  | 'token_missing'
-  | 'manual_only'
-  | 'unsupported'
-  | 'error';
-
-const reportAgentIds = [
-  'campaign-report-agent',
-  'task-performance-agent',
-  'content-performance-agent',
-  'provider-health-report-agent',
-  'workflow-usage-report-agent',
-] as const;
-
-function formatReportAgentPrompt(template: AgentTemplate) {
-  return [
-    `# ${template.name}`,
-    '',
-    `Category: ${template.category}`,
-    `Execution mode: ${template.execution_mode}`,
-    `Safety level: ${template.safety_level}`,
-    '',
-    '## Purpose',
-    template.description,
-    '',
-    '## Inputs',
-    template.inputs.map((input) => `- ${input}`).join('\n'),
-    '',
-    '## Outputs',
-    template.outputs.map((output) => `- ${output}`).join('\n'),
-    '',
-    '## Suggested Prompt',
-    template.suggested_prompt,
-    '',
-    '## Review Checklist',
-    template.review_checklist.map((item) => `- ${item}`).join('\n'),
-  ].join('\n');
-}
-
-interface ProviderStatusRow {
-  name: string;
-  status: ReadinessState;
-  missing: string[];
-  nextAction: string;
-}
-
-interface MetricCard {
-  label: string;
-  value: number;
-  helper: string;
-  icon: typeof Layers3;
-  accent: string;
-}
-
-type OptionalWorkspaceRow = Record<string, unknown>;
-
-interface OptionalWorkspaceRowsResult {
-  data: OptionalWorkspaceRow[];
-  error: string | null;
-}
-
-interface LooseWorkspaceQuery {
-  select(columns: string): LooseWorkspaceQuery;
-  eq(column: string, value: string): LooseWorkspaceQuery;
-  order(column: string, options: { ascending: boolean }): LooseWorkspaceQuery;
-  limit(count: number): Promise<{ data: unknown[] | null; error: { message: string } | null }>;
-}
-
-interface LooseWorkspaceClient {
-  from(table: string): LooseWorkspaceQuery;
-}
-
-const readinessBadgeStatuses: Record<ReadinessState, Parameters<typeof StatusBadge>[0]['status']> = {
-  ready: 'ready',
-  setup_required: 'setup_required',
-  approval_pending: 'approval_pending',
-  quota_limit: 'quota_limit',
-  token_missing: 'token_missing',
-  manual_only: 'manual_only',
-  unsupported: 'unsupported',
-  error: 'error',
-};
-
-const contentStatuses: ContentStudioStatus[] = [
-  'draft',
-  'ready',
-  'scheduled',
-  'published',
-  'failed',
-  'setup_required',
-  'approval_pending',
-];
-
-const attemptStatuses = [
-  'succeeded',
-  'failed',
-  'setup_required',
-  'approval_pending',
-  'quota_limit',
-  'token_missing',
-  'manual_only',
-  'unsupported',
-  'error',
-] as const;
-
-function countBy<T extends string>(values: T[]) {
-  return values.reduce<Record<T, number>>((counts, value) => {
-    counts[value] = (counts[value] ?? 0) + 1;
-    return counts;
-  }, {} as Record<T, number>);
-}
-
-function readObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function safeString(value: unknown) {
-  if (typeof value !== 'string' && typeof value !== 'number') {
-    return null;
-  }
-
-  const normalized = String(value).trim();
-  return normalized || null;
-}
-
-function rowString(row: OptionalWorkspaceRow, key: string, fallback = '') {
-  const value = row[key];
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  return fallback;
-}
-
-function rowNullableString(row: OptionalWorkspaceRow, key: string) {
-  const value = row[key];
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  return null;
-}
-
-function rowNumber(row: OptionalWorkspaceRow, key: string, fallback = 0) {
-  const value = row[key];
-  return typeof value === 'number' ? value : fallback;
-}
-
-function rowBoolean(row: OptionalWorkspaceRow, key: string, fallback = false) {
-  const value = row[key];
-  return typeof value === 'boolean' ? value : fallback;
-}
-
-function rowStringArray(row: OptionalWorkspaceRow, key: string) {
-  const value = row[key];
-  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
-}
-
-function safeText(value: string | null | undefined, fallback = '') {
-  const text = value?.trim() || fallback;
-  return text
-    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [redacted]')
-    .replace(/(access_token|refresh_token|client_secret|api_key)=([^&\s]+)/gi, '$1=[redacted]')
-    .replace(/("(?:access_token|refresh_token|client_secret|api_key|authorization)"\s*:\s*)"[^"]+"/gi, '$1"[redacted]"')
-    .slice(0, 500);
-}
-
-function isVideoAsset(asset: CreativeAssetRecord) {
-  return (
-    asset.asset_type === 'video' ||
-    asset.asset_type === 'reel_video' ||
-    asset.metadata?.media_type === 'video' ||
-    Boolean(asset.metadata?.video)
+function getMetaEnvironmentMissing() {
+  return ['META_APP_ID', 'META_APP_SECRET', 'META_REDIRECT_URI'].filter(
+    (key) => !process.env[key]?.trim()
   );
 }
 
-function hasAssetMediaUrl(asset: CreativeAssetRecord) {
-  const metadata = readObject(asset.metadata);
-  const video = readObject(metadata.video);
-
-  return Boolean(
-    asset.image_url ||
-      asset.storage_path ||
-      safeString(video.public_url) ||
-      safeString(video.storage_path)
-  );
+function getMetaProviderState({
+  missingEnvironment,
+  status,
+  requiredSelection,
+}: {
+  missingEnvironment: string[];
+  status: string | null | undefined;
+  requiredSelection: string | null;
+}): ReadinessState {
+  if (missingEnvironment.length > 0) return 'setup_required';
+  if (!status || status === 'not_connected') return 'token_missing';
+  if (status === 'expired' || status === 'revoked') return 'token_missing';
+  if (status !== 'connected') return 'setup_required';
+  return requiredSelection ? 'ready' : 'setup_required';
 }
 
-function isManualOnlyItem(item: ContentStudioItemWithAssets) {
-  return item.content_type === 'linkedin_post_planner' || item.provider_status === 'manual_only';
+function getGoogleAdsProviderState({
+  isConfigured,
+  status,
+}: {
+  isConfigured: boolean;
+  status: string | null | undefined;
+}): ReadinessState {
+  if (!isConfigured) return 'setup_required';
+  if (!status || status === 'not_connected') return 'token_missing';
+  if (status === 'expired' || status === 'revoked') return 'token_missing';
+  return status === 'connected' ? 'ready' : 'setup_required';
 }
 
-function sanitizeSummary(value: unknown, depth = 0): unknown {
-  if (depth > 2) {
-    return '[summary truncated]';
-  }
-
-  if (Array.isArray(value)) {
-    return value.slice(0, 4).map((entry) => sanitizeSummary(entry, depth + 1));
-  }
-
-  if (!value || typeof value !== 'object') {
-    return value;
-  }
-
-  const result: Record<string, unknown> = {};
-
-  for (const [key, entry] of Object.entries(value)) {
-    const normalized = key.toLowerCase();
-    if (
-      normalized.includes('token') ||
-      normalized.includes('secret') ||
-      normalized.includes('authorization') ||
-      normalized.includes('credential')
-    ) {
-      continue;
-    }
-
-    result[key] = sanitizeSummary(entry, depth + 1);
-  }
-
-  return result;
-}
-
-function summarizeJson(value: JsonObject | null | undefined) {
-  const sanitized = sanitizeSummary(value ?? {});
-  const serialized = JSON.stringify(sanitized);
-  return serialized === '{}' ? '' : serialized.slice(0, 240);
-}
-
-function mapAttemptTimeline(
-  attempts: ContentStudioPublishAttemptRecord[],
-  items: ContentStudioItemWithAssets[]
-): PublishAttemptTimelineItem[] {
-  const itemById = new Map(items.map((item) => [item.id, item]));
-
-  return attempts.map((attempt) => {
-    const item = attempt.content_item_id ? itemById.get(attempt.content_item_id) : null;
-    return {
-      id: attempt.id,
-      createdAt: attempt.created_at,
-      provider: attempt.provider,
-      actionType: attempt.action_type,
-      contentItemId: attempt.content_item_id,
-      contentTitle: item?.title ?? 'Workspace-level attempt',
-      contentType: item?.content_type ?? 'unknown',
-      status: attempt.status,
-      message: safeText(attempt.error_message ?? safeString(attempt.request_summary?.message), ''),
-      externalId: attempt.provider_external_id,
-      safeSummary: summarizeJson(attempt.provider_response_summary),
-    };
-  });
-}
-
-function getReadinessState(value: { state?: string; status?: string; isConfigured?: boolean; isReady?: boolean }) {
-  if (value.state) {
-    return value.state as ReadinessState;
-  }
-
-  if (value.status === 'configured' || value.status === 'ready' || value.isConfigured || value.isReady) {
-    return 'ready';
-  }
-
-  if (value.status === 'approval_pending') return 'approval_pending';
-  if (value.status === 'quota_limit') return 'quota_limit';
+function getPinterestProviderState(): ReadinessState {
   return 'setup_required';
 }
 
-function setupItem(label: string, configured: boolean | null, action: string) {
+function fallbackProviderReadiness(): { state: ReadinessState } {
   return {
-    label,
-    status: configured === null ? 'needs_review' : configured ? 'present' : 'missing',
-    action,
+    state: 'setup_required',
   };
-}
-
-function getPercent(value: number, total: number) {
-  if (total <= 0) return 0;
-  return Math.min(100, Math.round((value / total) * 100));
-}
-
-function buildReportText(input: {
-  contentCounts: Record<string, number>;
-  attemptCounts: Record<string, number>;
-  providers: ProviderStatusRow[];
-  schedulerLine: string;
-  creativeAssets: {
-    total: number;
-    images: number;
-    videos: number;
-    linked: number;
-    unlinked: number;
-    missingMedia: number;
-  };
-  taskStats: ReturnType<typeof buildReportSummary>['taskStats'];
-  externalBlockers: string[];
-}) {
-  return [
-    '# AgentFlow AI Operational Report',
-    '',
-    '## Content Counts',
-    ...Object.entries(input.contentCounts).map(([key, value]) => `- ${key}: ${value}`),
-    '',
-    '## Publish Attempts',
-    ...Object.entries(input.attemptCounts).map(([key, value]) => `- ${key}: ${value}`),
-    '',
-    '## Provider Readiness',
-    ...input.providers.map((provider) => `- ${provider.name}: ${provider.status} (${provider.nextAction})`),
-    '',
-    '## Scheduler',
-    `- ${input.schedulerLine}`,
-    '',
-    '## Creative Assets',
-    `- total: ${input.creativeAssets.total}`,
-    `- images: ${input.creativeAssets.images}`,
-    `- videos: ${input.creativeAssets.videos}`,
-    `- linked: ${input.creativeAssets.linked}`,
-    `- unlinked: ${input.creativeAssets.unlinked}`,
-    `- missing media URL: ${input.creativeAssets.missingMedia}`,
-    '',
-    '## Tasks & Reviews',
-    `- total tasks: ${input.taskStats.total}`,
-    `- pending: ${input.taskStats.pending}`,
-    `- processing: ${input.taskStats.processing}`,
-    `- needs_review: ${input.taskStats.needsReview}`,
-    `- completed: ${input.taskStats.completed}`,
-    `- failed: ${input.taskStats.failed}`,
-    '',
-    '## External Setup Checklist',
-    ...(input.externalBlockers.length > 0
-      ? input.externalBlockers.map((blocker) => `- ${blocker}`)
-      : ['- None detected in operational reporting.']),
-  ].join('\n');
-}
-
-async function listPublishAttempts(workspaceId: string) {
-  const { client, error } = await import('@/lib/supabase-server').then((module) => module.getSupabaseAdmin());
-
-  if (!client) {
-    return {
-      data: [] as ContentStudioPublishAttemptRecord[],
-      error: error ?? 'Supabase admin client is not configured.',
-    };
-  }
-
-  const { data, error: selectError } = await client
-    .from('content_studio_publish_attempts')
-    .select('*')
-    .eq('workspace_id', workspaceId)
-    .order('created_at', { ascending: false })
-    .limit(100);
-
-  return {
-    data: (data ?? []) as ContentStudioPublishAttemptRecord[],
-    error: selectError?.message ?? null,
-  };
-}
-
-function mapTaskReviewRecord(record: TaskReviewRecord): TaskReview {
-  return {
-    id: record.id,
-    workspace_id: record.workspace_id,
-    task_id: record.task_id,
-    reviewer_id: record.reviewer_id,
-    rating: record.rating,
-    feedback: record.feedback,
-    created_at: record.created_at,
-    updated_at: record.updated_at,
-  };
-}
-
-async function listWorkspaceTaskReviews(workspaceId: string) {
-  const { data, error } = await (await createSupabaseServerClient())
-    .from('task_reviews')
-    .select('*')
-    .eq('workspace_id', workspaceId)
-    .order('created_at', { ascending: false });
-
-  return {
-    data: (data ?? []).map(mapTaskReviewRecord),
-    error: error?.message ?? null,
-  };
-}
-
-async function listOptionalWorkspaceRows(
-  workspaceId: string,
-  table: string,
-  limit = 250
-): Promise<OptionalWorkspaceRowsResult> {
-  const client = (await createSupabaseServerClient()) as unknown as LooseWorkspaceClient;
-  const { data, error } = await client
-    .from(table)
-    .select('*')
-    .eq('workspace_id', workspaceId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  return {
-    data: (data ?? []).filter(
-      (row): row is OptionalWorkspaceRow => Boolean(row) && typeof row === 'object' && !Array.isArray(row)
-    ),
-    error: error?.message ?? null,
-  };
-}
-
-function ReportsCard({
-  title,
-  description,
-  action,
-  children,
-  className,
-}: {
-  title: string;
-  description?: string;
-  action?: React.ReactNode;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <section
-      className={cn(
-        'min-w-0 rounded-2xl border border-[#5D6B6B]/8 bg-white/90 p-5 shadow-[0_22px_55px_rgba(93,107,107,0.08)] ring-1 ring-white/70',
-        className
-      )}
-    >
-      <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-black/6 pb-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-lg font-black text-[#5D6B6B]">{title}</h2>
-          {description ? <p className="mt-1 text-sm leading-6 text-black/58">{description}</p> : null}
-        </div>
-        {action ? <div className="flex max-w-full shrink-0 flex-wrap gap-2">{action}</div> : null}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function ReportsMetricCard({ metric }: { metric: MetricCard }) {
-  const Icon = metric.icon;
-
-  return (
-    <div className="min-w-0 rounded-2xl border border-black/7 bg-white p-5 shadow-[0_18px_45px_rgba(93,107,107,0.07)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">{metric.label}</p>
-          <p className="mt-3 text-3xl font-black tracking-normal text-[#5D6B6B]">{metric.value}</p>
-        </div>
-        <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', metric.accent)}>
-          <Icon className="h-5 w-5" />
-        </span>
-      </div>
-      <p className="mt-4 text-sm font-semibold leading-6 text-black/55">{metric.helper}</p>
-    </div>
-  );
-}
-
-function ProgressRow({
-  label,
-  value,
-  total,
-  tone = 'berry',
-}: {
-  label: string;
-  value: number;
-  total: number;
-  tone?: 'berry' | 'coral' | 'peach' | 'dark';
-}) {
-  const width = getPercent(value, total);
-  const color =
-    tone === 'coral'
-      ? 'bg-[#F7CBCA]'
-      : tone === 'peach'
-        ? 'bg-[#E7F5DC]'
-        : tone === 'dark'
-          ? 'bg-[#5D6B6B]'
-          : 'bg-[#F7CBCA]';
-
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="min-w-0 whitespace-normal wrap-break-word text-sm font-bold text-black/70">{label}</span>
-        <span className="font-mono text-sm font-black text-[#5D6B6B]">{value}</span>
-      </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-background ring-1 ring-black/5">
-        <div className={cn('h-full rounded-full', color)} style={{ width: `${width}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function SmallMetric({ label, value, helper }: { label: string; value: number | string; helper?: string }) {
-  return (
-    <div className="rounded-2xl border border-black/7 bg-background/68 p-4">
-      <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">{label}</p>
-      <p className="mt-2 text-2xl font-black text-[#5D6B6B]">{value}</p>
-      {helper ? <p className="mt-1 text-xs font-semibold leading-5 text-black/50">{helper}</p> : null}
-    </div>
-  );
-}
-
-function safeDashboardHref(href: string) {
-  return href === '/dashboard/provider-setup' ? '/dashboard/settings#provider-setup-wizard' : href;
-}
-
-function ProviderReadinessList({ providers }: { providers: ProviderStatusRow[] }) {
-  return (
-    <div className="space-y-3">
-      {providers.map((provider) => (
-        <div
-          key={provider.name}
-          className="grid min-w-0 gap-3 rounded-2xl border border-black/7 bg-background/55 p-4 transition-colors hover:bg-white sm:grid-cols-[minmax(0,1fr)_minmax(9rem,auto)] sm:items-start"
-        >
-          <div className="min-w-0">
-            <p className="font-black text-[#5D6B6B]">{provider.name}</p>
-            <p className="mt-1 text-sm leading-6 text-black/58">{provider.nextAction}</p>
-            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black/42">
-              {provider.missing.length > 0 ? `Missing: ${provider.missing.join(', ')}` : 'No missing setup reported'}
-            </p>
-          </div>
-          <StatusBadge status={readinessBadgeStatuses[provider.status]} type="system" size="sm" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function RecentOperationalReports({
-  generatedCount,
-  reportText,
-}: {
-  generatedCount: number;
-  reportText: string;
-}) {
-  const rows = [
-    ['Provider Readiness Summary', 'Generated summary', 'Provider blockers and next actions'],
-    ['Content Studio Status Report', 'Generated summary', 'Content counts by readiness state'],
-    ['Scheduler Execution Report', 'Generated summary', 'Scheduled execution status counts'],
-    ['Creative Assets Usage Report', 'Generated summary', 'Linked, unlinked, image, and video assets'],
-    ['Task & Review Pipeline Report', generatedCount > 0 ? 'Saved task reports available' : 'Generated summary', 'Task and review workflow totals'],
-  ];
-
-  return (
-    <ReportsCard
-      title="Recent Operational Reports"
-      description="Copy-ready summaries generated from current workspace data. Saved task reports are counted when available."
-      action={
-        <CopyOperationalReportButton reportText={reportText} label="Copy Operational Report" />
-      }
-    >
-      <div className="dashboard-card-grid">
-        {rows.map(([title, status, detail]) => (
-          <div key={title} className="rounded-2xl border border-black/7 bg-background/60 p-4">
-            <p className="font-black text-[#5D6B6B]">{title}</p>
-            <p className="mt-2 text-xs font-black uppercase tracking-[0.12em] text-[#F7CBCA]">{status}</p>
-            <p className="mt-2 text-sm leading-6 text-black/56">{detail}</p>
-          </div>
-        ))}
-      </div>
-    </ReportsCard>
-  );
 }
 
 export default async function ReportsPage() {
@@ -1093,7 +604,7 @@ export default async function ReportsPage() {
     reviewsResult.error ||
     metaConnectionResult.error ||
     googleAdsConnectionResult.error;
-  const topMetrics: MetricCard[] = [
+  const topMetrics = [
     {
       label: 'Total Content Items',
       value: contentItems.length,

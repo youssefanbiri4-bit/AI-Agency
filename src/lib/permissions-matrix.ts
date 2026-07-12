@@ -1,3 +1,22 @@
+/**
+ * ROLE TYPE DEFINITIONS — shared by `normalizeWorkspaceRole()` and legacy consumers.
+ *
+ * This module provides the `StrictWorkspaceRole` type definition and the
+ * `permissionsMatrix` for UI-based role overviews. The current RBAC system
+ * (`@/lib/auth/rbac`) uses `RBACRole` from `@/types/auth`, which resolves to
+ * the same values (viewer < editor < operator < admin < owner).
+ *
+ * **Migration complete as of 2026-07-12:**
+ * - `workspace-permissions.ts` has been removed.
+ * - All call sites use `@/lib/auth/rbac` or `@/lib/auth/rbac-client`.
+ * - This module remains for:
+ *   1. `permissionsMatrix` used by Settings > Roles & Permissions UI.
+ *   2. `StrictWorkspaceRole` type used by a few lib-level interfaces.
+ *   3. `getPermissionLevelSummary()` for role description strings.
+ *
+ * @see src/lib/auth/rbac.ts — current source of truth for RBAC
+ * @see src/types/auth.ts  — canonical Role + Department types
+ */
 export const workspaceRoles = ['owner', 'admin', 'operator', 'editor', 'viewer'] as const;
 export type StrictWorkspaceRole = (typeof workspaceRoles)[number];
 

@@ -37,7 +37,7 @@ function taskMatchesRbacDepartment(task: TaskWithAgentDept, selectedDepartment: 
   const catalogRef =
     task.agentCatalogDepartmentId ??
     resolveCatalogDepartmentId(task.agentDepartment) ??
-    task.agent_department ??
+    task.agentDepartment ??
     null;
 
   if (!catalogRef) return false;

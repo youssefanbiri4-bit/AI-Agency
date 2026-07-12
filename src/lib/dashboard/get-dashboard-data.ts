@@ -21,7 +21,8 @@ import { listReleasesForWorkspace } from '@/lib/data/releases';
 import { getMetaConnectionStatus, getGoogleAdsConnectionStatus } from '@/lib/data/ad-connections';
 import { emptyDataResult, errorDataResult, type DataResult } from '@/lib/data/types';
 import { taskService } from '@/lib/tasks/task-service';
-import { normalizeWorkspaceRole, type StrictWorkspaceRole } from '@/lib/workspace-permissions';
+import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
+import type { StrictWorkspaceRole } from '@/lib/permissions-matrix';
 import { getAgentStats, getTaskStats } from '@/lib/stats';
 import { logger } from '@/lib/logger';
 import type { Database, ContentStudioPublishAttemptRecord, CreativeAssetRecord, ProjectRecord, ReleaseRecord } from '@/types/database';
@@ -398,7 +399,7 @@ export async function fetchCommandCenterBundle(ctx: DashboardPageContext): Promi
 
   const scope = await departmentScope();
   const sections = await Promise.allSettled([
-    withDashboardTimeout('dashboard data', getDashboardData(workspaceId, ctx.supabase, { departmentScope: scope })),
+    withDashboardTimeout(      'dashboard data', getDashboardData(workspaceId, ctx.supabase)),
     withDashboardTimeout(
       'content catalog',
       listContentStudioItemsForWorkspace(workspaceId, ctx.supabase, {

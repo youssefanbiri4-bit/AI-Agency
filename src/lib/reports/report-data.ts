@@ -50,7 +50,7 @@ export async function gatherClientReportData(options?: {
     const [tasksResult, reelsResult, assetsResult, brandKitResult, brandingResult, reviewsResult] =
       await Promise.all([
         listTasks({ workspaceId }, supabase),
-        listReelsForWorkspace(workspaceId, supabase),
+        listReelsForWorkspace(workspaceId, undefined, supabase),
         listCreativeAssetsForWorkspace(workspaceId, undefined, supabase),
         getBrandKitForWorkspace(supabase, workspaceId),
         getBrandingForWorkspace(supabase, workspaceId),

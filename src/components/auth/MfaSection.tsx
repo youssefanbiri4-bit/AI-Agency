@@ -47,12 +47,13 @@ export function MfaSection() {
   // TODO(wave2+): Refactor to avoid setState in effect.
   // Current pattern is intentional for initial data loading.
   // Revisit when introducing React Query / data-fetching layer.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     refreshStatus().then(() => {
       setTimeout(() => setIsLoading(false), 0);
     });
   }, [refreshStatus]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const startEnrollment = async () => {
     setError(null);

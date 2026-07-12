@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createTask } from '@/lib/data/tasks';
 import { createNotification } from '@/lib/data/notifications';
-import { canCreateTasks, getWorkspaceAccessContext } from '@/lib/workspace-permissions';
+import { getRBACContext, hasPermission } from '@/lib/auth/rbac';
 import type { AgentType } from '@/types';
 import type { TaskPriority } from '@/types/database';
 
@@ -47,7 +47,7 @@ export async function createTaskAction(
     return { error: 'Task description must be at least 5 characters.' };
   }
 
-  const access = await getWorkspaceAccessContext();
+  const access = await getRBACContext();
 
   if (!access.data && access.error === 'Authentication is required.') {
     redirect('/auth/login?redirectTo=/dashboard/create-task');
@@ -63,7 +63,7 @@ export async function createTaskAction(
 
   const { supabase, user, workspace, role } = access.data;
 
-  if (!canCreateTasks(role)) {
+  if (!hasPermission(role, 'editor')) {
     return { error: 'ما عندكش صلاحية لإنشاء المهام. Task creation is restricted for your workspace role.' };
   }
 

@@ -10,7 +10,8 @@ import {
   getCurrentUserWorkspace,
   getCurrentWorkspaceMembership,
 } from '@/lib/data/workspaces';
-import { canEditContent, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
+import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
+import { hasPermission } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import {
   createPromptLibraryItem,
@@ -127,7 +128,7 @@ export async function createPromptAction(
   if (validationError) return { error: validationError };
   if (context.error) return { error: context.error };
 
-  if (!canEditContent(context.role)) {
+  if (!hasPermission(context.role, 'editor')) {
     await logSecurityAuditEvent({
       supabase: context.supabase,
       workspaceId: context.workspace.id,
@@ -170,7 +171,7 @@ export async function updatePromptAction(
   if (validationError) return { error: validationError, promptId: id };
   if (context.error) return { error: context.error, promptId: id };
 
-  if (!canEditContent(context.role)) {
+  if (!hasPermission(context.role, 'editor')) {
     await logSecurityAuditEvent({
       supabase: context.supabase,
       workspaceId: context.workspace.id,
@@ -243,7 +244,7 @@ export async function togglePromptFavoriteAction(
 ): Promise<PromptActionState> {
   const context = await getPromptContext();
   if (context.error) return { error: context.error, promptId: id };
-  if (!canEditContent(context.role)) {
+  if (!hasPermission(context.role, 'editor')) {
     return { error: 'ما عندكش صلاحية لتعديل المفضلة. Prompt edits are restricted for your workspace role.', promptId: id };
   }
 
@@ -259,7 +260,7 @@ export async function togglePromptFavoriteAction(
 export async function markPromptCopiedAction(id: string): Promise<PromptActionState> {
   const context = await getPromptContext();
   if (context.error) return { error: context.error, promptId: id };
-  if (!canEditContent(context.role)) {
+  if (!hasPermission(context.role, 'editor')) {
     return { error: 'ما عندكش صلاحية لتحديث استعمال البرومبت. Prompt usage updates are restricted for your workspace role.', promptId: id };
   }
 
@@ -275,7 +276,7 @@ export async function markPromptCopiedAction(id: string): Promise<PromptActionSt
 export async function importStarterPromptsAction(): Promise<PromptActionState> {
   const context = await getPromptContext();
   if (context.error) return { error: context.error };
-  if (!canEditContent(context.role)) {
+  if (!hasPermission(context.role, 'editor')) {
     return { error: 'ما عندكش صلاحية لاستيراد البرومبتات. Prompt imports are restricted for your workspace role.' };
   }
 

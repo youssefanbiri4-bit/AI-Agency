@@ -1,7 +1,7 @@
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { getWorkspaceAccessContext } from '@/lib/workspace-permissions';
+import { getRBACContext } from '@/lib/auth/rbac';
 import { hasPermission } from '@/lib/auth/rbac-client';
 import { normalizeRole } from '@/lib/auth/rbac-client';
 import type { Department } from '@/types/auth';
@@ -17,7 +17,7 @@ export interface SetViewAsDepartmentResult {
 export async function setViewAsDepartmentAction(
   department: Department | null
 ): Promise<SetViewAsDepartmentResult> {
-  const access = await getWorkspaceAccessContext();
+  const access = await getRBACContext();
   if (!access.data) {
     return { ok: false, error: 'Workspace access required.', department: null };
   }

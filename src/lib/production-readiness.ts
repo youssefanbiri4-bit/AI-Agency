@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { JsonObject, JsonValue } from '@/types';
 import type { ContentStudioPlatform } from '@/types/database';
 import type { Database } from '@/types/database';
-import type { StrictWorkspaceRole } from '@/lib/workspace-permissions';
+import type { StrictWorkspaceRole } from '@/lib/permissions-matrix';
 import { getGoogleAdsExecutionReadiness } from '@/lib/ads/google-ads-publishing';
 import { checkOpenAIContentReadiness } from '@/lib/ai/openai-content';
 import { listBackupRecordsForWorkspace } from '@/lib/data/backup-records';

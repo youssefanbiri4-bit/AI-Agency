@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { getWorkspaceAccessContext } from '@/lib/workspace-permissions';
+import { getRBACContext } from '@/lib/auth/rbac';
 import { reportAppError } from '@/lib/logger';
 import { getRequestId, nowISO } from '@/lib/api-response';
 
@@ -42,7 +42,7 @@ type TaskEventRow = {
 export async function GET(request: Request) {
   const requestId = getRequestId(request);
   try {
-    const access = await getWorkspaceAccessContext();
+    const access = await getRBACContext();
     if ('error' in access && access.error) {
       return NextResponse.json({ ok: false, success: false, error: 'Unauthorized', requestId, timestamp: nowISO() }, { status: 401, headers: { 'X-Request-ID': requestId } });
     }

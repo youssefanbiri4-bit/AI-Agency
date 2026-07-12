@@ -1,5 +1,5 @@
 import { reportAppError } from '@/lib/logger';
-import { getWorkspaceAccessContext } from '@/lib/workspace-permissions';
+import { getRBACContext } from '@/lib/auth/rbac';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
@@ -14,16 +14,13 @@ export default async function OperationalDashboardLayout({
   let failureMessage: string | null = null;
 
   try {
-    const access = await getWorkspaceAccessContext();
+    const rbac = await getRBACContext();
 
-    if ('error' in access && access.error) {
-      failureMessage = 'Operational dashboard unavailable.';
-      allowed = false;
-    } else if (!access.data) {
+    if (rbac.error || !rbac.data) {
       failureMessage = 'Operational dashboard unavailable.';
       allowed = false;
     } else {
-      const { role } = access.data;
+      const { role } = rbac.data;
 
       // Admin-only enforcement (owner/admin). No role-system changes.
       allowed = role === 'owner' || role === 'admin';

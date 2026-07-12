@@ -6,9 +6,9 @@ import {
   AUTH_BRUTE_FORCE_WINDOW_MS,
   AUTH_LOCKOUT_WINDOW_MS,
   checkRateLimit,
-  checkRateLimitLockout,
   clearRateLimitKey,
   peekRateLimit,
+  peekRateLimitLockout,
   setRateLimitLockout,
 } from '@/lib/rate-limit';
 
@@ -143,7 +143,10 @@ async function checkLockoutPair(
   let result: AuthBruteForceCheckResult = { allowed: true, retryAfterSeconds: 0, resetAt: Date.now() };
 
   for (const lockoutKey of [keys.lockoutIp, keys.lockoutEmail]) {
-    const lockout = await checkRateLimitLockout(lockoutKey);
+    // Use peek to avoid creating a lockout bucket just for checking.
+    // checkRateLimitLockout would create a bucket (count=1, limit=1),
+    // causing subsequent calls to falsely detect a lockout.
+    const lockout = await peekRateLimitLockout(lockoutKey);
     if (!lockout.allowed) {
       result = pickStricterBlock(result, toBlockedResult('lockout', lockout.resetAt));
     }

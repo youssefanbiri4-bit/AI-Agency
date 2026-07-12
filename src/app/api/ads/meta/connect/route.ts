@@ -5,7 +5,8 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
-import { canManageProviders, normalizeWorkspaceRole } from '@/lib/workspace-permissions';
+import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
+import { hasPermission } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { buildMetaOAuthUrl } from '@/lib/ads/meta';
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
   const membership = await getCurrentWorkspaceMembership(supabase, workspaceResult.data.id, user.id);
   const currentRole = normalizeWorkspaceRole(membership.data?.role, workspaceResult.data, user.id);
 
-  if (!canManageProviders(currentRole)) {
+  if (!hasPermission(currentRole, 'admin')) {
     await logSecurityAuditEvent({
       supabase,
       workspaceId: workspaceResult.data.id,

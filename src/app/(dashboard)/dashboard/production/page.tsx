@@ -16,10 +16,7 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { cn } from '@/lib/utils';
-import {
-  canManageSecurity,
-  getWorkspaceAccessContext,
-} from '@/lib/workspace-permissions';
+import { getRBACContext, hasPermission } from '@/lib/auth/rbac';
 import { getProductionReadiness, type ProductionCheck } from '@/lib/production-readiness';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { ProductionSettingsForm } from './ProductionSettingsForm';
@@ -117,31 +114,31 @@ function allReady(checks: ProductionCheck[]) {
 }
 
 export default async function ProductionOperationsPage() {
-  const access = await getWorkspaceAccessContext();
+  const rbac = await getRBACContext();
 
-  if (access.error || !access.data) {
+  if (rbac.error || !rbac.data) {
     return <AccessDenied />;
   }
 
-  if (!canManageSecurity(access.data.role)) {
+  if (!hasPermission(rbac.data.role, 'admin')) {
     await logSecurityAuditEvent({
-      supabase: access.data.supabase,
-      workspaceId: access.data.workspace.id,
-      userId: access.data.user.id,
+      supabase: rbac.data.supabase,
+      workspaceId: rbac.data.workspace.id,
+      userId: rbac.data.user.id,
       eventType: 'permission_denied',
       severity: 'warning',
       entityType: 'production_readiness',
       message: 'Blocked Production Operations page access.',
-      metadata: { role: access.data.role },
+      metadata: { role: rbac.data.role },
     });
 
     return <AccessDenied />;
   }
 
   const readiness = await getProductionReadiness({
-    supabase: access.data.supabase,
-    workspaceId: access.data.workspace.id,
-    userId: access.data.user.id,
+    supabase: rbac.data.supabase,
+    workspaceId: rbac.data.workspace.id,
+    userId: rbac.data.user.id,
     logEvent: true,
     cacheTtlMs: 45_000,
   });

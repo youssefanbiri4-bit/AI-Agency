@@ -3,9 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import type { JsonObject } from '@/types';
 import {
-  canManageSecurity,
-  getWorkspaceAccessContext,
-} from '@/lib/workspace-permissions';
+  getRBACContext,
+  hasPermission,
+} from '@/lib/auth/rbac';
 import {
   PRODUCTION_OPERATIONS_SETTINGS_KEY,
   clearProductionReadinessCache,
@@ -110,7 +110,7 @@ export async function updateProductionOperationsSettingsAction(
   _state: ProductionSettingsState,
   formData: FormData
 ): Promise<ProductionSettingsState> {
-  const access = await getWorkspaceAccessContext();
+  const access = await getRBACContext();
 
   if (access.error || !access.data) {
     return {
@@ -120,7 +120,7 @@ export async function updateProductionOperationsSettingsAction(
     };
   }
 
-  if (!canManageSecurity(access.data.role)) {
+  if (!hasPermission(access.data.role, 'admin')) {
     await logSecurityAuditEvent({
       supabase: access.data.supabase,
       workspaceId: access.data.workspace.id,
@@ -240,7 +240,7 @@ export async function updateProductionOperationsSettingsAction(
 }
 
 export async function refreshProductionReadinessAction() {
-  const access = await getWorkspaceAccessContext();
+  const access = await getRBACContext();
 
   if (access.data) {
     clearProductionReadinessCache(access.data.workspace.id, access.data.user.id);

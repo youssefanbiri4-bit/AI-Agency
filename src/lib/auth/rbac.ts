@@ -5,7 +5,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, WorkspaceMemberRecord } from '@/types/database';
+import type { Database, WorkspaceMemberRecord, WorkspaceRecord } from '@/types/database';
 import type {
   Department,
   RBACRole,
@@ -28,10 +28,8 @@ import {
   type PageAccessResult,
 } from '@/lib/auth/require-page-access';
 
-import {
-  getWorkspaceAccessContext,
-  type WorkspaceAccessContext,
-} from '@/lib/workspace-permissions';
+import { createSupabaseServerClient, getActiveWorkspaceIdFromCookie } from '@/lib/supabase-server';
+import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 
 // Client-safe helpers — safe to re-export for server consumers
 export {
@@ -63,6 +61,89 @@ export type { CatalogDepartmentId } from '@/lib/auth/rbac-client';
 export type { Department, RBACRole, RBACPermissionContext, PermissionAction } from '@/types/auth';
 
 // ======================
+// Inlined legacy context types and helpers (migrated from workspace-permissions.ts)
+// ======================
+
+interface WorkspaceAccessContext {
+  supabase: SupabaseClient<Database>;
+  user: { id: string; email?: string | null };
+  workspace: WorkspaceRecord;
+  membership: WorkspaceMemberRecord | null;
+  role: RBACRole;
+  isOwner: boolean;
+  isAdmin: boolean;
+  memberCount: number | null;
+}
+
+async function countWorkspaceMembers(
+  supabase: SupabaseClient<Database>,
+  workspaceId: string
+): Promise<number | null> {
+  const { count, error } = await supabase
+    .from('workspace_members')
+    .select('user_id', { count: 'exact', head: true })
+    .eq('workspace_id', workspaceId);
+  if (error) return null;
+  return count;
+}
+
+/** @deprecated Use getRBACContext() instead. */
+export function normalizeWorkspaceRole(
+  role: string | null | undefined,
+  workspace?: Pick<WorkspaceRecord, 'owner_id'> | null,
+  userId?: string | null
+): RBACRole {
+  if (workspace?.owner_id && userId && workspace.owner_id === userId) {
+    return 'owner';
+  }
+  if (role === 'owner' || role === 'admin' || role === 'operator' || role === 'editor' || role === 'viewer') {
+    return role;
+  }
+  return 'viewer';
+}
+
+async function getWorkspaceAccessContextInternal(): Promise<
+  { data: WorkspaceAccessContext | null; error: string | null }
+> {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { data: null, error: 'Authentication is required.' };
+  }
+  const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
+  const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
+  if (workspaceResult.error) {
+    return { data: null, error: workspaceResult.error };
+  }
+  if (!workspaceResult.data) {
+    return { data: null, error: 'Active workspace is required.' };
+  }
+  const membershipResult = await getCurrentWorkspaceMembership(
+    supabase,
+    workspaceResult.data.id,
+    user.id
+  );
+  if (membershipResult.error) {
+    return { data: null, error: membershipResult.error };
+  }
+  const role = normalizeWorkspaceRole(membershipResult.data?.role, workspaceResult.data, user.id);
+  const memberCount = await countWorkspaceMembers(supabase, workspaceResult.data.id);
+  return {
+    data: {
+      supabase,
+      user,
+      workspace: workspaceResult.data,
+      membership: membershipResult.data,
+      role,
+      isOwner: role === 'owner',
+      isAdmin: role === 'owner' || role === 'admin',
+      memberCount,
+    },
+    error: null,
+  };
+}
+
+// ======================
 // Core Context Builders
 // ======================
 
@@ -79,7 +160,7 @@ export interface GetRBACContextResult {
 }
 
 export async function getRBACContext(): Promise<GetRBACContextResult> {
-  const legacy = await getWorkspaceAccessContext();
+  const legacy = await getWorkspaceAccessContextInternal();
 
   if (!legacy.data) {
     return { data: null, error: legacy.error };
