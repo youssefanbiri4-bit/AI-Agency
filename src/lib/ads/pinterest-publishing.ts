@@ -1,6 +1,10 @@
 import 'server-only';
 
 import { decryptToken, encryptToken } from '@/lib/ads/encryption';
+import {
+  withCircuitBreaker,
+  CIRCUIT_BREAKER_PROVIDERS,
+} from '@/lib/circuit-breaker';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import type { JsonObject } from '@/types';
 import type { ProviderExecutionResult, ProviderReadinessResult } from '@/lib/content-studio/provider-types';
@@ -300,16 +304,20 @@ async function callPinterestApi<T>({
   accessToken: string;
   body?: Record<string, unknown>;
 }) {
-  const response = await fetch(`${PINTEREST_API_BASE_URL}/${path.replace(/^\/+/, '')}`, {
-    method,
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    cache: 'no-store',
-  });
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.PINTEREST,
+    () =>
+      fetch(`${PINTEREST_API_BASE_URL}/${path.replace(/^\/+/, '')}`, {
+        method,
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as T & {
     error?: string;
     message?: string;
@@ -330,16 +338,20 @@ async function refreshPinterestAccessToken(refreshToken: string) {
     scope: PINTEREST_SCOPES.join(','),
   });
   const credentials = Buffer.from(`${env.appId}:${env.appSecret}`).toString('base64');
-  const response = await fetch(PINTEREST_OAUTH_TOKEN_URL, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-    cache: 'no-store',
-  });
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.PINTEREST,
+    () =>
+      fetch(PINTEREST_OAUTH_TOKEN_URL, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body,
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as PinterestTokenResponse | null;
 
   if (!response.ok || !payload?.access_token) {
@@ -445,16 +457,20 @@ export async function exchangePinterestCodeForTokens(code: string) {
     redirect_uri: env.redirectUri,
   });
   const credentials = Buffer.from(`${env.appId}:${env.appSecret}`).toString('base64');
-  const response = await fetch(PINTEREST_OAUTH_TOKEN_URL, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-    cache: 'no-store',
-  });
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.PINTEREST,
+    () =>
+      fetch(PINTEREST_OAUTH_TOKEN_URL, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body,
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as PinterestTokenResponse | null;
 
   if (!response.ok || !payload?.access_token) {

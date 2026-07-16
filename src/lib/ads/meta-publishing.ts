@@ -2,6 +2,10 @@ import 'server-only';
 
 import { decryptToken } from '@/lib/ads/encryption';
 import {
+  withCircuitBreaker,
+  CIRCUIT_BREAKER_PROVIDERS,
+} from '@/lib/circuit-breaker';
+import {
   checkInstagramPublishingReadiness,
   publishInstagramReel,
 } from '@/lib/ads/instagram-publishing';
@@ -250,14 +254,18 @@ async function fetchMetaPages(accessToken: string) {
     'id,name,access_token,instagram_business_account{id,username}'
   );
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: 'no-store',
-  });
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.META_API,
+    () =>
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as MetaListResponse<MetaPageAccount> | null;
 
   if (!response.ok || payload?.error || !Array.isArray(payload?.data)) {
@@ -364,16 +372,20 @@ async function postMetaGraph({
   accessToken: string;
   body: Record<string, string>;
 }) {
-  const response = await fetch(buildGraphUrl(path), {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams(body),
-    cache: 'no-store',
-  });
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.META_API,
+    () =>
+      fetch(buildGraphUrl(path), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(body),
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as MetaPublishResponse | null;
 
   if (!response.ok || payload?.error) {

@@ -1,5 +1,11 @@
 import 'server-only';
 
+import { startSpan } from '@sentry/nextjs';
+import {
+  withCircuitBreaker,
+  CIRCUIT_BREAKER_PROVIDERS,
+} from '@/lib/circuit-breaker';
+
 import type {
   CreativeAssetAspectRatio,
   CreativeAssetOutputStyle,
@@ -7,6 +13,11 @@ import type {
   CreativeAssetType,
 } from '@/types/database';
 import type { JsonObject } from '@/types';
+import {
+  CONCURRENCY_SLOTS,
+  ConcurrencyLimitError,
+  withConcurrencyLimit,
+} from '@/lib/concurrency-limiter';
 
 const OPENAI_IMAGE_ENDPOINT = 'https://api.openai.com/v1/images/generations';
 const DEFAULT_IMAGE_MODEL = 'gpt-image-1.5';
@@ -349,65 +360,114 @@ export async function generateImageWithOpenAI(
   }
 
   try {
-    const response = await fetch(OPENAI_IMAGE_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+    return await withConcurrencyLimit(
+      CONCURRENCY_SLOTS.AI_GENERATION,
+      async () => {
+        try {
+          const response = await startSpan(
+            {
+              op: 'ai.image.generation',
+              name: `OpenAI ${model}`,
+              attributes: {
+                'ai.provider': 'openai',
+                'ai.model': model,
+                'ai.image.size': size,
+                'ai.image.quality': quality,
+              },
+            },
+            async (span) => {
+              const result = await withCircuitBreaker(
+                CIRCUIT_BREAKER_PROVIDERS.OPENAI_IMAGE,
+                () =>
+                  fetch(OPENAI_IMAGE_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                      Authorization: `Bearer ${apiKey}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body),
+                  }),
+                { timeoutMs: 60_000 }
+              );
+              span.setAttribute('http.status_code', result.status);
+              span.setAttribute('ai.success', result.ok);
+              return result;
+            }
+          );
+
+          const payload = (await response.json().catch(() => null)) as
+            | Record<string, unknown>
+            | null;
+
+          if (!response.ok) {
+            return {
+              status: 'failed',
+              error: safeProviderError(payload),
+              model,
+              size,
+              quality,
+            };
+          }
+
+          const data = Array.isArray(payload?.data) ? payload.data : [];
+          const firstImage =
+            data[0] && typeof data[0] === 'object'
+              ? (data[0] as Record<string, unknown>)
+              : null;
+          const b64Json = typeof firstImage?.b64_json === 'string' ? firstImage.b64_json : null;
+          const imageUrl = typeof firstImage?.url === 'string' ? firstImage.url : null;
+
+          if (!b64Json && !imageUrl) {
+            return {
+              status: 'failed',
+              error: 'OpenAI returned no image data.',
+              model,
+              size,
+              quality,
+            };
+          }
+
+          return {
+            status: 'generated',
+            b64Json,
+            imageUrl,
+            contentType: imageContentTypeFromFormat(payload?.output_format),
+            revisedPrompt:
+              typeof firstImage?.revised_prompt === 'string' ? firstImage.revised_prompt : null,
+            model,
+            size: typeof payload?.size === 'string' ? payload.size : size,
+            quality: typeof payload?.quality === 'string' ? payload.quality : quality,
+            metadata: {
+              provider: 'openai',
+              output_format:
+                typeof payload?.output_format === 'string' ? payload.output_format : 'png',
+              ...usageToMetadata(payload?.usage),
+            },
+          };
+        } catch {
+          return {
+            status: 'failed',
+            error: 'OpenAI image generation request failed.',
+            model,
+            size,
+            quality,
+          };
+        }
       },
-      body: JSON.stringify(body),
-    });
-
-    const payload = (await response.json().catch(() => null)) as
-      | Record<string, unknown>
-      | null;
-
-    if (!response.ok) {
+      // Queue (don't fail-fast): wait briefly for a free slot rather than reject.
+      { failOnQueue: false, timeoutMs: 20_000 }
+    );
+  } catch (e) {
+    if (e instanceof ConcurrencyLimitError) {
       return {
         status: 'failed',
-        error: safeProviderError(payload),
+        error:
+          'Image generation is busy. Please try again shortly. التوليد المشغول، جرّب بعد قليل.',
         model,
         size,
         quality,
       };
     }
-
-    const data = Array.isArray(payload?.data) ? payload.data : [];
-    const firstImage =
-      data[0] && typeof data[0] === 'object'
-        ? (data[0] as Record<string, unknown>)
-        : null;
-    const b64Json = typeof firstImage?.b64_json === 'string' ? firstImage.b64_json : null;
-    const imageUrl = typeof firstImage?.url === 'string' ? firstImage.url : null;
-
-    if (!b64Json && !imageUrl) {
-      return {
-        status: 'failed',
-        error: 'OpenAI returned no image data.',
-        model,
-        size,
-        quality,
-      };
-    }
-
-    return {
-      status: 'generated',
-      b64Json,
-      imageUrl,
-      contentType: imageContentTypeFromFormat(payload?.output_format),
-      revisedPrompt:
-        typeof firstImage?.revised_prompt === 'string' ? firstImage.revised_prompt : null,
-      model,
-      size: typeof payload?.size === 'string' ? payload.size : size,
-      quality: typeof payload?.quality === 'string' ? payload.quality : quality,
-      metadata: {
-        provider: 'openai',
-        output_format:
-          typeof payload?.output_format === 'string' ? payload.output_format : 'png',
-        ...usageToMetadata(payload?.usage),
-      },
-    };
-  } catch {
     return {
       status: 'failed',
       error: 'OpenAI image generation request failed.',

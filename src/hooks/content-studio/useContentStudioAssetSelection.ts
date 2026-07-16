@@ -9,7 +9,7 @@ import {
   linkCreativeAssetToDraftAction,
   removeCreativeAssetFromDraftAction,
 } from '@/app/(dashboard)/dashboard/content-studio/actions';
-import { filterAssetsForPlatform, isSignedImageUrl, isPublicImageUrl } from './shared';
+import { isSignedImageUrl, isPublicImageUrl } from './shared';
 
 interface UseContentStudioAssetSelectionOptions {
   selectedItem: ContentStudioItemView | null;
@@ -39,11 +39,9 @@ interface UseContentStudioAssetSelectionReturn {
 export function useContentStudioAssetSelection({
   selectedItem,
   creativeAssets,
-  selectedPlatform,
   router,
 }: UseContentStudioAssetSelectionOptions): UseContentStudioAssetSelectionReturn {
   const safeCreativeAssets = creativeAssets ?? [];
-  const assetOptions = filterAssetsForPlatform(safeCreativeAssets, selectedPlatform);
 
   const [assetSelection, setAssetSelection] = useState<{
     itemId: string | null;

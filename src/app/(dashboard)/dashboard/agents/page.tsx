@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { useDashboardContext } from '@/components/layout/DashboardContext';
 import { listAgentCatalog, type AgentCatalogData } from '@/lib/data/agents';
-import { listTasks } from '@/lib/data/tasks';
+import { listTasks } from '@/features/tasks/data/tasks';
 import { getDepartmentUsageSummary } from '@/lib/agents/agent-display';
 import { getAgentStats, getDepartmentMetrics } from '@/lib/stats';
 import type { Agent, Department, DepartmentName, Task } from '@/types';

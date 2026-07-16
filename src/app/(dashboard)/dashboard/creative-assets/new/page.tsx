@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import {
@@ -10,7 +11,19 @@ import { getBrandKitForWorkspace } from '@/lib/data/brand-kit';
 import { checkOpenAIImageReadiness } from '@/lib/ai/openai-images';
 import { buttonStyles } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { CreativeAssetForm } from '../CreativeAssetForm';
+import { LoadingState } from '@/components/ui/LoadingState';
+
+const CreativeAssetForm = dynamic(
+  () => import('../CreativeAssetForm').then((mod) => mod.CreativeAssetForm),
+  {
+    loading: () => (
+      <LoadingState
+        title="Loading form"
+        description="Preparing the creative asset form."
+      />
+    ),
+  }
+);
 
 export default async function NewCreativeAssetPage() {
   const readiness = checkOpenAIImageReadiness();

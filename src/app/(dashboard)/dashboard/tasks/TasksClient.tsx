@@ -1,26 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertCircle,
   CheckCircle2,
   ChevronDown,
   Clock,
+  Copy,
+  Download,
   FileText,
   Plus,
+  RefreshCw,
   Search,
+  Trash2,
+  UserPlus,
   Zap,
 } from 'lucide-react';
 import { Input, Select } from '@/components/ui/FormControls';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
-import { TaskTable } from '@/components/ui/TaskTable';
+import { TaskTable, type TaskTableSelection } from '@/components/ui/TaskTable';
 import { buttonStyles } from '@/components/ui/Button';
 import { getTaskStats } from '@/lib/stats';
 import type { Agent, Department, Task, TaskStatus } from '@/types';
 import { useLanguage } from '@/i18n/context';
 import { translateTaskStatus } from '@/i18n/dashboard-labels';
+import { useRowSelection } from '@/hooks/useRowSelection';
+import { BulkActionBar, type BulkActionConfig } from '@/components/ui/BulkActionBar';
+import { toast } from '@/components/ui/toast';
+import { bulkSetTaskStatus, bulkDeleteTasks, bulkDuplicateTasks, bulkAssignTasks, bulkExportTasks } from './bulk-actions';
 
 interface TasksClientProps {
   tasks: Task[];
@@ -50,6 +59,231 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
 
     return matchesSearch && matchesStatus && matchesAgent && matchesDepartment;
   });
+
+  const taskIds = useMemo(() => filteredTasks.map((task) => task.id), [filteredTasks]);
+  const { selectedIds, toggle, toggleRange, selectAll, clear, isAllSelected, isSomeSelected } =
+    useRowSelection();
+  const lastIndexRef = useRef<number | null>(null);
+
+  const handleToggleRow = useCallback(
+    (id: string, index: number, shiftKey: boolean) => {
+      if (shiftKey && lastIndexRef.current !== null) {
+        toggleRange(taskIds, lastIndexRef.current, index, id);
+      } else {
+        toggle(id);
+      }
+      lastIndexRef.current = index;
+    },
+    [taskIds, toggle, toggleRange],
+  );
+
+  const handleToggleAll = useCallback(
+    (checked: boolean) => {
+      if (checked) selectAll(taskIds);
+      else clear();
+    },
+    [taskIds, selectAll, clear],
+  );
+
+  const allChecked = isAllSelected(taskIds);
+  const someChecked = isSomeSelected(taskIds);
+
+  const selection: TaskTableSelection = {
+    selectedIds,
+    onToggleRow: handleToggleRow,
+    onToggleAll: handleToggleAll,
+    allChecked,
+    someChecked,
+  };
+
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [statusPending, setStatusPending] = useState(false);
+  const [assignMenuOpen, setAssignMenuOpen] = useState(false);
+  const [assignPending, setAssignPending] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportPending, setExportPending] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+  const [duplicatePending, setDuplicatePending] = useState(false);
+
+  const bulkStatuses: { value: TaskStatus; label: string }[] = [
+    { value: 'pending', label: translateTaskStatus(t, 'pending') },
+    { value: 'processing', label: translateTaskStatus(t, 'processing') },
+    { value: 'needs_review', label: translateTaskStatus(t, 'needs_review') },
+    { value: 'completed', label: translateTaskStatus(t, 'completed') },
+    { value: 'failed', label: translateTaskStatus(t, 'failed') },
+  ];
+
+  const handleBulkStatus = useCallback(
+    async (status: TaskStatus) => {
+      setStatusMenuOpen(false);
+      setStatusPending(true);
+      try {
+        const result = await bulkSetTaskStatus(Array.from(selectedIds), status);
+        if (result.ok) {
+          toast.success(
+            t('page.tasks.bulkStatusSuccess', `Updated ${result.updated} task(s) to ${translateTaskStatus(t, status)}.`),
+          );
+          clear();
+        } else if (result.updated > 0) {
+          toast.warning(
+            t('page.tasks.bulkStatusPartial', `Updated ${result.updated} task(s); ${result.failed} failed.`),
+          );
+          clear();
+        } else {
+          toast.error(result.message || t('page.tasks.bulkStatusError', 'Failed to update task statuses.'));
+        }
+      } catch {
+        toast.error(t('page.tasks.bulkStatusError', 'Failed to update task statuses.'));
+      } finally {
+        setStatusPending(false);
+      }
+    },
+    [selectedIds, clear, t],
+  );
+
+  const handleBulkAssign = useCallback(
+    async (agentType: string) => {
+      setAssignMenuOpen(false);
+      setAssignPending(true);
+      try {
+        const result = await bulkAssignTasks(Array.from(selectedIds), agentType);
+        if (result.ok) {
+          toast.success(t('page.tasks.bulkAssignSuccess', `Assigned ${result.updated} task(s) to selected agent.`));
+          clear();
+        } else if (result.updated > 0) {
+          toast.warning(t('page.tasks.bulkAssignPartial', `Assigned ${result.updated} task(s); ${result.failed} failed.`));
+          clear();
+        } else {
+          toast.error(result.message || t('page.tasks.bulkAssignError', 'Failed to assign tasks.'));
+        }
+      } catch {
+        toast.error(t('page.tasks.bulkAssignError', 'Failed to assign tasks.'));
+      } finally {
+        setAssignPending(false);
+      }
+    },
+    [selectedIds, clear, t],
+  );
+
+  const handleBulkDelete = useCallback(
+    async () => {
+      setDeleteConfirmOpen(false);
+      setDeletePending(true);
+      try {
+        const result = await bulkDeleteTasks(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(t('page.tasks.bulkDeleteSuccess', `Deleted ${result.updated} task(s).`));
+          clear();
+        } else if (result.updated > 0) {
+          toast.warning(t('page.tasks.bulkDeletePartial', `Deleted ${result.updated} task(s); ${result.failed} failed.`));
+          clear();
+        } else {
+          toast.error(result.message || t('page.tasks.bulkDeleteError', 'Failed to delete tasks.'));
+        }
+      } catch {
+        toast.error(t('page.tasks.bulkDeleteError', 'Failed to delete tasks.'));
+      } finally {
+        setDeletePending(false);
+      }
+    },
+    [selectedIds, clear, t],
+  );
+
+  const handleBulkDuplicate = useCallback(
+    async () => {
+      setDuplicatePending(true);
+      try {
+        const result = await bulkDuplicateTasks(Array.from(selectedIds));
+        if (result.ok) {
+          toast.success(t('page.tasks.bulkDuplicateSuccess', `Duplicated ${result.updated} task(s).`));
+          clear();
+        } else if (result.updated > 0) {
+          toast.warning(t('page.tasks.bulkDuplicatePartial', `Duplicated ${result.updated} task(s); ${result.failed} failed.`));
+          clear();
+        } else {
+          toast.error(result.message || t('page.tasks.bulkDuplicateError', 'Failed to duplicate tasks.'));
+        }
+      } catch {
+        toast.error(t('page.tasks.bulkDuplicateError', 'Failed to duplicate tasks.'));
+      } finally {
+        setDuplicatePending(false);
+      }
+    },
+    [selectedIds, clear, t],
+  );
+
+  const handleBulkExport = useCallback(
+    async (format: 'csv' | 'json') => {
+      setExportMenuOpen(false);
+      setExportPending(true);
+      try {
+        const result = await bulkExportTasks(Array.from(selectedIds), format);
+        if (result.ok && result.data) {
+          // Trigger browser download
+          const blob = new Blob([result.data], {
+            type: format === 'csv' ? 'text/csv' : 'application/json',
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = result.filename ?? `tasks-export.${format}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast.success(t('page.tasks.bulkExportSuccess', `Exported ${Array.from(selectedIds).length} task(s) as ${format.toUpperCase()}.`));
+          clear();
+        } else {
+          toast.error(result.message || t('page.tasks.bulkExportError', 'Failed to export tasks.'));
+        }
+      } catch {
+        toast.error(t('page.tasks.bulkExportError', 'Failed to export tasks.'));
+      } finally {
+        setExportPending(false);
+      }
+    },
+    [selectedIds, clear, t],
+  );
+
+  const bulkActions: BulkActionConfig[] = [
+    {
+      key: 'assign',
+      label: t('action.assign', 'Assign'),
+      icon: UserPlus,
+      onClick: () => setAssignMenuOpen((value) => !value),
+      disabled: assignPending,
+    },
+    {
+      key: 'status',
+      label: t('action.changeStatus', 'Change Status'),
+      icon: RefreshCw,
+      onClick: () => setStatusMenuOpen((value) => !value),
+      disabled: statusPending,
+    },
+    {
+      key: 'duplicate',
+      label: t('action.duplicate', 'Duplicate'),
+      icon: Copy,
+      onClick: () => void handleBulkDuplicate(),
+      disabled: duplicatePending,
+    },
+    {
+      key: 'delete',
+      label: t('action.delete', 'Delete'),
+      icon: Trash2,
+      variant: 'danger',
+      onClick: () => setDeleteConfirmOpen(true),
+      disabled: deletePending,
+    },
+    {
+      key: 'export',
+      label: t('action.export', 'Export'),
+      icon: Download,
+      onClick: () => setExportMenuOpen((value) => !value),
+      disabled: exportPending,
+    },
+  ];
 
   return (
     <div className="space-y-8">
@@ -143,12 +377,139 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
       <TaskTable
         tasks={filteredTasks}
         agents={agents}
+        selection={selection}
         emptyAction={
           <Link href="/dashboard/create-task" className={buttonStyles()}>
             <Plus className="h-4 w-4" />
             {t('action.createTask')}
           </Link>
         }
+      />
+
+      {statusMenuOpen && selectedIds.size > 0 && (
+        <div className="fixed inset-0 z-40" onClick={() => setStatusMenuOpen(false)} aria-hidden="true" />
+      )}
+
+      {statusMenuOpen && selectedIds.size > 0 && (
+        <div
+          role="menu"
+          aria-label={t('action.changeStatus', 'Change Status')}
+          className="fixed inset-x-0 bottom-20 z-50 mx-auto flex w-fit flex-col gap-1 rounded-lg border border-primary-light/20 bg-background p-2 shadow-[0_18px_42px_rgba(61,90,90,0.18)]"
+        >
+          {bulkStatuses.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              role="menuitem"
+              onClick={() => handleBulkStatus(item.value)}
+              className="rounded-md px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-primary-light/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {assignMenuOpen && selectedIds.size > 0 && (
+        <div className="fixed inset-0 z-40" onClick={() => setAssignMenuOpen(false)} aria-hidden="true" />
+      )}
+
+      {assignMenuOpen && selectedIds.size > 0 && (
+        <div
+          role="menu"
+          aria-label={t('action.assign', 'Assign')}
+          className="fixed inset-x-0 bottom-20 z-50 mx-auto flex w-fit flex-col gap-1 rounded-lg border border-primary-light/20 bg-background p-2 shadow-[0_18px_42px_rgba(61,90,90,0.18)]"
+        >
+          <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-black/42">
+            {t('page.tasks.assignAgent', 'Assign to Agent')}
+          </p>
+          {agents.map((agent) => (
+            <button
+              key={agent.id}
+              type="button"
+              role="menuitem"
+              onClick={() => handleBulkAssign(agent.id)}
+              className="rounded-md px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-primary-light/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              {agent.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {exportMenuOpen && selectedIds.size > 0 && (
+        <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} aria-hidden="true" />
+      )}
+
+      {exportMenuOpen && selectedIds.size > 0 && (
+        <div
+          role="menu"
+          aria-label={t('action.export', 'Export')}
+          className="fixed inset-x-0 bottom-20 z-50 mx-auto flex w-fit flex-col gap-1 rounded-lg border border-primary-light/20 bg-background p-2 shadow-[0_18px_42px_rgba(61,90,90,0.18)]"
+        >
+          <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-black/42">
+            {t('page.tasks.exportFormat', 'Export Format')}
+          </p>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => handleBulkExport('csv')}
+            className="rounded-md px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-primary-light/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            CSV (.csv)
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => handleBulkExport('json')}
+            className="rounded-md px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-primary-light/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            JSON (.json)
+          </button>
+        </div>
+      )}
+
+      {deleteConfirmOpen && selectedIds.size > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={() => setDeleteConfirmOpen(false)}>
+          <div
+            className="mx-4 w-full max-w-md rounded-2xl border border-primary-light/20 bg-background p-6 shadow-[0_18px_42px_rgba(61,90,90,0.18)]"
+            onClick={(event) => event.stopPropagation()}
+            role="alertdialog"
+            aria-label="Delete confirmation"
+          >
+            <h3 className="text-lg font-bold text-foreground">
+              {t('page.tasks.deleteConfirmTitle', `Delete ${selectedIds.size} task(s)?`)}
+            </h3>
+            <p className="mt-2 text-sm text-foreground-muted">
+              {t('page.tasks.deleteConfirmDescription', 'This action cannot be undone. The tasks and their events will be permanently removed.')}
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(false)}
+                className={buttonStyles({ variant: 'outline', size: 'sm' })}
+              >
+                {t('action.cancel', 'Cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleBulkDelete()}
+                disabled={deletePending}
+                className={buttonStyles({ variant: 'danger', size: 'sm' })}
+              >
+                {deletePending ? t('common.deleting', 'Deleting...') : t('action.delete', 'Delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <BulkActionBar
+        count={selectedIds.size}
+        actions={bulkActions}
+        onClear={clear}
+        label="task"
+        aria-label={t('page.tasks.bulkActions', 'Bulk task actions')}
       />
     </div>
   );

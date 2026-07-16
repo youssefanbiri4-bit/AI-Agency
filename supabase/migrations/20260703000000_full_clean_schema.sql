@@ -927,7 +927,7 @@ create table if not exists public.billing_customers (
 );
 
 comment on table public.billing_customers is
-  'Stripe customer mapping. Never stores card details or Stripe secrets.';
+  'Billing customer mapping (schema reference only). Never stores card details or secrets.';
 
 create table if not exists public.subscriptions (
   id uuid primary key default gen_random_uuid(),
@@ -946,7 +946,7 @@ create table if not exists public.subscriptions (
 );
 
 comment on table public.subscriptions is
-  'Stripe subscription mirror. Webhooks are source of truth; clients cannot set state.';
+  'Subscription plan tracking (schema reference only). Used for internal quota plan mapping.';
 
 create table if not exists public.usage_limits (
   id uuid primary key default gen_random_uuid(),

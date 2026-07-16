@@ -7,7 +7,7 @@ import {
 } from '@/lib/supabase-server';
 import { listAgentCatalog } from '@/lib/data/agents';
 import { listTaskReviews } from '@/lib/data/reviews';
-import { getTaskById, listTasks } from '@/lib/data/tasks';
+import { getTaskById, listTasks } from '@/features/tasks/data/tasks';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { ReviewHistory } from '@/components/reviews/ReviewHistory';
 import { TaskResultOutput } from '@/components/tasks/TaskResultOutput';
@@ -42,7 +42,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
   const [catalogResult, reviewQueueResult, taskResult, reviewsResult] = await Promise.all([
     listAgentCatalog(supabase),
     workspaceId
-      ? listTasks({ workspaceId, status: 'needs_review' }, supabase)
+      ? listTasks({ workspaceId, status: 'needs_review', limit: 500 }, supabase)
       : Promise.resolve({ data: [], error: null, isConfigured: true }),
     taskId && workspaceId
       ? getTaskById(taskId, workspaceId, supabase)

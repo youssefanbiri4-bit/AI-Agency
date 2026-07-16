@@ -17,7 +17,7 @@ import {
   updateProject,
   type ProjectDeploymentMetadata,
 } from '@/lib/data/projects';
-import { createTask } from '@/lib/data/tasks';
+import { createTask } from '@/features/tasks/data/tasks';
 import {
   generateSoftwarePlan,
   platformToProjectType,

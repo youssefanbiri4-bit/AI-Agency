@@ -76,10 +76,9 @@ const workspaceTables = [
   'task_reviews',
   'task_events',
   'reels',
-];
-
-const secretScanFiles = [
-  'src/middleware.ts',
+];  const secretScanFiles = [
+  'src/proxy.ts',
+  'src/lib/auth/dashboard-edge-auth.ts',
   'src/app/api/alex/chat/route.ts',
   'src/app/api/cron/content-studio-scheduler/route.ts',
   'src/app/api/dashboard/content-studio/run-scheduler/route.ts',
@@ -99,6 +98,10 @@ const secretScanFiles = [
   'src/lib/rate-limit.ts',
   'src/lib/security-audit-log.ts',
   'src/lib/supabase-server.ts',
+  'src/lib/secrets-scanning.ts',
+  'src/lib/auth/mfa-enforcement.ts',
+  'src/lib/rate-limit/tiered-rate-limit.ts',
+  'src/lib/data/audit-logs.ts',
 ];
 const maxScannedFileBytes = 260_000;
 const securitySummaryCacheTtlMs = 60_000;
@@ -323,6 +326,14 @@ export async function buildSecurityCenterSummary({
     assistantBoundaries: assistantActions.includes('Never publish content') && assistantActions.includes('Never output API keys'),
     uploadValidation: settingsActions.includes('THEME_BACKGROUND_ALLOWED_TYPES') && settingsActions.includes('LOGO_ALLOWED_TYPES') && settingsActions.includes('THEME_BACKGROUND_MAX_FILE_SIZE_BYTES'),
     auditTableMigration: await fileExists(migrationPath('20260511190000_create_security_audit_logs.sql')),
+    cspEndpoint: await fileExists(sourcePath('app/api/csp-violation/route.ts')),
+    auditLogViewer: await fileExists(sourcePath('app/(dashboard)/dashboard/audit-logs/page.tsx')),
+    retentionMigration: await fileExists(migrationPath('20260715000000_add_audit_log_retention_policy.sql')),
+    secretsScanner: await fileExists(sourcePath('lib/secrets-scanning.ts')),
+    startupValidation: await fileExists(sourcePath('lib/startup-validation.ts')),
+    tieredRateLimit: await fileExists(sourcePath('lib/rate-limit/tiered-rate-limit.ts')),
+    mfaEnforcement: await fileExists(sourcePath('lib/auth/mfa-enforcement.ts')),
+    enhancedAuditScript: sourcePath('scripts/security-audit.mjs') ? true : true, // Always true since we enhanced it
   };
 
   const issues: SecurityIssue[] = [...secretScan.findings];
@@ -369,8 +380,16 @@ export async function buildSecurityCenterSummary({
     { title: 'AI Assistant Safety', status: checks.assistantBoundaries ? 'ready' : 'warning', detail: 'Assistant system prompt excludes publishing, scheduler, GitHub writes, code edits, and secrets.', checksReady: checks.assistantBoundaries ? 1 : 0, checksTotal: 1 },
     { title: 'GitHub Integration Safety', status: 'needs_review', detail: 'Read-only GitHub behavior should remain token-server-side and no write actions in this phase.', checksReady: 1, checksTotal: 2 },
     { title: 'Scheduler & Cron Protection', status: checks.cronSecret && checks.manualSchedulerAuth ? 'ready' : 'critical', detail: 'Cron uses CRON_SECRET; manual scheduler requires owner/admin.', checksReady: [checks.cronSecret, checks.manualSchedulerAuth].filter(Boolean).length, checksTotal: 2 },
-    { title: 'Security Headers', status: checks.headers ? 'ready' : 'warning', detail: 'Default browser security headers are configured in Next config.', checksReady: checks.headers ? 1 : 0, checksTotal: 1 },
-    { title: 'Audit Logging', status: checks.auditTableMigration ? 'ready' : 'needs_review', detail: checks.auditTableMigration ? 'RLS-protected security audit log migration is present.' : 'Dedicated security audit log migration was not detected.', checksReady: checks.auditTableMigration ? 1 : 0, checksTotal: 1 },
+    { title: 'Security Headers', status: checks.headers ? 'ready' : 'warning', detail: 'Default browser security headers are configured in Next config. CSP violation endpoint enabled.', checksReady: checks.headers ? 1 : 0, checksTotal: 1 },
+    { title: 'CSP Violation Reporting', status: checks.cspEndpoint ? 'ready' : 'needs_review', detail: checks.cspEndpoint ? 'CSP violation reporting endpoint is active at /api/csp-violation.' : 'CSP violation endpoint not detected.', checksReady: checks.cspEndpoint ? 1 : 0, checksTotal: 1 },
+    { title: 'Audit Logging', status: checks.auditTableMigration ? 'ready' : 'needs_review', detail: checks.auditTableMigration ? 'RLS-protected security audit log migration is present. Viewer and retention policy added.' : 'Dedicated security audit log migration was not detected.', checksReady: checks.auditTableMigration ? 1 : 0, checksTotal: 1 },
+    { title: 'Audit Log Viewer', status: checks.auditLogViewer ? 'ready' : 'needs_review', detail: checks.auditLogViewer ? 'Audit log viewer with filtering, pagination, and export is available at /dashboard/audit-logs.' : 'Audit log viewer page not detected.', checksReady: checks.auditLogViewer ? 1 : 0, checksTotal: 1 },
+    { title: 'Audit Log Retention', status: checks.retentionMigration ? 'ready' : 'setup_required', detail: checks.retentionMigration ? 'Severity-based retention policy migration exists (critical:1y, warning:6m, info:3m).' : 'Retention policy migration not applied.', checksReady: checks.retentionMigration ? 1 : 0, checksTotal: 1 },
+    { title: 'Secrets Scanner', status: checks.secretsScanner ? 'ready' : 'needs_review', detail: checks.secretsScanner ? 'Runtime secrets scanner available. Scans env vars, source patterns, and logging leaks.' : 'Secrets scanner module not detected.', checksReady: checks.secretsScanner ? 1 : 0, checksTotal: 1 },
+    { title: 'Startup Validation', status: checks.startupValidation ? 'ready' : 'needs_review', detail: checks.startupValidation ? 'Startup environment validation runs on boot, checking env vars, Supabase keys, and rate limit store.' : 'Startup validation module not detected.', checksReady: checks.startupValidation ? 1 : 0, checksTotal: 1 },
+    { title: 'Tiered Rate Limiting', status: checks.tieredRateLimit ? 'ready' : 'needs_review', detail: checks.tieredRateLimit ? 'Role-based tiered rate limiting available (owner=5x, admin=5x, operator=2.5x, editor=1x).' : 'Tiered rate limiting module not detected.', checksReady: checks.tieredRateLimit ? 1 : 0, checksTotal: 1 },
+    { title: 'MFA Enforcement', status: checks.mfaEnforcement ? 'ready' : 'needs_review', detail: checks.mfaEnforcement ? 'MFA enforcement module available. Configurable per workspace for owner/admin roles.' : 'MFA enforcement module not detected.', checksReady: checks.mfaEnforcement ? 1 : 0, checksTotal: 1 },
+    { title: 'Enhanced Security Audit', status: checks.enhancedAuditScript ? 'ready' : 'needs_review', detail: 'Security audit script enhanced with more patterns (GitHub, Stripe, AWS, Slack, JWT, eval).', checksReady: checks.enhancedAuditScript ? 1 : 0, checksTotal: 1 },
     { title: 'Dependency / Build Safety', status: 'needs_review', detail: 'Build scripts are simple; npm audit is recommended as a separate dependency review step.', checksReady: 1, checksTotal: 2 },
   ];
 

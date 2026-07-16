@@ -10,14 +10,13 @@ import {
   removeContentStudioItemAsset,
   replaceContentStudioItemAssets,
   updateContentStudioItem,
-} from '@/lib/data/content-studio';
+} from '@/features/content-studio/data/content-studio';
 import { getContentStudioProviderReadiness } from '@/lib/content-studio/provider-actions';
+import { incrementUsage } from '@/lib/usage/quotas';
 import {
   inferPlatformFromContentType,
 } from '../shared';
 import type {
-  ContentStudioItemRecord,
-  ContentStudioPlatform,
   ContentStudioStatus,
   ContentStudioType,
   NotificationType,
@@ -320,6 +319,10 @@ async function persistItem({
 
   if (result.error || !result.data) {
     return { ...initialState, error: result.error ?? 'Content item could not be saved.' };
+  }
+
+  if (!itemId) {
+    await incrementUsage(workspace.id, 'content_items', 1, user.id).catch(() => {});
   }
 
   const linkResult = await replaceContentStudioItemAssets(result.data.id, assetIds, supabase);

@@ -24,7 +24,7 @@ export default async function ReleaseDetailPage({ params }: { params: Promise<{ 
   if (!workspaceResult.data) notFound();
   const [releaseResult, projectsResult] = await Promise.all([
     getReleaseById(id, workspaceResult.data.id, supabase),
-    listProjectsForWorkspace(workspaceResult.data.id, supabase),
+    listProjectsForWorkspace(workspaceResult.data.id, supabase, { limit: 200 }),
   ]);
   if (!releaseResult.data) notFound();
   const release = releaseResult.data;

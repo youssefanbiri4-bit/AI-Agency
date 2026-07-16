@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getRequestId, createApiError } from '@/lib/api-response';
+import { checkSlidingWindowRateLimit, buildWorkspaceRateLimitKey, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
 import { downloadClientReportPdfAction } from '@/actions/reports/actions';
 import { reportAppError } from '@/lib/logger';
 
@@ -31,6 +32,24 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Sliding window rate limit for PDF report generation
+    const slidingLimiter = await checkSlidingWindowRateLimit({
+      key: buildWorkspaceRateLimitKey(parsed.data.workspaceId, RATE_LIMIT_ACTIONS.REPORT_EXPORT_PDF),
+      limit: 3,
+      windowMs: 60_000,
+    });
+
+    if (!slidingLimiter.allowed) {
+      return createApiError('PDF generation rate limit reached. Please wait before retrying.', {
+        status: 429,
+        requestId,
+        headers: {
+          'Retry-After': String(Math.ceil(slidingLimiter.resetInMs / 1000)),
+          'X-RateLimit-Remaining': '0',
+        },
+      });
+    }
+
     const result = await downloadClientReportPdfAction(parsed.data);
 
     if (!result.ok || !result.pdfBase64) {

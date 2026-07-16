@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { hasPermission } from '@/lib/auth/rbac';
-import { getContentStudioItemById } from '@/lib/data/content-studio';
-import { createTask } from '@/lib/data/tasks';
+import { getContentStudioItemById } from '@/features/content-studio/data/content-studio';
+import { createTask } from '@/features/tasks/data/tasks';
 import {
   formatContentStudioPlatformLabel,
   formatContentStudioTypeLabel,

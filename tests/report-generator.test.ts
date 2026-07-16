@@ -3,7 +3,7 @@ import {
   buildPerformanceMetrics,
   generateClientReport,
   renderReportToHTML,
-} from '@/lib/reports/report-generator';
+} from '@/features/reports/service/report-generator';
 import type { Task } from '@/types';
 import type { CreativeAssetRecord, ReelRecord } from '@/types/database';
 

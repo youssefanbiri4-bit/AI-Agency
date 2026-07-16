@@ -95,7 +95,7 @@ export async function listReels(
 
   let query = client
     .from('reels')
-    .select('*')
+    .select('id, workspace_id, user_id, platform, type, status, title, offer, goal, target_audience, market, tone, cta, hook, main_message, script, storyboard, caption, hashtags, duration_seconds, creative_type, video_url, cover_url, subtitles, music_note, scheduled_for, published_at, published_media_id, published_permalink, error_message, metadata, created_at, updated_at')
     .order('created_at', { ascending: false });
 
   if (options.workspaceId) {
@@ -130,9 +130,10 @@ export async function listReels(
 export async function listReelsForWorkspace(
   workspaceId: string,
   userId?: string,
-  client: SupabaseClient<Database> = supabase as SupabaseClient<Database>
+  client: SupabaseClient<Database> = supabase as SupabaseClient<Database>,
+  options: { limit?: number; offset?: number } = {}
 ): Promise<DataResult<ReelRecord[]>> {
-  return listReels({ workspaceId, userId }, client);
+  return listReels({ workspaceId, userId, ...options }, client);
 }
 
 export async function getReelById(

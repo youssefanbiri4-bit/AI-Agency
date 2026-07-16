@@ -1,6 +1,23 @@
 import { logger } from '@/lib/logger';
-import { listTasks, markStaleProcessingTaskFailed } from '@/lib/data/tasks';
+import { listTasks, markStaleProcessingTaskFailed } from '@/features/tasks/data/tasks';
 import { increment } from '@/lib/monitoring/metrics';
+import type { Task } from '@/types';
+
+/**
+ * Task extended with optional workspace_id from Supabase queries that include it.
+ * The base Task type does not declare workspace_id, but listTasks queries select it.
+ */
+type TaskWithWorkspace = Task & { workspace_id?: string };
+
+/**
+ * Detect and fail tasks stuck in 'processing' status beyond the threshold.
+ *
+ * Queries all tasks with status='processing', checks their updated_at timestamp,
+ * and marks any that exceed `thresholdMs` (default 10 min) as failed via
+ * markStaleProcessingTaskFailed. Emits stale_detected_total metric per task.
+ *
+ * @returns Count of tasks changed and any error encountered.
+ */
 
 const log = logger.child('queue:stale-recovery');
 
@@ -24,11 +41,8 @@ export async function runStaleProcessingRecoveryOnce(options?: { thresholdMs?: n
         if (Number.isNaN(updatedAt)) continue;
 
         if (updatedAt < now - thresholdMs) {
-          const workspaceId =
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (t as any).workspace_id ??
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (t as any).workspaceId;
+          const typed = t as TaskWithWorkspace;
+          const workspaceId = typed.workspace_id ?? '';
 
           // correlation_id fallback for stale recovery:
           // MUST NOT set correlation_id = task_id directly.

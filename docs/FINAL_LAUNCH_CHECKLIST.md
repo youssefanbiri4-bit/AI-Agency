@@ -141,7 +141,6 @@ Without Upstash, rate limits are **in-memory** (not safe across serverless insta
 | Meta / Instagram | `META_APP_ID`, `META_APP_SECRET`, `META_REDIRECT_URI`, `META_GRAPH_API_VERSION` |
 | Google Ads | `GOOGLE_ADS_*` (OAuth, developer token, customer ID) |
 | Pinterest | `PINTEREST_APP_ID` or `PINTEREST_CLIENT_ID`, `PINTEREST_APP_SECRET`, `PINTEREST_REDIRECT_URI` |
-| Stripe billing | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price IDs, `STRIPE_ALLOW_LIVE_MODE=true` for live |
 | Sentry | `SENTRY_DSN` |
 | Client PDF (HTML branding) | `PUPPETEER_EXECUTABLE_PATH` or `CHROME_PATH` — optional; pdf-lib fallback works without Chromium |
 | PDF password | Install `qpdf` on build image if password protection required (optional) |
@@ -183,7 +182,7 @@ npm audit --audit-level=moderate
 - [ ] `/api/tasks/execute` requires auth + production gate + n8n readiness
 - [ ] `/api/n8n/callback` validates `N8N_CALLBACK_SECRET`
 - [ ] `/api/cron/content-studio-scheduler` rejects requests without `CRON_SECRET`
-- [ ] Billing webhook uses `STRIPE_WEBHOOK_SECRET` / `BILLING_WEBHOOK_SECRET`
+
 - [ ] RLS: two test workspaces cannot read each other's tasks/assets
 
 ### 2.3 Production gate
@@ -334,7 +333,6 @@ npx vercel deploy --prebuilt --prod --archive=tgz
 | M16 | Brand kit wired in reports | ✅ Done |
 | P1 | Persistent rate limits (Upstash) | ⚠️ Required before public scale |
 | P1 | Full task-create path quota coverage | ⚠️ Partial — monitor |
-| P1 | Stripe Checkout / portal | ⚠️ Foundation only |
 | P1 | `PUPPETEER_EXECUTABLE_PATH` on Vercel | ⚠️ Optional — pdf-lib fallback active |
 
 ---

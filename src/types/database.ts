@@ -1,7 +1,61 @@
 import type { AgentType, DepartmentName, JsonObject, JsonValue, TaskStatus } from './index';
 
 export type WorkspaceRole = 'owner' | 'admin' | 'operator' | 'editor' | 'viewer';
-export type BillingPlan = 'free' | 'starter' | 'pro' | 'agency';
+export type BillingPlan = 'free' | 'starter' | 'pro' | 'agency' | 'enterprise';
+
+export type BillingPeriod = 'monthly' | 'yearly';
+
+export interface PlanFeature {
+  key: string;
+  label: string;
+  included: boolean;
+  limit?: string | number;
+}
+
+export interface SeatPricing {
+  /** Price per seat per month in USD */
+  perSeatMonth: number;
+  /** Minimum seats required */
+  minSeats: number;
+  /** Maximum seats allowed (null = unlimited) */
+  maxSeats: number | null;
+  /** Included seats in the base price */
+  includedSeats: number;
+}
+
+export interface UsagePricing {
+  /** Included usage units per month */
+  includedUnits: number;
+  /** Price per additional unit */
+  overagePerUnit: number;
+  /** Unit label */
+  unitLabel: string;
+}
+
+export interface PlanDefinition {
+  id: BillingPlan;
+  name: string;
+  description: string;
+  /** Monthly price in USD (0 for free) */
+  monthlyPrice: number;
+  /** Yearly price in USD (0 for free) */
+  yearlyPrice: number;
+  /** Features included in this plan */
+  features: PlanFeature[];
+  /** Seat-based pricing (null if not seat-based) */
+  seatPricing: SeatPricing | null;
+  /** Usage-based pricing per quota type */
+  usagePricing: Partial<Record<string, UsagePricing>>;
+  /** Whether the plan has hard limits vs soft warnings */
+  hardLimits: boolean;
+  /** Whether this plan is publicly visible for upgrade */
+  isUpgradeTarget: boolean;
+  /** Sort order in UI */
+  sortOrder: number;
+  /** Badge color for UI */
+  color: string;
+}
+
 export type TaskPriority = 'Low' | 'Normal' | 'High';
 export type SupabaseConnectionStatus = 'not_configured' | 'configured';
 export type N8nConnectionStatus = 'not_connected' | 'prepared' | 'connected';
@@ -124,7 +178,11 @@ export type NotificationType =
   | 'creative_asset_created'
   | 'creative_prompt_ready'
   | 'creative_image_generated'
-  | 'creative_image_failed';
+  | 'creative_image_failed'
+  | 'quota_warning'
+  | 'quota_critical'
+  | 'churn_warning'
+  | 'win_back';
 export type NotificationStatus = 'unread' | 'read' | 'archived';
 export type NotificationSeverity = 'info' | 'success' | 'warning' | 'error' | 'critical';
 export type ProjectStatus =
@@ -218,6 +276,9 @@ export type AgentTemplateUsageActionType =
   | 'export_workflow_playbook';
 export type AgentTemplateUsageSourcePage = 'agent_library' | 'alex' | 'content_studio';
 export type AgentWorkflowPlaybookStatus = 'draft' | 'ready' | 'archived';
+export type AgentBuilderSafetyLevel = 'safe' | 'requires_review' | 'readonly';
+export type AgentBuilderExecutionMode = 'autonomous' | 'supervised' | 'manual' | 'draft_only';
+export type AgentBuilderVisibility = 'workspace' | 'marketplace';
 
 // ===== Missing Table Types (defined in DB but not in existing types) =====
 
@@ -283,6 +344,299 @@ export interface Database {
           updated_at?: string;
         };
         Relationships: [];
+      };
+      usage_costs: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string | null;
+          operation_type: string;
+          model: string | null;
+          input_tokens: number;
+          output_tokens: number;
+          image_count: number;
+          n8n_executions: number;
+          estimated_cost_usd: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id?: string | null;
+          operation_type: string;
+          model?: string | null;
+          input_tokens?: number;
+          output_tokens?: number;
+          image_count?: number;
+          n8n_executions?: number;
+          estimated_cost_usd?: number;
+          created_at?: string;
+        };
+        Update: {
+          operation_type?: string;
+          model?: string | null;
+          estimated_cost_usd?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'usage_costs_workspace_id_fkey';
+            columns: ['workspace_id'];
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      backup_jobs: {
+        Row: {
+          id: string;
+          workspace_id: string | null;
+          job_type: string;
+          status: string;
+          destination: string | null;
+          destination_path: string | null;
+          size_bytes: number;
+          started_at: string;
+          finished_at: string | null;
+          rpo_target_minutes: number | null;
+          rto_target_minutes: number | null;
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id?: string | null;
+          job_type: string;
+          status?: string;
+          destination?: string | null;
+          destination_path?: string | null;
+          size_bytes?: number;
+          started_at?: string;
+          finished_at?: string | null;
+          rpo_target_minutes?: number | null;
+          rto_target_minutes?: number | null;
+          error_message?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          status?: string;
+          destination?: string | null;
+          destination_path?: string | null;
+          size_bytes?: number;
+          finished_at?: string | null;
+          error_message?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'backup_jobs_workspace_id_fkey';
+            columns: ['workspace_id'];
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      marketing_events: {
+        Row: {
+          id: string;
+          event_type: string;
+          experiment: string | null;
+          variant: string | null;
+          workspace_id: string | null;
+          anonymous_id: string | null;
+          metadata: JsonObject;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_type: string;
+          experiment?: string | null;
+          variant?: string | null;
+          workspace_id?: string | null;
+          anonymous_id?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
+        };
+        Update: {
+          event_type?: string;
+          experiment?: string | null;
+          variant?: string | null;
+          workspace_id?: string | null;
+          anonymous_id?: string | null;
+          metadata?: JsonObject;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'marketing_events_workspace_id_fkey';
+            columns: ['workspace_id'];
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      referrals: {
+        Row: {
+          id: string;
+          code: string;
+          referrer_user_id: string;
+          referrer_workspace_id: string;
+          referred_email: string | null;
+          referred_user_id: string | null;
+          status: string;
+          reward_granted: boolean;
+          created_at: string;
+          completed_at: string | null;
+          expires_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          referrer_user_id: string;
+          referrer_workspace_id: string;
+          referred_email?: string | null;
+          referred_user_id?: string | null;
+          status?: string;
+          reward_granted?: boolean;
+          created_at?: string;
+          completed_at?: string | null;
+          expires_at?: string | null;
+        };
+        Update: {
+          code?: string;
+          referred_email?: string | null;
+          referred_user_id?: string | null;
+          status?: string;
+          reward_granted?: boolean;
+          completed_at?: string | null;
+          expires_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'referrals_referrer_user_id_fkey';
+            columns: ['referrer_user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'referrals_referrer_workspace_id_fkey';
+            columns: ['referrer_workspace_id'];
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      referral_rewards: {
+        Row: {
+          id: string;
+          user_id: string;
+          workspace_id: string;
+          points: number;
+          reason: string;
+          referral_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          workspace_id: string;
+          points?: number;
+          reason: string;
+          referral_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          points?: number;
+          reason?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'referral_rewards_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'referral_rewards_workspace_id_fkey';
+            columns: ['workspace_id'];
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'referral_rewards_referral_id_fkey';
+            columns: ['referral_id'];
+            referencedRelation: 'referrals';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      system_health_snapshots: {
+        Row: {
+          id: string;
+          workspace_id: string | null;
+          status: string;
+          score: number;
+          metrics: JsonObject;
+          details: JsonObject;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id?: string | null;
+          status: string;
+          score: number;
+          metrics?: JsonObject;
+          details?: JsonObject;
+          created_at?: string;
+        };
+        Update: {
+          status?: string;
+          score?: number;
+          metrics?: JsonObject;
+          details?: JsonObject;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'system_health_snapshots_workspace_id_fkey';
+            columns: ['workspace_id'];
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      workspace_alert_channels: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          channel_type: string;
+          target: string;
+          label: string | null;
+          enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          channel_type: string;
+          target: string;
+          label?: string | null;
+          enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          channel_type?: string;
+          target?: string;
+          label?: string | null;
+          enabled?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'workspace_alert_channels_workspace_id_fkey';
+            columns: ['workspace_id'];
+            referencedRelation: 'workspaces';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       workspaces: {
         Row: {
@@ -446,6 +800,7 @@ export interface Database {
         Update: {
           title?: string;
           description?: string;
+          agent_type?: AgentType;
           input_data?: JsonObject;
           status?: TaskStatus;
           priority?: TaskPriority;
@@ -666,6 +1021,293 @@ export interface Database {
           readiness_summary?: JsonObject;
           diagram?: JsonObject;
           metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      agent_builder_agents: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          created_by: string | null;
+          name: string;
+          role: string;
+          description: string | null;
+          category: string;
+          icon: string;
+          accent_color: string;
+          instructions: string;
+          inputs: string[];
+          outputs: string[];
+          safety_level: AgentBuilderSafetyLevel;
+          execution_mode: AgentBuilderExecutionMode;
+          review_checklist: string[];
+          tags: string[];
+          prompt_library_id: string | null;
+          is_template: boolean;
+          visibility: AgentBuilderVisibility;
+          share_slug: string | null;
+          usage_count: number;
+          last_used_at: string | null;
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          created_by?: string | null;
+          name: string;
+          role?: string;
+          description?: string | null;
+          category?: string;
+          icon?: string;
+          accent_color?: string;
+          instructions: string;
+          inputs?: string[];
+          outputs?: string[];
+          safety_level?: AgentBuilderSafetyLevel;
+          execution_mode?: AgentBuilderExecutionMode;
+          review_checklist?: string[];
+          tags?: string[];
+          prompt_library_id?: string | null;
+          is_template?: boolean;
+          visibility?: AgentBuilderVisibility;
+          share_slug?: string | null;
+          usage_count?: number;
+          last_used_at?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          role?: string;
+          description?: string | null;
+          category?: string;
+          icon?: string;
+          accent_color?: string;
+          instructions?: string;
+          inputs?: string[];
+          outputs?: string[];
+          safety_level?: AgentBuilderSafetyLevel;
+          execution_mode?: AgentBuilderExecutionMode;
+          review_checklist?: string[];
+          tags?: string[];
+          prompt_library_id?: string | null;
+          is_template?: boolean;
+          visibility?: AgentBuilderVisibility;
+          share_slug?: string | null;
+          usage_count?: number;
+          last_used_at?: string | null;
+          metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      api_keys: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          name: string;
+          key_prefix: string;
+          key_hash: string;
+          scopes: string[];
+          rate_limit: number;
+          status: string;
+          expires_at: string | null;
+          last_used_at: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          name: string;
+          key_prefix: string;
+          key_hash: string;
+          scopes?: string[];
+          rate_limit?: number;
+          status?: string;
+          expires_at?: string | null;
+          last_used_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          name?: string;
+          key_prefix?: string;
+          key_hash?: string;
+          scopes?: string[];
+          rate_limit?: number;
+          status?: string;
+          expires_at?: string | null;
+          last_used_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      support_tickets: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          created_by: string | null;
+          subject: string;
+          description: string;
+          status: string;
+          priority: string;
+          category: string;
+          assigned_to: string | null;
+          resolved_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          created_by?: string | null;
+          subject: string;
+          description: string;
+          status?: string;
+          priority?: string;
+          category?: string;
+          assigned_to?: string | null;
+          resolved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          created_by?: string | null;
+          subject?: string;
+          description?: string;
+          status?: string;
+          priority?: string;
+          category?: string;
+          assigned_to?: string | null;
+          resolved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      customer_feedback: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          created_by: string | null;
+          author_email: string | null;
+          rating: number | null;
+          category: string;
+          message: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          created_by?: string | null;
+          author_email?: string | null;
+          rating?: number | null;
+          category?: string;
+          message: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          created_by?: string | null;
+          author_email?: string | null;
+          rating?: number | null;
+          category?: string;
+          message?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      nps_responses: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string | null;
+          score: number;
+          comment: string | null;
+          period: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id?: string | null;
+          score: number;
+          comment?: string | null;
+          period?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          user_id?: string | null;
+          score?: number;
+          comment?: string | null;
+          period?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      churn_alerts: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          signal_type: string;
+          severity: string;
+          title: string;
+          message: string;
+          acknowledged: boolean;
+          acknowledged_by: string | null;
+          acknowledged_at: string | null;
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          signal_type: string;
+          severity?: string;
+          title: string;
+          message: string;
+          acknowledged?: boolean;
+          acknowledged_by?: string | null;
+          acknowledged_at?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          signal_type?: string;
+          severity?: string;
+          title?: string;
+          message?: string;
+          acknowledged?: boolean;
+          acknowledged_by?: string | null;
+          acknowledged_at?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
           updated_at?: string;
         };
         Relationships: [];
@@ -959,43 +1601,10 @@ export interface Database {
         };
         Relationships: [];
       };
-      billing_customers: {
-        Row: {
-          id: string;
-          workspace_id: string;
-          user_id: string | null;
-          stripe_customer_id: string | null;
-          email: string | null;
-          metadata: JsonObject;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          workspace_id: string;
-          user_id?: string | null;
-          stripe_customer_id?: string | null;
-          email?: string | null;
-          metadata?: JsonObject;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          user_id?: string | null;
-          stripe_customer_id?: string | null;
-          email?: string | null;
-          metadata?: JsonObject;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
       subscriptions: {
         Row: {
           id: string;
           workspace_id: string;
-          stripe_customer_id: string | null;
-          stripe_subscription_id: string | null;
-          stripe_price_id: string | null;
           plan: BillingPlan;
           status: string;
           current_period_start: string | null;
@@ -1008,9 +1617,6 @@ export interface Database {
         Insert: {
           id?: string;
           workspace_id: string;
-          stripe_customer_id?: string | null;
-          stripe_subscription_id?: string | null;
-          stripe_price_id?: string | null;
           plan?: BillingPlan;
           status?: string;
           current_period_start?: string | null;
@@ -1021,9 +1627,6 @@ export interface Database {
           updated_at?: string;
         };
         Update: {
-          stripe_customer_id?: string | null;
-          stripe_subscription_id?: string | null;
-          stripe_price_id?: string | null;
           plan?: BillingPlan;
           status?: string;
           current_period_start?: string | null;
@@ -1072,6 +1675,29 @@ export interface Database {
           max_ai_generations_per_month?: number | null;
           max_backups_per_month?: number | null;
           metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      usage_counters: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          quota_type: string;
+          count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          quota_type: string;
+          count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          count?: number;
           updated_at?: string;
         };
         Relationships: [];
@@ -1858,6 +2484,311 @@ export interface Database {
         };
         Relationships: [];
       };
+      agent_memory: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          agent_type: string;
+          memory_type: 'episodic' | 'semantic' | 'procedural' | 'working';
+          category: string;
+          content: string;
+          embedding: number[] | null;
+          importance: number;
+          confidence: number;
+          source: string | null;
+          tags: string[];
+          metadata: JsonObject;
+          last_accessed_at: string | null;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          agent_type: string;
+          memory_type: 'episodic' | 'semantic' | 'procedural' | 'working';
+          category?: string;
+          content: string;
+          embedding?: number[] | null;
+          importance?: number;
+          confidence?: number;
+          source?: string | null;
+          tags?: string[];
+          metadata?: JsonObject;
+          last_accessed_at?: string | null;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          workspace_id?: string;
+          agent_type?: string;
+          memory_type?: 'episodic' | 'semantic' | 'procedural' | 'working';
+          category?: string;
+          content?: string;
+          embedding?: number[] | null;
+          importance?: number;
+          confidence?: number;
+          source?: string | null;
+          tags?: string[];
+          metadata?: JsonObject;
+          last_accessed_at?: string | null;
+          expires_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      human_review_requests: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          run_id: string;
+          step_id: string;
+          agent_type: string;
+          reason: string;
+          context: JsonObject;
+          requested_action: string | null;
+          status: 'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled';
+          reviewer_id: string | null;
+          decision_note: string | null;
+          decided_at: string | null;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          run_id: string;
+          step_id: string;
+          agent_type: string;
+          reason: string;
+          context?: JsonObject;
+          requested_action?: string | null;
+          status?: 'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled';
+          reviewer_id?: string | null;
+          decision_note?: string | null;
+          decided_at?: string | null;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          workspace_id?: string;
+          run_id?: string;
+          step_id?: string;
+          agent_type?: string;
+          reason?: string;
+          context?: JsonObject;
+          requested_action?: string | null;
+          status?: 'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled';
+          reviewer_id?: string | null;
+          decision_note?: string | null;
+          decided_at?: string | null;
+          expires_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      consent_records: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string;
+          purpose: string;
+          legal_basis: string;
+          granted: boolean;
+          version: string;
+          withdrawn_at: string | null;
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id: string;
+          purpose: string;
+          legal_basis?: string;
+          granted: boolean;
+          version?: string;
+          withdrawn_at?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          purpose?: string;
+          legal_basis?: string;
+          granted?: boolean;
+          version?: string;
+          withdrawn_at?: string | null;
+          metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      data_subject_requests: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string;
+          request_type: 'access' | 'erasure' | 'rectification' | 'portability';
+          status: 'pending' | 'in_progress' | 'completed' | 'rejected' | 'expired';
+          requested_at: string;
+          completed_at: string | null;
+          verified: boolean;
+          export_path: string | null;
+          notes: string | null;
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id: string;
+          request_type: 'access' | 'erasure' | 'rectification' | 'portability';
+          status?: 'pending' | 'in_progress' | 'completed' | 'rejected' | 'expired';
+          requested_at?: string;
+          completed_at?: string | null;
+          verified?: boolean;
+          export_path?: string | null;
+          notes?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          request_type?: 'access' | 'erasure' | 'rectification' | 'portability';
+          status?: 'pending' | 'in_progress' | 'completed' | 'rejected' | 'expired';
+          completed_at?: string | null;
+          verified?: boolean;
+          export_path?: string | null;
+          notes?: string | null;
+          metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      sso_configs: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          provider: 'google_workspace' | 'microsoft_entra';
+          enabled: boolean;
+          client_id: string | null;
+          client_secret_encrypted: string | null;
+          tenant_id: string | null;
+          domain: string | null;
+          issuer_url: string | null;
+          allow_sign_up: boolean;
+          allowed_domains: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          provider: 'google_workspace' | 'microsoft_entra';
+          enabled?: boolean;
+          client_id?: string | null;
+          client_secret_encrypted?: string | null;
+          tenant_id?: string | null;
+          domain?: string | null;
+          issuer_url?: string | null;
+          allow_sign_up?: boolean;
+          allowed_domains?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          provider?: 'google_workspace' | 'microsoft_entra';
+          enabled?: boolean;
+          client_id?: string | null;
+          client_secret_encrypted?: string | null;
+          tenant_id?: string | null;
+          domain?: string | null;
+          issuer_url?: string | null;
+          allow_sign_up?: boolean;
+          allowed_domains?: string[];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      security_policies: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          policy_key: string;
+          enabled: boolean;
+          config: JsonObject;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          policy_key: string;
+          enabled?: boolean;
+          config?: JsonObject;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          policy_key?: string;
+          enabled?: boolean;
+          config?: JsonObject;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      compliance_evidence: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          framework: string;
+          control_id: string;
+          control_name: string;
+          status: 'not_started' | 'implemented' | 'evidence_collected' | 'attested' | 'failed';
+          evidence: string | null;
+          attested_by: string | null;
+          attested_at: string | null;
+          metadata: JsonObject;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          framework?: string;
+          control_id: string;
+          control_name: string;
+          status?: 'not_started' | 'implemented' | 'evidence_collected' | 'attested' | 'failed';
+          evidence?: string | null;
+          attested_by?: string | null;
+          attested_at?: string | null;
+          metadata?: JsonObject;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          framework?: string;
+          control_id?: string;
+          control_name?: string;
+          status?: 'not_started' | 'implemented' | 'evidence_collected' | 'attested' | 'failed';
+          evidence?: string | null;
+          attested_by?: string | null;
+          attested_at?: string | null;
+          metadata?: JsonObject;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -1868,6 +2799,32 @@ export interface Database {
       is_workspace_admin: {
         Args: { check_workspace_id: string };
         Returns: boolean;
+      };
+      increment_usage_counter: {
+        Args: { p_workspace_id: string; p_quota_type: string };
+        Returns: undefined;
+      };
+      increment_usage_counter_metadata: {
+        Args: { p_workspace_id: string; p_quota_type: string; p_amount?: number };
+        Returns: undefined;
+      };
+      list_rls_enabled_tables: {
+        Args: Record<PropertyKey, never>;
+        Returns: { tablename: string; rowsecurity: boolean }[];
+      };
+      sum_workspace_cost: {
+        Args: {
+          p_workspace_id: string;
+          p_since?: string;
+          p_until?: string;
+        };
+        Returns: {
+          total_cost: number;
+          openai_cost: number;
+          n8n_cost: number;
+          total_tokens: number;
+          operations: number;
+        };
       };
     };
     Enums: Record<string, never>;
@@ -1889,12 +2846,13 @@ export type AgentTemplateUsageEventRecord =
   Database['public']['Tables']['agent_template_usage_events']['Row'];
 export type AgentWorkflowPlaybookRecord =
   Database['public']['Tables']['agent_workflow_playbooks']['Row'];
+export type AgentBuilderAgentRecord =
+  Database['public']['Tables']['agent_builder_agents']['Row'];
 export type UserPreferenceRecord = Database['public']['Tables']['user_preferences']['Row'];
 export type IntegrationSettingsRecord =
   Database['public']['Tables']['integration_settings']['Row'];
-export type BillingCustomerRecord = Database['public']['Tables']['billing_customers']['Row'];
-export type SubscriptionRecord = Database['public']['Tables']['subscriptions']['Row'];
 export type UsageLimitRecord = Database['public']['Tables']['usage_limits']['Row'];
+export type SubscriptionRecord = Database['public']['Tables']['subscriptions']['Row'];
 export type AdConnectionRecord = Database['public']['Tables']['ad_connections']['Row'];
 export type NotificationRecord = Database['public']['Tables']['notifications']['Row'];
 export type ProjectRecord = Database['public']['Tables']['projects']['Row'];
@@ -1917,3 +2875,26 @@ export type ProviderReadinessCacheRecord =
 export type PullRequestReviewRecord =
   Database['public']['Tables']['pull_request_reviews']['Row'];
 export type SafePatchPlanRecord = Database['public']['Tables']['safe_patch_plans']['Row'];
+export type ApiKeyRecord = Database['public']['Tables']['api_keys']['Row'];
+
+export type SupportTicketRecord = Database['public']['Tables']['support_tickets']['Row'];
+export type CustomerFeedbackRecord = Database['public']['Tables']['customer_feedback']['Row'];
+export type NpsResponseRecord = Database['public']['Tables']['nps_responses']['Row'];
+export type ChurnAlertRecord = Database['public']['Tables']['churn_alerts']['Row'];
+
+export type ConsentRecord = Database['public']['Tables']['consent_records']['Row'];
+export type DataSubjectRequestRecord =
+  Database['public']['Tables']['data_subject_requests']['Row'];
+export type SsoConfigRecord = Database['public']['Tables']['sso_configs']['Row'];
+export type SecurityPolicyRecord = Database['public']['Tables']['security_policies']['Row'];
+export type ComplianceEvidenceRecord =
+  Database['public']['Tables']['compliance_evidence']['Row'];
+
+export type ApiKeyScope =
+  | 'agents:read'
+  | 'agents:write'
+  | 'prompts:read'
+  | 'prompts:write'
+  | 'team:read'
+  | 'usage:read'
+  | 'api:keys:manage';

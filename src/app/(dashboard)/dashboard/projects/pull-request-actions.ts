@@ -11,7 +11,7 @@ import {
   getCurrentWorkspaceMembership,
 } from '@/lib/data/workspaces';
 import { getProjectById } from '@/lib/data/projects';
-import { createTask } from '@/lib/data/tasks';
+import { createTask } from '@/features/tasks/data/tasks';
 import { createRelease } from '@/lib/data/releases';
 import {
   getPullRequestReviewById,

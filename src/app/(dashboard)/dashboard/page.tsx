@@ -1,605 +1,100 @@
 import Link from 'next/link';
-import { Suspense, type ReactNode } from 'react';
+import { Suspense } from 'react';
 import {
-  AlertCircle,
-  ArrowRight,
-  BarChart3,
-  BookMarked,
-  Bot,
-  CalendarDays,
-  CalendarClock,
   CheckCircle2,
   ClipboardList,
-  DatabaseBackup,
-  FileText,
-  FolderKanban,
-  Gauge,
-  ImageIcon,
-  Layers3,
-  LifeBuoy,
-  LockKeyhole,
-  Megaphone,
-  PenSquare,
-  Plus,
-  RadioTower,
-  Rocket,
-  Settings,
   ShieldCheck,
-  Sparkles,
-  SearchCode,
 } from 'lucide-react';
 import {
   createSupabaseServerClient,
   getActiveWorkspaceIdFromCookie,
-  getSupabaseAdmin,
 } from '@/lib/supabase-server';
 import {
   getCurrentUserWorkspace,
   getCurrentWorkspaceMembership,
 } from '@/lib/data/workspaces';
 import { getDashboardData, type DashboardData } from '@/lib/data/dashboard';
-import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
+import { listContentStudioItemsForWorkspace } from '@/features/content-studio/data/content-studio';
 import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
 import { listProjectsForWorkspace } from '@/lib/data/projects';
 import { listReleasesForWorkspace } from '@/lib/data/releases';
+import {
+  listLatestNotifications,
+  countUnreadNotifications,
+} from '@/lib/data/notifications';
+import type { NotificationRecord } from '@/types/database';
 import { getMetaConnectionStatus, getGoogleAdsConnectionStatus } from '@/lib/data/ad-connections';
 import { getGoogleAdsConfigReadiness } from '@/lib/ads/google-ads';
 import { getPinterestConfigReadiness } from '@/lib/ads/pinterest';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
-import {
-  checkOpenAITextProviderReadiness,
-} from '@/lib/ai/text-provider';
-import { logger } from '@/lib/logger';
+import { checkOpenAITextProviderReadiness } from '@/lib/ai/text-provider';
 import { buttonStyles } from '@/components/ui/Button';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { ExpandablePanel } from '@/components/ui/ExpandablePanel';
+import { formatTimeAgo } from '@/lib/utils';
 import { Notice } from '@/components/ui/Notice';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { cn, formatDateTime, formatTimeAgo } from '@/lib/utils';
-import { DashboardSchedulerButton } from './DashboardSchedulerButton';
-import { WavingRobot } from '@/components/dashboard/WavingRobot';
-import { emptyDataResult, errorDataResult, type DataResult } from '@/lib/data/types';
-import { getAgentStats, getTaskStats } from '@/lib/stats';
-import type { ContentStudioItemWithAssets } from '@/lib/data/content-studio';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
+import { getServerTranslator } from '@/i18n/server';
+import { type DataResult } from '@/lib/data/types';
+import type { ContentStudioItemWithAssets } from '@/features/content-studio/data/content-studio';
 import type {
   ContentStudioPublishAttemptRecord,
-  ContentStudioStatus,
   CreativeAssetRecord,
   ProjectRecord,
   ReleaseRecord,
 } from '@/types/database';
-import type { Task } from '@/types';
 
-type ReadinessState =
-  | 'ready'
-  | 'setup_required'
-  | 'approval_pending'
-  | 'quota_limit'
-  | 'token_missing'
-  | 'manual_only'
-  | 'unsupported'
-  | 'error';
-
-interface ProviderRow {
-  name: string;
-  status: ReadinessState;
-  nextAction: string;
-}
-
-interface TodayAction {
-  id: string;
-  title: string;
-  reason: string;
-  href: string;
-  status: Parameters<typeof StatusBadge>[0]['status'];
-  cta: string;
-}
-
-const contentStatuses: ContentStudioStatus[] = [
-  'draft',
-  'ready',
-  'scheduled',
-  'published',
-  'failed',
-  'setup_required',
-  'approval_pending',
-];
-
-const readinessBadgeStatuses: Record<ReadinessState, Parameters<typeof StatusBadge>[0]['status']> = {
-  ready: 'ready',
-  setup_required: 'setup_required',
-  approval_pending: 'approval_pending',
-  quota_limit: 'quota_limit',
-  token_missing: 'token_missing',
-  manual_only: 'manual_only',
-  unsupported: 'unsupported',
-  error: 'error',
-};
-
-const DASHBOARD_SECTION_TIMEOUT_MS = 3500;
-const DASHBOARD_PROVIDER_TIMEOUT_MS = 2500;
-const dashboardPageLog = logger.child('dashboard:page');
+import {
+  type ReadinessState,
+  type ProviderRow,
+  type UsageWidgetData,
+  DASHBOARD_PROVIDER_TIMEOUT_MS,
+  traceWorkspace,
+  withDashboardTimeout,
+  timeoutMessage,
+  settledDataResult,
+  dashboardFallbackResult,
+  buildEmptyDashboardData,
+  buildProjectSnapshot,
+  buildReleaseSnapshot,
+  contentStatuses,
+  getMetaEnvironmentMissing,
+  getMetaProviderState,
+  getGoogleAdsProviderState,
+  getPinterestProviderState,
+  fallbackProviderReadiness,
+  getReadinessState,
+  countBy,
+  readObject,
+  safeString,
+  isVideoAsset,
+  isManualOnlyItem,
+  buildTodayActions,
+  listRecentPublishAttempts,
+  getUsageWidgetData,
+} from './utils';
+import {
+  CommandCard,
+  ProgressRow,
+  SmallMetric,
+  DashboardContentFallback,
+  HeroSection,
+  UsageWidget,
+  OpsCard,
+  WorkShortcutsGrid,
+  ManagerShortcutsGrid,
+  ProviderRowsSection,
+  ProjectSnapshotCard,
+  ReleaseSnapshotCard,
+  TodayActionCard,
+  LatestTaskCard,
+  LatestContentCard,
+  LatestPublishAttemptCard,
+  HealthScoreCard,
+} from './components';
 
 export const dynamic = 'force-dynamic';
-
-function traceWorkspace(message: string, details?: Record<string, unknown>) {
-  if (details) {
-    dashboardPageLog.info(message, details);
-    return;
-  }
-  dashboardPageLog.info(message);
-}
-
-function buildEmptyDashboardData(): DashboardData {
-  const agents: DashboardData['agents'] = [];
-  const departments: DashboardData['departments'] = [];
-  const tasks: DashboardData['tasks'] = [];
-
-  return {
-    agents,
-    departments,
-    tasks,
-    events: [],
-    agentStats: getAgentStats(agents),
-    taskStats: getTaskStats(tasks),
-  };
-}
-
-function dashboardFallbackResult<T>(data: T, error: string | null = null): DataResult<T> {
-  return error ? errorDataResult(data, error) : emptyDataResult(data, true);
-}
-
-function timeoutMessage(sectionName: string) {
-  return `${sectionName} did not respond quickly enough. Showing a safe fallback.`;
-}
-
-async function withDashboardTimeout<T>(
-  sectionName: string,
-  promise: Promise<T>,
-  timeoutMs = DASHBOARD_SECTION_TIMEOUT_MS
-): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const startedAt = Date.now();
-  traceWorkspace(`before ${sectionName}`);    const guardedPromise = promise.catch((error: unknown) => {
-    dashboardPageLog.warn(`failed ${sectionName}`, { error: error instanceof Error ? error.message : String(error) });
-    throw error;
-  });
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      dashboardPageLog.warn(`timeout ${sectionName}`, {
-        durationMs: Date.now() - startedAt,
-      });
-      reject(new Error(timeoutMessage(sectionName)));
-    }, timeoutMs);
-  });
-
-  try {
-    const result = await Promise.race([guardedPromise, timeout]);
-    traceWorkspace(`after ${sectionName}`, { durationMs: Date.now() - startedAt });
-    return result;
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
-}
-
-function settledDataResult<T>(
-  result: PromiseSettledResult<DataResult<T>>,
-  fallbackData: T,
-  sectionName: string
-): DataResult<T> {
-  if (result.status === 'fulfilled') {
-    return result.value;
-  }
-
-  return dashboardFallbackResult(fallbackData, timeoutMessage(sectionName));
-}
-
-function getMetaEnvironmentMissing() {
-  return ['META_APP_ID', 'META_APP_SECRET', 'META_REDIRECT_URI'].filter(
-    (key) => !process.env[key]?.trim()
-  );
-}
-
-function getMetaProviderState({
-  missingEnvironment,
-  status,
-  requiredSelection,
-}: {
-  missingEnvironment: string[];
-  status: string | null | undefined;
-  requiredSelection: string | null;
-}): ReadinessState {
-  if (missingEnvironment.length > 0) return 'setup_required';
-  if (!status || status === 'not_connected') return 'token_missing';
-  if (status === 'expired' || status === 'revoked') return 'token_missing';
-  if (status !== 'connected') return 'setup_required';
-  return requiredSelection ? 'ready' : 'setup_required';
-}
-
-function getGoogleAdsProviderState({
-  isConfigured,
-  status,
-}: {
-  isConfigured: boolean;
-  status: string | null | undefined;
-}): ReadinessState {
-  if (!isConfigured) return 'setup_required';
-  if (!status || status === 'not_connected') return 'token_missing';
-  if (status === 'expired' || status === 'revoked') return 'token_missing';
-  return status === 'connected' ? 'ready' : 'setup_required';
-}
-
-function getPinterestProviderState(): ReadinessState {
-  return 'setup_required';
-}
-
-function fallbackProviderReadiness(): { state: ReadinessState } {
-  return {
-    state: 'setup_required',
-  };
-}
-
-function countBy<T extends string>(values: T[]) {
-  return values.reduce<Record<T, number>>((counts, value) => {
-    counts[value] = (counts[value] ?? 0) + 1;
-    return counts;
-  }, {} as Record<T, number>);
-}
-
-function buildProjectSnapshot(projects: ProjectRecord[]) {
-  return {
-    total: projects.length,
-    active: projects.filter((project) => project.status === 'active').length,
-    readyToDeploy: projects.filter((project) => project.status === 'ready_to_deploy').length,
-    deployed: projects.filter((project) => project.status === 'deployed').length,
-    latest: projects[0] ?? null,
-  };
-}
-
-function buildReleaseSnapshot(releases: ReleaseRecord[]) {
-  return {
-    total: releases.length,
-    deployed: releases.filter((release) => release.status === 'deployed').length,
-    failed: releases.filter((release) => release.status === 'failed').length,
-    readyToDeploy: releases.filter((release) => release.status === 'ready_to_deploy').length,
-    latest: releases[0] ?? null,
-  };
-}
-
-function readObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function safeString(value: unknown) {
-  if (typeof value !== 'string' && typeof value !== 'number') {
-    return null;
-  }
-
-  const normalized = String(value).trim();
-  return normalized || null;
-}
-
-function isVideoAsset(asset: CreativeAssetRecord) {
-  return (
-    asset.asset_type === 'video' ||
-    asset.asset_type === 'reel_video' ||
-    asset.metadata?.media_type === 'video' ||
-    Boolean(asset.metadata?.video)
-  );
-}
-
-function isManualOnlyItem(item: ContentStudioItemWithAssets) {
-  return item.content_type === 'linkedin_post_planner' || item.provider_status === 'manual_only';
-}
-
-function isDueSoon(value: string | null) {
-  if (!value) {
-    return false;
-  }
-
-  const timestamp = Date.parse(value);
-  if (!Number.isFinite(timestamp)) {
-    return false;
-  }
-
-  const now = Date.now();
-  return timestamp <= now + 24 * 60 * 60 * 1000;
-}
-
-function formatActionType(value: string) {
-  return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function getReadinessState(value: { state?: string; status?: string; isConfigured?: boolean; isReady?: boolean }) {
-  if (value.state) {
-    return value.state as ReadinessState;
-  }
-
-  if (value.status === 'configured' || value.status === 'ready' || value.isConfigured || value.isReady) {
-    return 'ready';
-  }
-
-  if (value.status === 'approval_pending') return 'approval_pending';
-  if (value.status === 'quota_limit') return 'quota_limit';
-  return 'setup_required';
-}
-
-function hasMediaUrl(asset: CreativeAssetRecord) {
-  const metadata = readObject(asset.metadata);
-  const video = readObject(metadata.video);
-  return Boolean(asset.image_url || asset.storage_path || safeString(video.public_url));
-}
-
-async function listRecentPublishAttempts(workspaceId: string) {
-  const { client, error } = getSupabaseAdmin(DASHBOARD_PROVIDER_TIMEOUT_MS);
-
-  if (!client) {
-    return {
-      data: [] as ContentStudioPublishAttemptRecord[],
-      error: error ?? 'Supabase admin client is not configured.',
-    };
-  }
-
-  const { data, error: selectError } = await client
-    .from('content_studio_publish_attempts')
-    .select('*')
-    .eq('workspace_id', workspaceId)
-    .order('created_at', { ascending: false })
-    .limit(6);
-
-  return {
-    data: (data ?? []) as ContentStudioPublishAttemptRecord[],
-    error: selectError?.message ?? null,
-  };
-}
-
-function CommandCard({
-  title,
-  description,
-  action,
-  children,
-  className,
-}: {
-  title: string;
-  description?: string;
-  action?: ReactNode;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <section
-      className={cn(
-        'min-w-0 rounded-2xl border border-black/7 bg-white/90 p-5 shadow-[0_20px_54px_rgba(93,107,107,0.08)] ring-1 ring-white/70',
-        className
-      )}
-    >
-      <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-black/6 pb-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-lg font-black text-[#5D6B6B]">{title}</h2>
-          {description ? <p className="mt-1 text-sm leading-6 text-black/58">{description}</p> : null}
-        </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function ManagerStat({
-  label,
-  value,
-  helper,
-  icon: Icon,
-  tone = 'berry',
-}: {
-  label: string;
-  value: number | string;
-  helper: string;
-  icon: typeof FileText;
-  tone?: 'berry' | 'coral' | 'peach' | 'dark';
-}) {
-  const accent =
-    tone === 'coral'
-      ? 'bg-[#F7CBCA]/14 text-[#B51F30]'
-      : tone === 'peach'
-        ? 'bg-[#E7F5DC]/28 text-[#8A4300]'
-        : tone === 'dark'
-          ? 'bg-[#5D6B6B] text-[#D5E5E5]'
-          : 'bg-[#D5E5E5] text-[#F7CBCA]';
-
-  return (
-    <div className="rounded-2xl border border-black/7 bg-white p-5 shadow-[0_16px_42px_rgba(93,107,107,0.07)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">{label}</p>
-          <p className="mt-3 text-3xl font-black text-[#5D6B6B]">{value}</p>
-        </div>
-        <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', accent)}>
-          <Icon className="h-5 w-5" />
-        </span>
-      </div>
-      <p className="mt-4 text-sm font-semibold leading-6 text-black/55">{helper}</p>
-    </div>
-  );
-}
-
-function ProgressRow({ label, value, total }: { label: string; value: number; total: number }) {
-  const width = total <= 0 ? 0 : Math.min(100, Math.round((value / total) * 100));
-
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="text-sm font-bold text-black/70">{label}</span>
-        <span className="font-mono text-sm font-black text-[#5D6B6B]">{value}</span>
-      </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-[#F1F7F7] ring-1 ring-black/5">
-        <div className="h-full rounded-full bg-[#F7CBCA]" style={{ width: `${width}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function SmallMetric({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="rounded-2xl border border-black/7 bg-[#F1F7F7]/68 p-4">
-      <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">{label}</p>
-      <p className="mt-2 text-2xl font-black text-[#5D6B6B]">{value}</p>
-    </div>
-  );
-}
-
-function buildTodayActions({
-  contentItems,
-  tasks,
-  unlinkedAssets,
-}: {
-  contentItems: ContentStudioItemWithAssets[];
-  tasks: Task[];
-  unlinkedAssets: CreativeAssetRecord[];
-}) {
-  const actions: TodayAction[] = [];
-
-  for (const item of contentItems.filter((candidate) => candidate.status === 'ready').slice(0, 3)) {
-    actions.push({
-      id: `ready-${item.id}`,
-      title: item.title,
-      reason: 'Content is ready for the next publish or draft action.',
-      href: `/dashboard/content-studio?item=${item.id}`,
-      status: 'ready',
-      cta: 'Open item',
-    });
-  }
-
-  for (const item of contentItems.filter((candidate) => candidate.status === 'scheduled' && isDueSoon(candidate.schedule_at)).slice(0, 3)) {
-    actions.push({
-      id: `scheduled-${item.id}`,
-      title: item.title,
-      reason: item.schedule_at ? `Scheduled for ${formatDateTime(item.schedule_at)}` : 'Scheduled item needs timing review.',
-      href: `/dashboard/content-studio?item=${item.id}`,
-      status: 'scheduled',
-      cta: 'Review schedule',
-    });
-  }
-
-  for (const item of contentItems.filter((candidate) => ['failed', 'setup_required', 'approval_pending'].includes(candidate.status)).slice(0, 4)) {
-    actions.push({
-      id: `blocked-${item.id}`,
-      title: item.title,
-      reason: item.provider_error || `Item is ${item.status.replace(/_/g, ' ')}.`,
-      href: `/dashboard/content-studio?item=${item.id}`,
-      status: item.status,
-      cta: 'Fix item',
-    });
-  }
-
-  for (const task of tasks.filter((candidate) => candidate.status === 'needs_review').slice(0, 4)) {
-    actions.push({
-      id: `review-${task.id}`,
-      title: task.title,
-      reason: 'Task needs manager review before it can move forward.',
-      href: `/dashboard/tasks/${task.id}`,
-      status: 'needs_review',
-      cta: 'Review task',
-    });
-  }
-
-  for (const asset of unlinkedAssets.slice(0, 2)) {
-    actions.push({
-      id: `asset-${asset.id}`,
-      title: asset.title,
-      reason: hasMediaUrl(asset) ? 'Creative asset is not linked to any content item.' : 'Creative asset is missing a usable media URL.',
-      href: `/dashboard/creative-assets/${asset.id}`,
-      status: hasMediaUrl(asset) ? 'manual_only' : 'setup_required',
-      cta: 'Open asset',
-    });
-  }
-
-  return actions.slice(0, 10);
-}
-
-function DashboardContentFallback() {
-  return (
-    <div className="-mx-4 -my-6 min-h-screen bg-[var(--theme-background,#F1F7F7)] px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <div className="mx-auto max-w-[1540px] space-y-8">
-        <Notice tone="warning" title="Dashboard is running in safe mode">
-          Core navigation is available while workspace data finishes loading. If a provider or database request is slow, this page stays usable instead of returning to an infinite loading screen.
-        </Notice>
-
-        <section className="rounded-2xl border border-black/7 bg-white/90 p-5 shadow-[0_24px_70px_rgba(93,107,107,0.08)] sm:p-7">
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] xl:items-center">
-            <div className="min-w-0">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#F7CBCA]/14 bg-[#F1F7F7] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#F7CBCA]">
-                <Sparkles className="h-3.5 w-3.5" />
-                Safe dashboard shell
-              </div>
-              <h1 className="text-3xl font-black leading-tight tracking-normal text-[#5D6B6B] sm:text-4xl xl:text-5xl">
-                Agency Command Center
-              </h1>
-              <p className="mt-3 max-w-3xl text-base leading-7 text-black/60">
-                The dashboard shell is ready. Heavy widgets load separately so one slow request cannot block the whole workspace.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Link href="/dashboard/create-task" className={buttonStyles({ size: 'lg' })}>
-                  <Plus className="h-5 w-5" />
-                  Create Task
-                </Link>
-                <Link href="/dashboard/content-studio" className={buttonStyles({ size: 'lg', variant: 'secondary' })}>
-                  <PenSquare className="h-5 w-5" />
-                  Content Studio
-                </Link>
-                <Link href="/dashboard/system-health" className={buttonStyles({ size: 'lg', variant: 'outline' })}>
-                  <Gauge className="h-5 w-5" />
-                  System Health
-                </Link>
-                <Link href="/dashboard/alex" className={buttonStyles({ size: 'lg', variant: 'outline' })}>
-                  <Bot className="h-5 w-5" />
-                  Open Alex
-                </Link>
-              </div>
-            </div>
-            <div className="min-w-0 rounded-2xl border border-black/7 bg-[#F1F7F7]/72 p-4">
-              <WavingRobot />
-            </div>
-          </div>
-        </section>
-
-        <div className="dashboard-stat-grid">
-          <ManagerStat label="Tasks" value="..." helper="Loading with timeout protection" icon={FileText} />
-          <ManagerStat label="Reviews" value="..." helper="Safe fallback remains visible" icon={AlertCircle} tone="coral" />
-          <ManagerStat label="Content" value="..." helper="Widgets load independently" icon={CheckCircle2} tone="dark" />
-          <ManagerStat label="Providers" value="..." helper="Provider checks cannot freeze this page" icon={RadioTower} />
-        </div>
-
-        <CommandCard title="Workspace Shortcuts" description="Routes stay available even while dashboard data is recovering.">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ['Open Alex', '/dashboard/alex', Bot],
-              ['Agent Library', '/dashboard/agent-library', Bot],
-              ['Workflow Builder', '/dashboard/agent-library/workflows', Layers3],
-              ['AI Studio', '/dashboard/ai-studio', Sparkles],
-              ['Projects', '/dashboard/projects', FolderKanban],
-              ['Settings', '/dashboard/settings', Settings],
-              ['Tasks', '/dashboard/tasks', ClipboardList],
-              ['Reports', '/dashboard/reports', BarChart3],
-            ].map(([label, href, Icon]) => (
-              <Link
-                key={label as string}
-                href={href as string}
-                className={buttonStyles({ variant: 'outline', size: 'lg', className: 'w-full justify-start' })}
-              >
-                <Icon className="h-5 w-5" />
-                {label as string}
-              </Link>
-            ))}
-          </div>
-        </CommandCard>
-      </div>
-    </div>
-  );
-}
+export const revalidate = 60;
 
 export default function DashboardPage() {
   return (
@@ -621,7 +116,7 @@ async function DashboardContent() {
     supabase.auth.getUser(),
     DASHBOARD_PROVIDER_TIMEOUT_MS
   ).catch((error: unknown) => {
-    dashboardPageLog.warn('auth timeout', { error: error instanceof Error ? error.message : String(error) });
+    traceWorkspace('auth timeout', { error: error instanceof Error ? error.message : String(error) });
     return {
       data: { user: null },
       error,
@@ -701,6 +196,24 @@ async function DashboardContent() {
         ? getGoogleAdsConnectionStatus(workspaceId, userId)
         : Promise.resolve(dashboardFallbackResult<Awaited<ReturnType<typeof getGoogleAdsConnectionStatus>>['data'] | null>(null))
     ),
+    withDashboardTimeout(
+      'usage widget data',
+      workspaceId
+        ? getUsageWidgetData(workspaceId).then((data) => dashboardFallbackResult(data))
+        : Promise.resolve(dashboardFallbackResult<UsageWidgetData>({ plan: 'Internal Free Tier', quotas: [] }))
+    ),
+    withDashboardTimeout(
+      'notifications preview',
+      workspaceId && userId
+        ? listLatestNotifications({ workspaceId, userId, limit: 3 }, supabase).then((r) => dashboardFallbackResult(r.data))
+        : Promise.resolve(dashboardFallbackResult<NotificationRecord[]>([]))
+    ),
+    withDashboardTimeout(
+      'unread notifications count',
+      workspaceId && userId
+        ? countUnreadNotifications({ workspaceId, userId }, supabase).then((r) => dashboardFallbackResult(r.data))
+        : Promise.resolve(dashboardFallbackResult<number>(0))
+    ),
   ]);
   traceWorkspace('after dashboard section batch');
 
@@ -714,6 +227,9 @@ async function DashboardContent() {
     membershipResult,
     metaConnectionResult,
     googleAdsConnectionResult,
+    usageWidgetResult,
+    notificationsPreviewResult,
+    unreadCountResult,
   ] = [
     settledDataResult(dashboardSections[0] as PromiseSettledResult<DataResult<DashboardData>>, emptyDashboardData, 'dashboard data'),
     settledDataResult(dashboardSections[1] as PromiseSettledResult<DataResult<ContentStudioItemWithAssets[]>>, [] as ContentStudioItemWithAssets[], 'content catalog'),
@@ -724,6 +240,9 @@ async function DashboardContent() {
     settledDataResult(dashboardSections[6] as PromiseSettledResult<DataResult<Awaited<ReturnType<typeof getCurrentWorkspaceMembership>>['data']>>, null, 'membership'),
     settledDataResult(dashboardSections[7] as PromiseSettledResult<DataResult<Awaited<ReturnType<typeof getMetaConnectionStatus>>['data'] | null>>, null, 'meta connection status'),
     settledDataResult(dashboardSections[8] as PromiseSettledResult<DataResult<Awaited<ReturnType<typeof getGoogleAdsConnectionStatus>>['data'] | null>>, null, 'google ads connection status'),
+    settledDataResult(dashboardSections[9] as PromiseSettledResult<DataResult<UsageWidgetData>>, { plan: 'Internal Free Tier', quotas: [] } as UsageWidgetData, 'usage widget data'),
+    settledDataResult(dashboardSections[10] as PromiseSettledResult<DataResult<NotificationRecord[]>>, [] as NotificationRecord[], 'notifications preview'),
+    settledDataResult(dashboardSections[11] as PromiseSettledResult<DataResult<number>>, 0, 'unread notifications count'),
   ];
 
   traceWorkspace('dashboard data loaded', {
@@ -744,12 +263,10 @@ async function DashboardContent() {
   const contentStatusCounts = {
     ...Object.fromEntries(contentStatuses.map((status) => [status, 0])),
     ...countBy(contentItems.map((item) => item.status)),
-  } as Record<ContentStudioStatus, number>;
+  } as Record<string, number>;
   const manualOnlyCount = contentItems.filter(isManualOnlyItem).length;
   const assetIdsInUse = new Set(contentItems.flatMap((item) => item.asset_ids));
   const unlinkedAssets = creativeAssets.filter((asset) => !assetIdsInUse.has(asset.id));
-  const failedOrSetup =
-    contentStatusCounts.failed + contentStatusCounts.setup_required + contentStatusCounts.approval_pending;
   const schedulerReadiness = getContentStudioSchedulerReadiness();
   const googleAdsReadiness = getGoogleAdsConfigReadiness();
   const pinterestReadiness = getPinterestConfigReadiness();
@@ -820,22 +337,32 @@ async function DashboardContent() {
     },
     {
       name: 'LinkedIn',
-      status: 'manual_only',
+      status: 'manual_only' as ReadinessState,
       nextAction: 'Manual-only copy workflow until real LinkedIn OAuth/publishing is implemented.',
     },
     {
       name: 'Scheduler',
-      status: schedulerReadiness.isConfigured ? 'ready' : 'setup_required',
+      status: schedulerReadiness.isConfigured ? 'ready' : ('setup_required' as ReadinessState),
       nextAction: schedulerReadiness.message,
     },
   ];
   const activeProviders = providerRows.filter((provider) => provider.status === 'ready').length;
   const todayActions = buildTodayActions({ contentItems, tasks, unlinkedAssets });
-  const canRunScheduler =
-    membershipResult.data?.role === 'owner' || membershipResult.data?.role === 'admin';
+  const usageData = usageWidgetResult.data as UsageWidgetData;
+  const notificationsPreview = notificationsPreviewResult.data as NotificationRecord[];
+  const unreadCount = unreadCountResult.data as number;
+  const t = getServerTranslator('en');
+  const role = membershipResult.data?.role;
+  const isAdmin = role === 'owner' || role === 'admin';
+  const canRunScheduler = isAdmin;
   const recentContent = contentItems.slice(0, 4);
   const recentTasks = tasks.slice(0, 4);
   const recentEvents = events.slice(0, 3);
+  const myTasks = tasks.filter((task) => task.user_id === userId).slice(0, 5);
+  const myDrafts = contentItems
+    .filter((item) => item.status === 'draft' && item.created_by === userId)
+    .slice(0, 5);
+  const awaitingReview = tasks.filter((task) => task.status === 'needs_review').slice(0, 5);
   const pageError =
     workspaceResult.error ||
     dashboardResult.error ||
@@ -846,84 +373,97 @@ async function DashboardContent() {
     releasesResult.error ||
     membershipResult.error ||
     metaConnectionResult.error ||
-    googleAdsConnectionResult.error;
+    googleAdsConnectionResult.error ||
+    usageWidgetResult.error ||
+    notificationsPreviewResult.error ||
+    unreadCountResult.error;
 
   return (
     <div className="-mx-4 -my-6 min-h-screen bg-[var(--theme-background,#F1F7F7)] px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <div className="mx-auto max-w-[1540px] space-y-8">
+      <div className="mx-auto max-w-[1540px] space-y-10">
         {pageError ? (
           <Notice tone="warning" title="Command Center data notice">
             {pageError}
           </Notice>
         ) : null}
 
-        <section className="rounded-2xl border border-black/7 bg-white/90 p-5 shadow-[0_24px_70px_rgba(93,107,107,0.08)] sm:p-7">
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] xl:items-center">
-            <div className="min-w-0">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#F7CBCA]/14 bg-[#F1F7F7] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#F7CBCA]">
-                <Sparkles className="h-3.5 w-3.5" />
-                Manager workspace
-              </div>
-              <h1 className="text-3xl font-black leading-tight tracking-normal text-[#5D6B6B] sm:text-4xl xl:text-5xl">
-                Agency Command Center
-              </h1>
-              <p className="mt-3 max-w-3xl text-base leading-7 text-black/60">
-                Manage today&apos;s tasks, content, campaigns, provider setup, and publishing readiness from one place.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Link href="/dashboard/create-task" className={buttonStyles({ size: 'lg' })}>
-                  <Plus className="h-5 w-5" />
-                  Create Task
-                </Link>
-                <Link href="/dashboard/content-studio" className={buttonStyles({ size: 'lg', variant: 'secondary' })}>
-                  <PenSquare className="h-5 w-5" />
-                  Content Studio
-                </Link>
-                <Link href="/dashboard/system-health" className={buttonStyles({ size: 'lg', variant: 'outline' })}>
-                  <Gauge className="h-5 w-5" />
-                  System Health
-                </Link>
-                <Link href="/dashboard/alex" className={buttonStyles({ size: 'lg', variant: 'outline' })}>
-                  <Bot className="h-5 w-5" />
-                  Open Alex
-                </Link>
-                <Link href="/dashboard/backups" className={buttonStyles({ size: 'lg', variant: 'outline' })}>
-                  <DatabaseBackup className="h-5 w-5" />
-                  Open Backup Center
-                </Link>
-              </div>
-            </div>
-            <div className="min-w-0 rounded-2xl border border-black/7 bg-[#F1F7F7]/72 p-4">
-              <WavingRobot />
-              <div className="mt-3 grid gap-2">
-                <Link href="/dashboard/projects" className={buttonStyles({ variant: 'outline', className: 'w-full justify-start' })}>
-                  <FolderKanban className="h-4 w-4" />
-                  Open Projects
-                </Link>
-                <DashboardSchedulerButton canRunScheduler={canRunScheduler} />
-              </div>
-            </div>
-          </div>
-        </section>
+        <HeroSection canRunScheduler={canRunScheduler} t={t} />
 
-        <div className="space-y-3">
-          <div>
-            <h2 className="text-xl font-black text-[#5D6B6B]">Today&apos;s Priorities</h2>
-            <p className="mt-1 text-sm leading-6 text-black/58">
-              The highest-signal counts for blockers, review work, ready content, and provider readiness.
-            </p>
+        <OnboardingChecklist
+          hasTasks={tasks.length > 0}
+          hasProjects={projects.length > 0}
+          hasContent={contentItems.length > 0}
+          hasProviders={activeProviders > 0}
+        />
+
+        <HealthScoreCard
+          providerStatus={{ active: activeProviders, total: providerRows.length }}
+          schedulerHealthy={schedulerReadiness.isConfigured}
+          reviewQueue={taskStats.needsReview}
+          readyContent={contentStatusCounts.ready ?? 0}
+          t={t}
+        />
+
+        {/* My Work — personalized zone: my tasks, my drafts, items awaiting my review */}
+        <CommandCard title={t('page.dashboard.myWork', 'My Work')} description={t('page.dashboard.myWorkDescription', 'Personalized tasks, drafts, and items waiting on your review.')}>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="min-w-0">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-black uppercase tracking-[0.12em] text-[#5D6B6B]">{t('page.dashboard.myTasks', 'My Tasks')}</h3>
+                <Link href="/dashboard/tasks" className="text-xs font-bold text-[#F7CBCA] hover:underline">{t('page.dashboard.seeAll', 'See all')} →</Link>
+              </div>
+              {myTasks.length > 0 ? (
+                <div className="space-y-2">
+                  {myTasks.map((task) => (
+                    <LatestTaskCard key={task.id} task={task} />
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed border-black/10 bg-white p-4 text-sm text-black/55">{t('page.dashboard.myTasksEmpty', 'You have no tasks yet.')}</p>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-black uppercase tracking-[0.12em] text-[#5D6B6B]">{t('page.dashboard.myDrafts', 'My Drafts')}</h3>
+                <Link href="/dashboard/content-studio" className="text-xs font-bold text-[#F7CBCA] hover:underline">{t('page.dashboard.seeAll', 'See all')} →</Link>
+              </div>
+              {myDrafts.length > 0 ? (
+                <div className="space-y-2">
+                  {myDrafts.map((item) => (
+                    <LatestContentCard key={item.id} item={item} />
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed border-black/10 bg-white p-4 text-sm text-black/55">{t('page.dashboard.myDraftsEmpty', 'No drafts created by you.')}</p>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-black uppercase tracking-[0.12em] text-[#5D6B6B]">{t('page.dashboard.awaitingMyReview', 'Awaiting My Review')}</h3>
+                <Link href="/dashboard/tasks?status=needs_review" className="text-xs font-bold text-[#F7CBCA] hover:underline">{t('page.dashboard.seeAll', 'See all')} →</Link>
+              </div>
+              {awaitingReview.length > 0 ? (
+                <div className="space-y-2">
+                  {awaitingReview.map((task) => (
+                    <LatestTaskCard key={task.id} task={task} />
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed border-black/10 bg-white p-4 text-sm text-black/55">{t('page.dashboard.awaitingMyReviewEmpty', 'Nothing is waiting on your review.')}</p>
+              )}
+            </div>
           </div>
-        <div className="dashboard-stat-grid">
-          <ManagerStat label="Total Tasks" value={taskStats.total} helper="Real workspace tasks" icon={FileText} />
-          <ManagerStat label="Needs Review" value={taskStats.needsReview} helper="Manager review queue" icon={AlertCircle} tone="coral" />
-          <ManagerStat label="Ready Content" value={contentStatusCounts.ready} helper="Ready content items" icon={CheckCircle2} tone="dark" />
-          <ManagerStat label="Scheduled Content" value={contentStatusCounts.scheduled} helper="Planned publishing items" icon={CalendarClock} tone="peach" />
-          <Link href="/dashboard/recovery" className="block min-w-0">
-            <ManagerStat label="Failed / Setup Required" value={failedOrSetup} helper="Open Recovery Center" icon={LifeBuoy} tone="coral" />
-          </Link>
-          <ManagerStat label="Active Providers" value={activeProviders} helper="Ready provider services" icon={RadioTower} />
-        </div>
-        </div>
+        </CommandCard>
+
+        <UsageWidget usageWidgetData={usageData} />
+
+        <OpsCard
+          unreadCount={unreadCount}
+          recentNotifications={notificationsPreview}
+          isAdmin={isAdmin}
+        />
 
         <CommandCard
           title="System Health Snapshot"
@@ -939,80 +479,28 @@ async function DashboardContent() {
           title="Work Shortcuts"
           description="Core manager workspaces grouped for quick navigation."
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                  ['Open Alex', '/dashboard/alex', Bot],
-                  ['Content Studio', '/dashboard/content-studio', PenSquare],
-                  ['Creative Assets', '/dashboard/creative-assets', ImageIcon],
-                  ['Projects', '/dashboard/projects', FolderKanban],
-                  ['Plan Safe Patch', '/dashboard/safe-patch-planner', SearchCode],
-                  ['Open Backup Center', '/dashboard/backups', DatabaseBackup],
-                  ['Prompt Library', '/dashboard/prompt-library', ClipboardList],
-                  ['Reports', '/dashboard/reports', BarChart3],
-                  ['System Health', '/dashboard/system-health', Gauge],
-                  ['Security Center', '/dashboard/security', LockKeyhole],
-                  ['Docs', '/dashboard/docs', BookMarked],
-                  ['Settings', '/dashboard/settings', Settings],
-                ].map(([label, href, Icon]) => (
-              <Link
-                key={label as string}
-                href={href as string}
-                className={buttonStyles({ variant: 'outline', size: 'lg', className: 'w-full justify-start' })}
-              >
-                <Icon className="h-5 w-5" />
-                {label as string}
-              </Link>
-            ))}
-          </div>
+          <WorkShortcutsGrid />
         </CommandCard>
 
-        <CommandCard
-          title="Projects Snapshot"
+        <ExpandablePanel
+          title={t('page.dashboard.projectsSnapshot', 'Projects Snapshot')}
           description="Internal project organization from real workspace project records."
+          defaultOpen={false}
+          storageKey="cc-panel-projects"
           action={<Link href="/dashboard/projects" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Projects</Link>}
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <SmallMetric label="Active projects" value={projectSnapshot.active} />
-            <SmallMetric label="Ready to deploy" value={projectSnapshot.readyToDeploy} />
-            <SmallMetric label="Deployed" value={projectSnapshot.deployed} />
-            <SmallMetric label="Total projects" value={projectSnapshot.total} />
-          </div>
-          {projectSnapshot.latest ? (
-            <Link href={`/dashboard/projects/${projectSnapshot.latest.id}`} className="mt-4 block rounded-2xl border border-black/7 bg-[#F1F7F7]/60 p-4 hover:bg-white">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">Latest project</p>
-              <p className="mt-1 font-black text-[#5D6B6B]">{projectSnapshot.latest.name}</p>
-              <p className="mt-1 text-sm leading-6 text-black/58">
-                {projectSnapshot.latest.status.replace(/_/g, ' ')} / {formatTimeAgo(projectSnapshot.latest.updated_at)}
-              </p>
-            </Link>
-          ) : (
-            <p className="mt-4 rounded-2xl border border-dashed border-black/10 bg-white p-4 text-sm text-black/55">
-              No project records yet.
-            </p>
-          )}
-        </CommandCard>
+          <ProjectSnapshotCard projectSnapshot={projectSnapshot} />
+        </ExpandablePanel>
 
-        <CommandCard
-          title="Releases Snapshot"
+        <ExpandablePanel
+          title={t('page.dashboard.releasesSnapshot', 'Releases Snapshot')}
           description="Release tracking from real workspace release records."
+          defaultOpen={false}
+          storageKey="cc-panel-releases"
           action={<Link href="/dashboard/releases" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Releases</Link>}
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <SmallMetric label="Ready to deploy" value={releaseSnapshot.readyToDeploy} />
-            <SmallMetric label="Deployed releases" value={releaseSnapshot.deployed} />
-            <SmallMetric label="Failed releases" value={releaseSnapshot.failed} />
-            <SmallMetric label="Total releases" value={releaseSnapshot.total} />
-          </div>
-          {releaseSnapshot.latest ? (
-            <Link href={`/dashboard/releases/${releaseSnapshot.latest.id}`} className="mt-4 block rounded-2xl border border-black/7 bg-[#F1F7F7]/60 p-4 hover:bg-white">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">Latest release</p>
-              <p className="mt-1 font-black text-[#5D6B6B]">{releaseSnapshot.latest.title}</p>
-              <p className="mt-1 text-sm leading-6 text-black/58">{releaseSnapshot.latest.status.replace(/_/g, ' ')} / {formatTimeAgo(releaseSnapshot.latest.updated_at)}</p>
-            </Link>
-          ) : (
-            <p className="mt-4 rounded-2xl border border-dashed border-black/10 bg-white p-4 text-sm text-black/55">No release records yet.</p>
-          )}
-        </CommandCard>
+          <ReleaseSnapshotCard releaseSnapshot={releaseSnapshot} />
+        </ExpandablePanel>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
           <CommandCard
@@ -1032,24 +520,9 @@ async function DashboardContent() {
                 }
               />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {todayActions.map((action) => (
-                  <div
-                    key={action.id}
-                    className="flex min-w-0 flex-col gap-3 rounded-2xl border border-black/7 bg-[#F1F7F7]/60 p-4 transition-colors hover:bg-white lg:flex-row lg:items-center lg:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="break-words font-black text-[#5D6B6B]">{action.title}</p>
-                        <StatusBadge status={action.status} type="system" size="sm" />
-                      </div>
-                      <p className="mt-1 text-sm leading-6 text-black/58">{action.reason}</p>
-                    </div>
-                    <Link href={action.href} className={buttonStyles({ variant: 'outline', size: 'sm' })}>
-                      {action.cta}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
+                  <TodayActionCard key={action.id} action={action} />
                 ))}
               </div>
             )}
@@ -1060,28 +533,15 @@ async function DashboardContent() {
             description="No secret values are shown. Use Settings to fix provider setup gaps."
             action={<ShieldCheck className="h-5 w-5 text-[#F7CBCA]" />}
           >
-            <div className="space-y-3">
-              {providerRows.map((provider) => (
-                <div key={provider.name} className="rounded-2xl border border-black/7 bg-[#F1F7F7]/60 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-black text-[#5D6B6B]">{provider.name}</p>
-                      <p className="mt-1 text-sm leading-6 text-black/58">{provider.nextAction}</p>
-                    </div>
-                    <StatusBadge status={readinessBadgeStatuses[provider.status]} type="system" size="sm" />
-                  </div>
-                  <Link href="/dashboard/settings#provider-setup-wizard" className={buttonStyles({ variant: 'ghost', size: 'sm', className: 'mt-3' })}>
-                    {provider.status === 'ready' || provider.status === 'manual_only' ? 'Open Settings' : 'Fix Now'}
-                  </Link>
-                </div>
-              ))}
-            </div>
+            <ProviderRowsSection providerRows={providerRows} />
           </CommandCard>
         </div>
 
-        <CommandCard
-          title="Content & Campaign Snapshot"
+        <ExpandablePanel
+          title={t('page.dashboard.contentCampaignSnapshot', 'Content & Campaign Snapshot')}
           description="Operational state from Content Studio records. Manual-only is tracked from provider status and LinkedIn planners."
+          defaultOpen={false}
+          storageKey="cc-panel-content"
           action={
             <div className="flex flex-wrap gap-2">
               <Link href="/dashboard/content-studio" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Content Studio</Link>
@@ -1093,13 +553,13 @@ async function DashboardContent() {
         >
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
             <div className="space-y-4">
-              <ProgressRow label="Draft" value={contentStatusCounts.draft} total={contentItems.length} />
-              <ProgressRow label="Ready" value={contentStatusCounts.ready} total={contentItems.length} />
-              <ProgressRow label="Scheduled" value={contentStatusCounts.scheduled} total={contentItems.length} />
-              <ProgressRow label="Published" value={contentStatusCounts.published} total={contentItems.length} />
-              <ProgressRow label="Failed" value={contentStatusCounts.failed} total={contentItems.length} />
-              <ProgressRow label="Setup Required" value={contentStatusCounts.setup_required} total={contentItems.length} />
-              <ProgressRow label="Approval Pending" value={contentStatusCounts.approval_pending} total={contentItems.length} />
+              <ProgressRow label="Draft" value={contentStatusCounts.draft ?? 0} total={contentItems.length} />
+              <ProgressRow label="Ready" value={contentStatusCounts.ready ?? 0} total={contentItems.length} />
+              <ProgressRow label="Scheduled" value={contentStatusCounts.scheduled ?? 0} total={contentItems.length} />
+              <ProgressRow label="Published" value={contentStatusCounts.published ?? 0} total={contentItems.length} />
+              <ProgressRow label="Failed" value={contentStatusCounts.failed ?? 0} total={contentItems.length} />
+              <ProgressRow label="Setup Required" value={contentStatusCounts.setup_required ?? 0} total={contentItems.length} />
+              <ProgressRow label="Approval Pending" value={contentStatusCounts.approval_pending ?? 0} total={contentItems.length} />
               <ProgressRow label="Manual Only" value={manualOnlyCount} total={contentItems.length} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -1109,41 +569,29 @@ async function DashboardContent() {
               <SmallMetric label="Video Assets" value={creativeAssets.filter(isVideoAsset).length} />
             </div>
           </div>
-        </CommandCard>
+        </ExpandablePanel>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
           <CommandCard title="Recent Activity / Attempts" description="Latest tasks, content items, publish attempts, and scheduler-related attempts when available.">
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">Latest Tasks</p>
                 {recentTasks.length === 0 ? (
                   <p className="text-sm text-black/55">No tasks yet.</p>
                 ) : recentTasks.map((task) => (
-                  <Link key={task.id} href={`/dashboard/tasks/${task.id}`} className="block rounded-2xl border border-black/7 bg-[#F1F7F7]/60 p-4 hover:bg-white">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <p className="font-bold leading-5 text-[#5D6B6B]">{task.title}</p>
-                      <StatusBadge status={task.status} type="task" size="sm" />
-                    </div>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/42">{formatTimeAgo(task.updated_at)}</p>
-                  </Link>
+                  <LatestTaskCard key={task.id} task={task} />
                 ))}
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">Latest Content</p>
                 {recentContent.length === 0 ? (
                   <p className="text-sm text-black/55">No content items yet.</p>
                 ) : recentContent.map((item) => (
-                  <Link key={item.id} href={`/dashboard/content-studio?item=${item.id}`} className="block rounded-2xl border border-black/7 bg-[#F1F7F7]/60 p-4 hover:bg-white">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                      <p className="font-bold leading-5 text-[#5D6B6B]">{item.title}</p>
-                      <StatusBadge status={item.status} type="task" size="sm" />
-                    </div>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-black/42">{formatTimeAgo(item.updated_at)}</p>
-                  </Link>
+                  <LatestContentCard key={item.id} item={item} />
                 ))}
               </div>
             </div>
-            <div className="mt-5 space-y-3">
+            <div className="mt-6 space-y-2">
               <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">Latest Task Events</p>
               {recentEvents.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-black/10 bg-white p-4 text-sm text-black/55">
@@ -1158,58 +606,20 @@ async function DashboardContent() {
                 </div>
               ))}
             </div>
-            <div className="mt-5 space-y-3">
+            <div className="mt-6 space-y-2">
               <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">Publish & Scheduler Attempts</p>
               {publishAttempts.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-black/10 bg-white p-4 text-sm text-black/55">
                   No publish attempts yet. Provider actions and scheduled attempts will appear after they run.
                 </p>
               ) : publishAttempts.map((attempt) => (
-                <div key={attempt.id} className="rounded-2xl border border-black/7 bg-[#F1F7F7]/60 p-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="font-bold text-[#5D6B6B]">{formatActionType(attempt.action_type)}</p>
-                      <p className="mt-1 text-sm text-black/58">{attempt.provider} / {formatDateTime(attempt.created_at)}</p>
-                    </div>
-                    <StatusBadge status={attempt.status} type="system" size="sm" />
-                  </div>
-                  {attempt.error_message ? <p className="mt-2 text-sm leading-6 text-black/58">{attempt.error_message}</p> : null}
-                </div>
+                <LatestPublishAttemptCard key={attempt.id} attempt={attempt} />
               ))}
             </div>
           </CommandCard>
 
           <CommandCard title="Manager Shortcuts" description="Jump straight to the workspace that needs your attention.">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                ['Open Alex', '/dashboard/alex', Bot],
-                ['Instagram Studio', '/dashboard/content-studio?tab=instagram', Megaphone],
-                ['Projects', '/dashboard/projects', FolderKanban],
-                ['Plan Software Project', '/dashboard/software-planner', Sparkles],
-                ['Releases', '/dashboard/releases', Rocket],
-                ['Prompt Library', '/dashboard/prompt-library', ClipboardList],
-                ['Plan Campaign', '/dashboard/content-studio#one-click-campaign-planner', Sparkles],
-                ['Facebook Studio', '/dashboard/content-studio?tab=facebook', Megaphone],
-                ['Google Ads Studio', '/dashboard/content-studio?tab=google_ads', BarChart3],
-                ['Content Calendar', '/dashboard/calendar', CalendarDays],
-                ['Recovery Center', '/dashboard/recovery', LifeBuoy],
-                ['Backup Center', '/dashboard/backups', DatabaseBackup],
-                ['Monthly Report', '/dashboard/reports#monthly-agency-report', FileText],
-                ['Pinterest Studio', '/dashboard/content-studio?tab=pinterest', ImageIcon],
-                ['LinkedIn Planner', '/dashboard/content-studio?tab=linkedin', ClipboardList],
-                ['Creative Assets', '/dashboard/creative-assets', ImageIcon],
-                ['Reports', '/dashboard/reports', Layers3],
-                ['Docs', '/dashboard/docs', BookMarked],
-                ['Provider Setup', '/dashboard/settings#provider-setup-wizard', ShieldCheck],
-                ['Brand Kit', '/dashboard/settings#brand-kit', Sparkles],
-                ['Settings', '/dashboard/settings', Settings],
-              ].map(([label, href, Icon]) => (
-                <Link key={label as string} href={href as string} className={buttonStyles({ variant: 'outline', className: 'justify-start' })}>
-                  <Icon className="h-4 w-4" />
-                  {label as string}
-                </Link>
-              ))}
-            </div>
+            <ManagerShortcutsGrid />
           </CommandCard>
         </div>
       </div>

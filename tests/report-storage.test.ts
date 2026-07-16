@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { verifySharePassword } from '@/lib/reports/report-storage';
+import { verifySharePassword } from '@/features/reports/service/report-storage';
 import { randomBytes, scryptSync } from 'node:crypto';
 
 function hashForTest(password: string): string {

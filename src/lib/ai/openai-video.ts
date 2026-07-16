@@ -1,7 +1,13 @@
 import 'server-only';
 
+import { startSpan } from '@sentry/nextjs';
 import { Buffer } from 'node:buffer';
 import type { JsonObject } from '@/types';
+import {
+  CONCURRENCY_SLOTS,
+  ConcurrencyLimitError,
+  withConcurrencyLimit,
+} from '@/lib/concurrency-limiter';
 
 const OPENAI_VIDEO_ENDPOINT = 'https://api.openai.com/v1/videos';
 const DEFAULT_VIDEO_MODEL = 'sora-2';
@@ -175,44 +181,79 @@ export async function createVideoWithOpenAI(
   }
 
   try {
-    const response = await fetch(OPENAI_VIDEO_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+    return await withConcurrencyLimit(
+      CONCURRENCY_SLOTS.AI_GENERATION,
+      async () => {
+        try {
+          const response = await startSpan(
+            {
+              op: 'ai.video.create',
+              name: `OpenAI ${model}`,
+              attributes: {
+                'ai.provider': 'openai',
+                'ai.model': model,
+                'ai.video.seconds': seconds,
+                'ai.video.size': size,
+              },
+            },
+            async (span) => {
+              const result = await fetch(OPENAI_VIDEO_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${apiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model,
+                  prompt,
+                  seconds,
+                  size,
+                  ...(input.userId ? { user: input.userId } : {}),
+                }),
+              });
+              span.setAttribute('http.status_code', result.status);
+              return result;
+            }
+          );
+
+          const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+
+          if (!response.ok) {
+            return { status: 'failed', error: safeProviderError(payload), model };
+          }
+
+          const videoId = typeof payload?.id === 'string' ? payload.id : null;
+
+          if (!videoId) {
+            return { status: 'failed', error: 'OpenAI returned no video job id.', model };
+          }
+
+          return {
+            status: 'created',
+            videoId,
+            providerStatus: normalizeProviderStatus(payload?.status),
+            progress: progressFromPayload(payload),
+            model,
+            seconds,
+            size,
+            metadata: metadataFromPayload(payload),
+          };
+        } catch {
+          return { status: 'failed', error: 'OpenAI video generation request failed.', model };
+        }
       },
-      body: JSON.stringify({
+      // Queue (don't fail-fast): wait briefly for a free slot rather than reject.
+      { failOnQueue: false, timeoutMs: 20_000 }
+    );
+  } catch (e) {
+    if (e instanceof ConcurrencyLimitError) {
+      return {
+        status: 'failed',
+        error:
+          'Video generation is busy. Please try again shortly. التوليد المشغول، جرّب بعد قليل.',
         model,
-        prompt,
-        seconds,
-        size,
-        ...(input.userId ? { user: input.userId } : {}),
-      }),
-    });
-
-    const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-
-    if (!response.ok) {
-      return { status: 'failed', error: safeProviderError(payload), model };
+      };
     }
-
-    const videoId = typeof payload?.id === 'string' ? payload.id : null;
-
-    if (!videoId) {
-      return { status: 'failed', error: 'OpenAI returned no video job id.', model };
-    }
-
-    return {
-      status: 'created',
-      videoId,
-      providerStatus: normalizeProviderStatus(payload?.status),
-      progress: progressFromPayload(payload),
-      model,
-      seconds,
-      size,
-      metadata: metadataFromPayload(payload),
-    };
-  } catch {
     return { status: 'failed', error: 'OpenAI video generation request failed.', model };
   }
 }
@@ -232,12 +273,26 @@ export async function getOpenAIVideoStatus(videoId: string): Promise<GetOpenAIVi
   }
 
   try {
-    const response = await fetch(`${OPENAI_VIDEO_ENDPOINT}/${encodeURIComponent(cleanVideoId)}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
+    const response = await startSpan(
+      {
+        op: 'ai.video.status',
+        name: `OpenAI Video Status`,
+        attributes: {
+          'ai.provider': 'openai',
+          'ai.video.id': cleanVideoId,
+        },
       },
-      cache: 'no-store',
-    });
+      async (span) => {
+        const result = await fetch(`${OPENAI_VIDEO_ENDPOINT}/${encodeURIComponent(cleanVideoId)}`, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          cache: 'no-store',
+        });
+        span.setAttribute('http.status_code', result.status);
+        return result;
+      }
+    );
     const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null;
 
     if (!response.ok) {

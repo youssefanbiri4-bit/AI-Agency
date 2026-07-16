@@ -3,10 +3,12 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 const mockGetUsageCounters = vi.fn().mockResolvedValue({});
 const mockIncrementUsageCounter = vi.fn().mockResolvedValue(undefined);
 const mockGetMonthlyUsageByType = vi.fn().mockResolvedValue(0);
+const mockGetUsageCountersFromTable = vi.fn().mockResolvedValue({});
 vi.mock('@/lib/usage/usage-limits', () => ({
   getUsageCounters: (...args: unknown[]) => mockGetUsageCounters(...args),
   incrementUsageCounter: (...args: unknown[]) => mockIncrementUsageCounter(...args),
   getMonthlyUsageByType: (...args: unknown[]) => mockGetMonthlyUsageByType(...args),
+  getUsageCountersFromTable: (...args: unknown[]) => mockGetUsageCountersFromTable(...args),
   PLAN_LIMITS: {
     free: { max_ai_generations_per_month: 20, max_tasks: 50, max_creative_assets: 50, max_content_items: 30, max_reels_publishes_per_month: 5 },
     starter: { max_ai_generations_per_month: 100, max_tasks: 200, max_creative_assets: 150, max_content_items: 100, max_reels_publishes_per_month: 30 },
@@ -50,7 +52,7 @@ function createSupabaseMock() {
 const { fromMock, chain: defaultChain, maybeSingle: defaultMaybeSingle } = createSupabaseMock();
 
 vi.mock('@/lib/supabase-server', () => ({
-  createSupabaseServerClient: vi.fn().mockResolvedValue({ from: fromMock }),
+  getSupabaseAdmin: vi.fn().mockReturnValue({ client: { from: fromMock } }),
 }));
 
 describe('Quota System - smoke tests', () => {
@@ -160,7 +162,7 @@ describe('Quota System - smoke tests', () => {
     const { incrementUsage } = await import('@/lib/usage/quotas');
     await incrementUsage('ws-1', 'tasks', 1);
 
-    expect(mockIncrementUsageCounter).toHaveBeenCalledWith('ws-1', 'tasks', 1);
+    expect(mockIncrementUsageCounter).toHaveBeenCalledWith('ws-1', 'tasks', 1, undefined);
   });
 
   it('incrementUsage throws when counter update fails', async () => {

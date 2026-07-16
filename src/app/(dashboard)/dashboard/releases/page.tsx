@@ -15,8 +15,8 @@ export default async function ReleasesPage() {
   const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
   const [releasesResult, projectsResult] = workspaceResult.data
     ? await Promise.all([
-        listReleasesForWorkspace(workspaceResult.data.id, supabase),
-        listProjectsForWorkspace(workspaceResult.data.id, supabase),
+        listReleasesForWorkspace(workspaceResult.data.id, supabase, { limit: 200 }),
+        listProjectsForWorkspace(workspaceResult.data.id, supabase, { limit: 200 }),
       ])
     : [
         { data: [], error: workspaceResult.error ?? 'Workspace not found.', isConfigured: true },

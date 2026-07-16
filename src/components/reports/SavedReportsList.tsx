@@ -22,8 +22,8 @@ import {
   revokeReportShareLinkAction,
   saveClientReport,
 } from '@/actions/reports/actions';
-import type { SavedReportWithShares } from '@/lib/reports/report-storage';
-import type { ClientReportTemplate } from '@/lib/reports/report-types';
+import type { SavedReportWithShares } from '@/features/reports/service/report-storage';
+import type { ClientReportTemplate } from '@/features/reports/service/report-types';
 
 interface SavedReportsListProps {
   workspaceId: string;

@@ -4,9 +4,12 @@ import type { Agent, Department, Task } from '@/types';
 import type { Database, TaskEventRecord } from '@/types/database';
 import { getAgentStats, getTaskStats } from '@/lib/stats';
 import { listAgentCatalog } from './agents';
-import { listTasks } from './tasks';
+import { listTasks } from '@/features/tasks/data/tasks';
 import { emptyDataResult, errorDataResult, type DataResult } from './types';
 import { logger } from '@/lib/logger';
+import { withQueryTiming } from '@/lib/db/query-timing';
+import { getCachedJson } from '@/lib/cache';
+import { startTrace } from '@/lib/monitoring/server-timing';
 
 const dashboardLog = logger.child('data:dashboard');
 
@@ -39,6 +42,32 @@ export async function getDashboardData(
   workspaceId?: string,
   client: SupabaseClient<Database> = supabase as SupabaseClient<Database>
 ): Promise<DataResult<DashboardData>> {
+  const trace = startTrace('dashboard.getData');
+
+  if (!workspaceId) {
+    trace.end();
+    return fetchDashboardDataUncached(workspaceId, client);
+  }
+
+  // Cache dashboard data per workspace (60s TTL)
+  try {
+    const result = await getCachedJson(
+      `dashboard:${workspaceId}`,
+      () => fetchDashboardDataUncached(workspaceId, client),
+      60
+    );
+    trace.end();
+    return result;
+  } catch {
+    trace.end();
+    return fetchDashboardDataUncached(workspaceId, client);
+  }
+}
+
+async function fetchDashboardDataUncached(
+  workspaceId: string | undefined,
+  client: SupabaseClient<Database>
+): Promise<DataResult<DashboardData>> {
   const emptyDashboard = buildDashboardData();
   dashboardLog.info('start', { workspaceId: workspaceId ?? null });
 
@@ -51,8 +80,14 @@ export async function getDashboardData(
     workspaceId: workspaceId ?? null,
   });
   const [catalogResult, tasksResult] = await Promise.allSettled([
-    listAgentCatalog(client),
-    listTasks({ workspaceId, limit: 40 }, client),
+    withQueryTiming('dashboard.catalog', () => listAgentCatalog(client), {
+      attributes: { workspaceId: workspaceId ?? 'none' },
+    }),
+    withQueryTiming(
+      'dashboard.tasks',
+      () => listTasks({ workspaceId, limit: 40 }, client),
+      { attributes: { workspaceId: workspaceId ?? 'none' } }
+    ),
   ]);
   dashboardLog.info('after catalog/tasks batch', {
     catalogStatus: catalogResult.status,
@@ -96,7 +131,14 @@ export async function getDashboardData(
   dashboardLog.info('before task events query', {
     workspaceId: workspaceId ?? null,
   });
-  const { data: events, error: eventsError } = await eventsQuery;
+  const { data: events, error: eventsError } = await withQueryTiming(
+    'dashboard.taskEvents',
+    async () => {
+      const result = await eventsQuery;
+      return result;
+    },
+    { attributes: { workspaceId: workspaceId ?? 'none' } }
+  );
   dashboardLog.info('after task events query', {
     workspaceId: workspaceId ?? null,
     eventCount: events?.length ?? 0,

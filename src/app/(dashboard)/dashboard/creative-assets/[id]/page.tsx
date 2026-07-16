@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { redirect } from 'next/navigation';
 import { ArrowLeft, Image as ImageIcon, Link2, Play, Video } from 'lucide-react';
 import {
@@ -13,11 +14,23 @@ import { buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { formatDateTime } from '@/lib/utils';
-import { CreativeAssetForm } from '../CreativeAssetForm';
 import type { CreativeAssetRecord } from '@/types/database';
 import { CreativeAssetDeleteButton } from '../CreativeAssetDeleteButton';
 import { RemoveCreativeAssetImageButton } from '../RemoveCreativeAssetImageButton';
+
+const CreativeAssetForm = dynamic(
+  () => import('../CreativeAssetForm').then((mod) => mod.CreativeAssetForm),
+  {
+    loading: () => (
+      <LoadingState
+        title="Loading form"
+        description="Preparing the creative asset form."
+      />
+    ),
+  }
+);
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -153,15 +166,17 @@ export default async function CreativeAssetDetailsPage({ params }: Props) {
     redirect('/onboarding');
   }
 
-  const assetResult = await getCreativeAssetById(
-    workspaceResult.data.id,
-    user.id,
-    assetId,
-    supabase
-  );
+  const [assetResult, brandKitResult] = await Promise.all([
+    getCreativeAssetById(
+      workspaceResult.data.id,
+      user.id,
+      assetId,
+      supabase
+    ),
+    getBrandKitForWorkspace(supabase, workspaceResult.data.id),
+  ]);
   const asset = assetResult.data;
   const readiness = checkOpenAIImageReadiness();
-  const brandKitResult = await getBrandKitForWorkspace(supabase, workspaceResult.data.id);
 
   if (!asset) {
     return (

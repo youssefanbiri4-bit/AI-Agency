@@ -2,7 +2,7 @@
 
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { listAgentCatalog } from '@/lib/data/agents';
-import { listTasks } from '@/lib/data/tasks';
+import { listTasks } from '@/features/tasks/data/tasks';
 
 export async function fetchAgentsPageDataAction(workspaceId: string) {
   const supabase = await createSupabaseServerClient();

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/FormControls';
 import { toast } from '@/components/ui/toast';
 import { downloadClientReportPdfAction } from '@/actions/reports/actions';
-import type { ClientReportTemplate } from '@/lib/reports/report-types';
+import type { ClientReportTemplate } from '@/features/reports/service/report-types';
 
 interface ClientReportButtonProps {
   workspaceId: string;

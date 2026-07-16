@@ -25,7 +25,7 @@ import { useRBAC } from '@/components/layout/DashboardContext';
 import type { Department } from '@/types/auth';
 import { DEPARTMENT_LABELS } from '@/types/auth';
 import { getRbacDepartmentsForCatalog, resolveCatalogDepartmentId } from '@/lib/auth/rbac-client';
-import type { TaskWithAgentDept } from '@/lib/tasks/task-service';
+import type { TaskWithAgentDept } from '@/features/tasks/service/task-service';
 
 interface TasksClientProps {
   tasks: TaskWithAgentDept[];

@@ -6,16 +6,18 @@ import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import {
   getContentStudioItemById,
   updateContentStudioItem,
-} from '@/lib/data/content-studio';
+} from '@/features/content-studio/data/content-studio';
 import {
   createContentStudioPublishAttempt,
   updateContentStudioPublishAttempt,
   type ContentStudioPublishAttemptActionType,
-} from '@/lib/data/content-studio-publish-attempts';
+} from '@/features/content-studio/data/content-studio-publish-attempts';
 import {
   executeContentStudioProviderAction,
   getContentStudioProviderReadiness,
 } from '@/lib/content-studio/provider-actions';
+import { incrementUsage } from '@/lib/usage/quotas';
+import { checkWorkspaceUserRateLimit, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
 import type {
   ContentStudioItemRecord,
   ContentStudioType,
@@ -163,11 +165,24 @@ export async function executeContentStudioProviderActionAction(
   _state: ContentStudioActionState,
   formData?: FormData
 ): Promise<ContentStudioActionState> {
-  void _state;
+  void _state;    try {
+      const { supabase, user, workspace, role } = await getWorkspaceContext();
 
-  try {
-    const { supabase, user, workspace, role } = await getWorkspaceContext();
-    const explicitConfirmation = formData?.get('provider_action_confirmed') === 'true';
+      // Sliding window rate limit: 20 publish actions per minute per user
+      const publishLimit = await checkWorkspaceUserRateLimit(
+        workspace.id,
+        user.id,
+        RATE_LIMIT_ACTIONS.CONTENT_PUBLISH
+      );
+      if (!publishLimit.allowed) {
+        return {
+          ...initialState,
+          error: `Publishing rate limit reached. Please wait ${Math.ceil(publishLimit.resetInMs / 1000)} seconds before retrying.`,
+          outcome: 'failed',
+        };
+      }
+
+      const explicitConfirmation = formData?.get('provider_action_confirmed') === 'true';
 
     if (!hasPermission(role, 'operator')) {
       await logSecurityAuditEvent({
@@ -499,6 +514,8 @@ export async function executeContentStudioProviderActionAction(
           outcome: 'failed',
         };
       }
+
+      await incrementUsage(workspace.id, 'content_publishes', 1, user.id).catch(() => {});
 
       await createContentStudioNotification({
         workspaceId: workspace.id,

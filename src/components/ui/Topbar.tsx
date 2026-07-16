@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Globe, Menu, Search, Settings, X } from 'lucide-react';
 import { buttonStyles } from './Button';
+import { ThemeToggle } from './ThemeToggle';
 import { useDashboardContext } from '@/components/layout/DashboardContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import type { NotificationRecord } from '@/types/database';
@@ -25,6 +26,8 @@ const pageTitleMap: Record<string, { titleKey: string; descriptionKey: string }>
   '/dashboard/projects': { titleKey: 'topbar.pageTitles.projects.title', descriptionKey: 'topbar.pageTitles.projects.description' },
   '/dashboard/releases': { titleKey: 'topbar.pageTitles.releases.title', descriptionKey: 'topbar.pageTitles.releases.description' },
   '/dashboard/agent-library': { titleKey: 'topbar.pageTitles.agentLibrary.title', descriptionKey: 'topbar.pageTitles.agentLibrary.description' },
+  '/dashboard/agent-builder': { titleKey: 'topbar.pageTitles.agentBuilder.title', descriptionKey: 'topbar.pageTitles.agentBuilder.description' },
+  '/dashboard/agent-builder/gallery': { titleKey: 'topbar.pageTitles.marketplace.title', descriptionKey: 'topbar.pageTitles.marketplace.description' },
   '/dashboard/automation-blueprints': { titleKey: 'topbar.pageTitles.automationBlueprints.title', descriptionKey: 'topbar.pageTitles.automationBlueprints.description' },
   '/dashboard/quality-review': { titleKey: 'topbar.pageTitles.qualityReview.title', descriptionKey: 'topbar.pageTitles.qualityReview.description' },
   '/dashboard/knowledge-base': { titleKey: 'topbar.pageTitles.knowledgeBase.title', descriptionKey: 'topbar.pageTitles.knowledgeBase.description' },
@@ -69,6 +72,7 @@ export function Topbar({
     if (pathname.startsWith('/dashboard/projects/')) return { titleKey: 'topbar.pageTitles.projectDetails.title', descriptionKey: 'topbar.pageTitles.projectDetails.description' };
     if (pathname.startsWith('/dashboard/releases/')) return { titleKey: 'topbar.pageTitles.releaseDetails.title', descriptionKey: 'topbar.pageTitles.releaseDetails.description' };
     if (pathname.startsWith('/dashboard/prompt-library/')) return { titleKey: 'topbar.pageTitles.promptDetails.title', descriptionKey: 'topbar.pageTitles.promptDetails.description' };
+    if (pathname.startsWith('/dashboard/agent-builder/shared/')) return { titleKey: 'topbar.pageTitles.sharedTemplate.title', descriptionKey: 'topbar.pageTitles.sharedTemplate.description' };
     if (pathname.startsWith('/dashboard/reels/')) return { titleKey: 'topbar.pageTitles.reelDetails.title', descriptionKey: 'topbar.pageTitles.reelDetails.description' };
     if (pathname.startsWith('/dashboard/creative-assets/')) return { titleKey: 'topbar.pageTitles.creativeAssetDetails.title', descriptionKey: 'topbar.pageTitles.creativeAssetDetails.description' };
     return pageTitleMap[pathname] ?? pageTitleMap['/dashboard'];
@@ -134,8 +138,8 @@ export function Topbar({
   };
 
   return (
-    <header className="fixed start-0 end-0 top-0 z-30 border-b border-[#F7CBCA]/12 bg-[#F1F7F7]/84 shadow-[0_10px_30px_rgba(93,107,107,0.04)] backdrop-blur-[20px] [-webkit-backdrop-filter:blur(20px)] lg:start-72">
-      <div className="flex h-20 min-w-0 items-center justify-between gap-3 px-3 sm:gap-4 sm:px-6 lg:px-8">
+    <header className="fixed start-0 end-0 top-0 z-30 h-20 border-b border-border bg-background/80 shadow-sm backdrop-blur-lg lg:start-60">
+      <div className="flex h-full min-w-0 items-center justify-between gap-3 px-3 sm:gap-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <button
             type="button"
@@ -147,29 +151,30 @@ export function Topbar({
           </button>
 
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-black tracking-normal text-black sm:text-xl">
+            <h1 className="truncate text-lg font-bold tracking-normal text-foreground sm:text-xl">
               {t(pageMetaKey.titleKey)}
             </h1>
-            <p className="hidden truncate text-sm font-medium text-black/56 sm:block">{t(pageMetaKey.descriptionKey)}</p>
+            <p className="hidden truncate text-sm font-medium text-foreground-muted sm:block">{t(pageMetaKey.descriptionKey)}</p>
           </div>
         </div>
 
         <form
           onSubmit={handleSearch}
-          className="hidden w-full max-w-md items-center rounded-lg border border-[#F7CBCA]/12 bg-white/78 px-3 py-2 shadow-inner focus-within:border-[#F7CBCA]/50 focus-within:ring-4 focus-within:ring-[#F7CBCA]/20 lg:flex"
+          className="hidden w-full max-w-md items-center rounded-lg border border-border bg-surface-elevated px-3 py-2 shadow-inner focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30 lg:flex"
         >
-          <Search className="h-4 w-4 text-black/34" />
+          <Search className="h-4 w-4 text-foreground-muted" />
           <input
             type="search"
             aria-label={t('common.search')}
             placeholder={t('topbar.searchPlaceholder')}
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            className="ms-2 w-full border-0 bg-transparent text-sm text-black outline-none placeholder:text-black/34"
+            className="ms-2 w-full border-0 bg-transparent text-sm text-foreground outline-none placeholder:text-foreground-muted"
           />
         </form>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+          <ThemeToggle />
           <div ref={langRef} className="relative">
             <button
               type="button"
@@ -180,17 +185,17 @@ export function Topbar({
               <Globe className="h-5 w-5" />
             </button>
             {langOpen && (
-              <div className="absolute end-0 top-full z-50 mt-1.5 min-w-[160px] rounded-lg border border-black/8 bg-white/98 p-1.5 shadow-xl backdrop-blur-xl">
+              <div className="absolute end-0 top-full z-50 mt-1.5 min-w-[160px] rounded-lg border border-border bg-background p-1.5 shadow-xl">
                 {LANGUAGES.map((l) => (
                   <button
                     key={l.code}
                     type="button"
                     onClick={() => { setLanguage(l.code as LanguageCode); setLangOpen(false); }}
-                    className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-bold transition hover:bg-[#F7CBCA]/8 ${
-                      language === l.code ? 'text-[#F7CBCA]' : 'text-black/72'
+                    className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-bold transition hover:bg-primary/10 ${
+                      language === l.code ? 'text-primary' : 'text-foreground-muted'
                     }`}
                   >
-                    {language === l.code && <span className="h-1.5 w-1.5 rounded-full bg-[#F7CBCA]" />}
+                    {language === l.code && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
                     <span>{l.label}</span>
                   </button>
                 ))}
@@ -208,14 +213,14 @@ export function Topbar({
           >
             <Settings className="h-5 w-5" />
           </Link>
-          <div className="hidden h-8 w-px bg-black/8 sm:block" />
-          <div className="flex min-w-0 items-center gap-3 rounded-lg border border-[#F7CBCA]/10 bg-white/78 px-2 py-2 shadow-sm backdrop-blur-[16px] [-webkit-backdrop-filter:blur(16px)] sm:px-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F7CBCA] text-xs font-black text-white">
+          <div className="hidden h-8 w-px bg-border sm:block" />
+          <div className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-surface-elevated/70 px-2 py-2 shadow-sm sm:px-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-black text-primary-foreground">
               {profileLabel.charAt(0).toUpperCase()}
             </div>
             <div className="hidden min-w-0 sm:block">
-              <p className="max-w-[180px] truncate text-sm font-bold text-black">{profileLabel}</p>
-              <p className="max-w-[180px] truncate text-xs text-black/52">{workspace.name}</p>
+              <p className="max-w-[180px] truncate text-sm font-bold text-foreground">{profileLabel}</p>
+              <p className="max-w-[180px] truncate text-xs text-foreground-muted">{workspace.name}</p>
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, ClipboardCheck, FileText, Search } from 'lucide-react';
-import type { GeneratedReportItem } from '@/lib/data/reports';
+import type { GeneratedReportItem } from '@/features/reports/data/reports';
 import { buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';

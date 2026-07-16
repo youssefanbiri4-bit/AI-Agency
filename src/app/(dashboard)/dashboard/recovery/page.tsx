@@ -12,7 +12,7 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
+import { listContentStudioItemsForWorkspace } from '@/features/content-studio/data/content-studio';
 import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
 import { getContentStudioProviderReadiness } from '@/lib/content-studio/provider-actions';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
@@ -20,7 +20,7 @@ import { checkOpenAITextProviderReadiness } from '@/lib/ai/text-provider';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
-import type { ContentStudioItemWithAssets } from '@/lib/data/content-studio';
+import type { ContentStudioItemWithAssets } from '@/features/content-studio/data/content-studio';
 import type {
   ContentStudioPlatform,
   ContentStudioPublishAttemptRecord,
@@ -575,8 +575,8 @@ export default async function RecoveryPage() {
     googleReadiness,
     pinterestReadiness,
   ] = await Promise.all([
-    listContentStudioItemsForWorkspace(workspaceId, supabase),
-    listCreativeAssetsForWorkspace(workspaceId, undefined, supabase),
+    listContentStudioItemsForWorkspace(workspaceId, supabase, { limit: 1000 }),
+    listCreativeAssetsForWorkspace(workspaceId, undefined, supabase, { limit: 1000 }),
     listPublishAttempts(workspaceId),
     getContentStudioProviderReadiness({ workspaceId, userId: user.id, contentType: 'facebook_post' }),
     getContentStudioProviderReadiness({ workspaceId, userId: user.id, contentType: 'instagram_post' }),

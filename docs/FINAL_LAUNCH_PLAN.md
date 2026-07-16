@@ -37,7 +37,7 @@ Based on:
 - Rate limiting still in-memory (Upstash/Redis persistent not enforced in prod).
 - Some queries use `select('*')`; broad data transfer.
 - Client reporting is print-based (no true server PDF, no password yet).
-- Billing/Stripe: Foundation exists but metered usage + portal not fully live.
+- Billing: Internal usage/quotas are live; commercial billing is not applicable (internal platform).
 - Reels/Creative: Asset previews/thumbnails not deep; storage bucket for dedicated reels not fully wired; some manual ID entry still.
 - RBAC: App-layer strong but not fully pushed to RLS for dept; some pages still fetch independently.
 - Observability: Good but missing circuit breakers for providers, full distributed tracing, usage_events table.
@@ -62,7 +62,6 @@ The project is **ready for controlled launch** to internal/team + early clients.
 |----------|------|-------|--------|-------|-------------|
 | P0 (Blocker) | Rate Limiting | In-memory only. No persistent store enforced. | Abuse/spend risk on prod. | Backend | 2-3 days |
 | P1 (High) | Client Reports | Print-only PDF; no server gen, no password, no versioning. | Client share friction. | Full-stack | 4-5 days |
-| P1 | Billing | Stripe foundation + quotas exist but no metered billing / portal / auto-increment to Stripe. | Monetization incomplete. | Backend | 5-7 days |
 | P1 | Reels/Creative | No deep asset previews in reel list; manual linking IDs in some flows; reels storage bucket partial. | UX polish gap. | Full-stack | 3-4 days |
 | P2 (Medium) | RBAC/RLS | Dept not in RLS policies; some pages bypass shared context. | Future multi-tenant risk. | Backend | 3 days |
 | P2 | Observability | No circuit breakers; limited usage_events persistence. | Hard to debug at scale. | Backend | 4 days |
@@ -83,7 +82,7 @@ The project is **ready for controlled launch** to internal/team + early clients.
 - [ ] Seed usage_limits + launch_mode="internal" or "production" via admin.
 - [ ] Run full smoke: `npm run lint && npx tsc --noEmit && npm run build`.
 - [ ] `npm audit --audit-level=moderate` — must be clean.
-- [ ] Confirm all env: OPENAI_API_KEY (server), N8N_*, SUPABASE_*, Stripe (if billing), etc. No client secrets.
+- [ ] Confirm all env: OPENAI_API_KEY (server), N8N_*, SUPABASE_*, etc. No client secrets.
 - [ ] Test RBAC: different roles + depts cannot bypass gates/quotas.
 - [ ] Test quota hard limits block (ai gen, tasks, etc.).
 - [ ] Test full client report: generate → PDF (print/save).
@@ -178,7 +177,6 @@ The project is **ready for controlled launch** to internal/team + early clients.
 ### Immediate (Week 1-2)
 1. Implement persistent rate limiting (Upstash) + enforce in prod.
 2. Add server-side PDF generation (Puppeteer or similar on Vercel/Edge) + password option for client reports.
-3. Wire usage increments to Stripe metered billing (for paid plans).
 4. Enhance Reels: auto thumbnail previews from linked assets; full asset gallery modal with search/filter.
 5. Tighten more RLS with dept-aware helpers.
 6. Add E2E tests (Playwright) for gated flows: Reels create+link+publish, Client Report generate+PDF, Quota blocks.
@@ -191,7 +189,7 @@ The project is **ready for controlled launch** to internal/team + early clients.
 11. Observability: Add circuit breakers for providers + usage_events table + better metrics dashboard.
 12. i18n completion + role/dept labels everywhere.
 13. Custom domain one-click helper (or docs automation).
-14. Billing portal self-serve (upgrade/downgrade + usage view).
+14. Internal usage dashboard refinements (detailed quotas + cost view).
 15. Performance: Narrow selects, add more caching, split heavy dashboard pages.
 
 ### Nice-to-Haves / Future
@@ -206,7 +204,7 @@ The project is **ready for controlled launch** to internal/team + early clients.
 - Zero critical incidents.
 - <5% error rate on production paths.
 - Positive client feedback on reports/reels UX.
-- Clear path to first paid customers via quotas/billing.
+- Clear path to resource governance via internal quotas/usage system.
 
 ---
 

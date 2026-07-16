@@ -3,7 +3,6 @@
 import { FileCheck2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import type { AgentTemplate } from '@/lib/agent-library/templates';
-import type { CampaignPlannerResult } from '@/lib/content-studio/campaign-planner-types';
 import { useLanguage } from '@/i18n/context';
 import { translateContentStudioType, translateTemplateCategory } from '@/i18n/dashboard-labels';
 

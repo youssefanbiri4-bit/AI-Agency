@@ -1,6 +1,6 @@
 import type { Job } from 'bullmq';
 import { redis } from '@/lib/queue/redis';
-import { dlqQueue } from '@/lib/queue/queues';
+import { getDlqQueue } from '@/lib/queue/queues';
 import { logger } from '@/lib/logger';
 import { increment } from '@/lib/monitoring/metrics';
 
@@ -95,7 +95,7 @@ export async function maybeMoveJobToDLQ(job: MaybeJobLike, err: unknown) {
       return;
     }
 
-    await dlqQueue.add('failed-job', {
+    await getDlqQueue().add('failed-job', {
       // Required metadata for DLQ consumers / debugging
       task_id: taskId,
       taskExecutionId,

@@ -18,19 +18,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'border border-[var(--theme-primary,#F7CBCA)] bg-gradient-to-r from-[var(--theme-primary,#F7CBCA)] to-[var(--theme-secondary,#F7CBCA)] text-white shadow-[0_14px_30px_rgba(202,40,81,0.24)] hover:border-[var(--theme-secondary,#F7CBCA)] hover:shadow-[0_16px_36px_rgba(255,103,102,0.20)]',
+    'border border-primary bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(var(--color-primary),0.25)] hover:bg-primary-hover hover:shadow-[0_4px_12px_rgba(var(--color-primary),0.3)]',
   secondary:
-    'border border-[#F7CBCA]/15 bg-white/78 text-[#5D6B6B] shadow-sm backdrop-blur-[16px] hover:border-[#F7CBCA]/35 hover:bg-white hover:text-[#F7CBCA]',
+    'border border-border bg-surface text-foreground shadow-sm hover:border-border-strong hover:bg-surface-elevated',
   outline:
-    'border border-[#F7CBCA]/15 bg-white/78 text-black shadow-sm backdrop-blur-[16px] hover:border-[#F7CBCA]/40 hover:bg-[#D5E5E5]/55 hover:text-[#F7CBCA]',
+    'border border-border bg-transparent text-foreground hover:bg-surface hover:border-border-strong',
   ghost:
-    'border border-transparent bg-transparent text-black/62 hover:bg-[#D5E5E5]/62 hover:text-black',
+    'border border-transparent bg-transparent text-foreground-muted hover:bg-surface hover:text-foreground',
   danger:
-    'border border-[#F7CBCA] bg-[#F7CBCA] text-white shadow-[0_14px_30px_rgba(255,103,102,0.20)] hover:border-black hover:bg-black',
+    'border border-danger bg-danger text-danger-foreground shadow-[0_2px_8px_rgba(var(--color-danger),0.25)] hover:bg-danger/90 hover:border-danger/90',
   success:
-    'border border-black bg-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.18)] hover:border-[#F7CBCA] hover:bg-[#F7CBCA]',
+    'border border-success bg-success text-success-foreground shadow-[0_2px_8px_rgba(var(--color-success),0.25)] hover:bg-success/90 hover:border-success/90',
   soft:
-    'border border-[#F7CBCA]/15 bg-[#D5E5E5]/70 text-[#F7CBCA] hover:border-[#F7CBCA]/35 hover:bg-[#D5E5E5]',
+    'border border-primary-light bg-primary-light text-primary hover:border-primary hover:bg-primary-light/90',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -52,9 +52,9 @@ export function buttonStyles({
   return cn(
     'inline-flex max-w-full min-w-0 shrink-0 items-center justify-center gap-2 rounded-lg text-center font-bold leading-5 tracking-normal transition-all duration-200 ease-out text-wrap',
     'whitespace-normal break-words',
-    'focus:outline-none focus:ring-4 focus:ring-[#F7CBCA]/18 focus:ring-offset-2 focus:ring-offset-white',
-    'disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-black/10 disabled:bg-black/[0.06] disabled:bg-none disabled:text-black/38 disabled:shadow-none',
-    'hover:-translate-y-0.5 active:translate-y-px',
+    'btn-press',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-ring-offset',
+    'disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-border disabled:bg-surface disabled:text-foreground-muted disabled:shadow-none',
     variantStyles[variant],
     sizeStyles[size],
     className

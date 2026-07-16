@@ -31,6 +31,9 @@ jobs:
       - name: Security audit (prod deps only) — fail on high/critical
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Secrets & hardcoded-credential scan (CI)
+        run: npm run security:audit -- --ci
+
       - name: CI debug info (versions + dry typecheck)
         run: |
           mkdir -p ci-logs

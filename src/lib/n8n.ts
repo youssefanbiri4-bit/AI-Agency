@@ -4,7 +4,8 @@ if (typeof window !== 'undefined') {
 
 import type { ApiResponse, JsonObject } from '@/types';
 import { PRIMARY_AGENT_IDS } from '@/lib/agents';
-import { reportAppError } from '@/lib/logger';
+import { reportAppError, logger } from '@/lib/logger';
+import { withCircuitBreaker, CIRCUIT_BREAKER_PROVIDERS } from '@/lib/circuit-breaker';
 import { setupBlockerMessage } from '@/lib/safe-messages';
 import { safeFetch } from '@/lib/network/safeFetch';
 import { validateN8nWebhookUrl } from '@/lib/network/ssrf';
@@ -116,21 +117,26 @@ export async function executeN8nWorkflow(
       };
     }
 
-    const response = await safeFetch<JsonObject>(webhookUrl, {
-      method: 'POST',
-      redirect: 'manual',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        workflowId,
-        data,
-      }),
-      timeoutMs: timeoutMs,
-      retryOptions: {
-        maxRetries: 3,
-      },
-    });
+    const response = await withCircuitBreaker(
+      CIRCUIT_BREAKER_PROVIDERS.N8N,
+      () =>
+        safeFetch<JsonObject>(webhookUrl, {
+          method: 'POST',
+          redirect: 'manual',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            workflowId,
+            data,
+          }),
+          timeoutMs: timeoutMs,
+          retryOptions: {
+            maxRetries: 3,
+          },
+        }),
+      { timeoutMs }
+    );
 
     if (response.error || !response.statusCode || response.statusCode >= 400) {
       return {

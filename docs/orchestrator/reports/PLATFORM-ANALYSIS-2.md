@@ -13,7 +13,7 @@
 3. [Dual Systems & Integration Debt](#3-dual-systems--integration-debt)
 4. [Database & Index Risk Analysis](#4-database--index-risk-analysis)
 5. [Multi-tenancy Architecture Review](#5-multi-tenancy-architecture-review)
-6. [Billing & SaaS Commercial Readiness](#6-billing--saas-commercial-readiness)
+6. [Internal Usage & Resource Governance](#6-internal-usage--resource-governance)
 7. [Maintainability Score & Breakdown](#7-maintainability-score--breakdown)
 8. [Architectural Risks: 6–12 Month Horizon](#8-architectural-risks-6-12-month-horizon)
 9. [Top 10 Problems by Business + Technical Impact](#9-top-10-problems-by-business--technical-impact)
@@ -31,7 +31,7 @@ However, the architecture has **structural problems that will compound over 6–
 |-----------|:------------:|---------|
 | **Maintainability** | **4.5 / 10** | God files, dual systems, documentation sprawl |
 | **Scalability** | **6.5 / 10** | Good foundation, missing aggregates + pagination discipline |
-| **SaaS Readiness** | **4.0 / 10** | Scaffold-only billing, no organization layer, no self-serve |
+| **Internal Platform Readiness** | **8.0 / 10** | Strong internal resource governance, no commercial billing |
 | **Modularity** | **5.5 / 10** | Core domains clean, many god components violate SRP |
 | **Extensibility** | **4.0 / 10** | Adding new features requires changing god files |
 
@@ -207,53 +207,35 @@ For **internal team use** (current phase), the multi-tenancy architecture is suf
 
 ---
 
-## 6. Billing & SaaS Commercial Readiness
+## 6. Internal Usage & Resource Governance
 
-### Current State: Scaffold + Functional Usage Tracking
+### Current State: Functional Usage Tracking (Internal Platform)
 
-Per the documented decision in `docs/BILLING_STATUS.md` (2026-07-11), billing is intentionally disabled for internal/Beta use.
+Per the documented decision in `docs/BILLING_STATUS.md` (2026-07-12), this is an **internal platform** with no commercial billing. Usage tracking exists for internal resource governance only.
 
-| Component | Status | Lines of Code |
-|-----------|--------|:-------------:|
-| `usage-limits.ts` | ✅ Production-ready | 335 |
-| `quotas.ts` | ✅ Production-ready | 384 |
-| `cost-tracking.ts` | 🟡 Functional (log-only) | 161 |
-| `stripe-server.ts` | 🟡 Scaffold (never imported) | 40 |
-| `billing_customers` table | ✅ Schema ready | — |
-| `subscriptions` table | ✅ Schema ready | — |
-| `usage_events` table | ✅ Schema ready, used | — |
-| Checkout API route | ❌ Missing | — |
-| Webhook handler | ❌ Missing | — |
-| Customer Portal | ❌ Missing | — |
-| Plan selection UI | ❌ Missing | — |
-| Invoice/subscription UI | ❌ Missing | — |
+| Component | Status | Notes |
+|-----------|--------|:-----:|
+| `usage-limits.ts` | ✅ Production-ready | Internal plan limits |
+| `quotas.ts` | ✅ Production-ready | Multi-source quota checking |
+| `cost-tracking.ts` | 🟡 Functional (log-only) | OpenAI/n8n cost estimation |
+| `billing_customers` table | 🟡 Schema only (no Stripe) | Schema reference, no data |
+| `subscriptions` table | 🟡 Schema only (all rows `free`) | Plan tracking, no Stripe wiring |
+| `usage_events` table | ✅ Used for monthly aggregation | Append-only event store |
+| Checkout/Webhook/Portal routes | ❌ Not applicable (removed) | No commercial billing needed |
 
-### What It Would Take to Go Live with Billing
+### Readiness Scorecard (Internal Platform)
 
-| Phase | Effort | Deliverables |
-|-------|:------:|-------------|
-| Checkout flow | 2–3 days | `/api/billing/checkout`, plan selection UI |
-| Webhook handler | 2–3 days | `/api/billing/webhook`, Stripe event sync |
-| Customer portal | 1 day | `/api/billing/portal` redirect |
-| Billing UI | 3–5 days | Plan management, invoices, usage dashboard |
-| Plan gating | 2–3 days | Feature flags tied to `subscriptions.plan` |
-| **Total** | **10–15 days** | Full billing integration |
-
-### Readiness Scorecard
-
-| SaaS Capability | Score (0–10) | Notes |
-|-----------------|:------------:|-------|
+| Capability | Score (0–10) | Notes |
+|-----------|:------------:|-------|
 | Multi-tenant (workspace) | 8 | Solid isolation + RLS |
-| Organizations (above workspace) | 2 | Not implemented |
 | Teams / invites UX | 5 | Membership exists, invite flow incomplete |
 | Roles & permissions | 7.5 | RBAC + departments |
-| Subscription plans | 6 | Plan enum + quotas |
-| Billing (Stripe live) | 2 | Schema only, no API |
+| Internal usage quotas | 8 | Plan enum + limits + counters |
+| Cost tracking | 6 | Log-only, needs DB persistence |
 | Notifications | 7 | In-app + realtime |
 | Audit logs | 7 | `security_audit_logs` + `task_events` |
-| Analytics (product) | 4 | Ops metrics, no business funnel |
 | Monitoring | 6 | Sentry, health route |
-| **SaaS Readiness** | **4.0 / 10** | |
+| **Internal Platform Readiness** | **8.0 / 10** | |
 
 ---
 
@@ -301,17 +283,11 @@ Per the documented decision in `docs/BILLING_STATUS.md` (2026-07-11), billing is
 
 **Fix:** Add the missing composite index. Effort: 30 minutes.
 
-### Risk 3: Billing Implementation Blocked by Accumulated Debt (Month 8–12)
+### Risk 3: Internal Usage Dashboard & Cost Accuracy (Month 8–12)
 
-**Problem:** When the business decides to activate billing (inevitable for a SaaS platform), the engineering team will need to:
-1. Migrate 22 legacy RBAC call sites
-2. Refactor god files enough to add billing-gated UI
-3. Add proper Stripe integration
-4. Wire usage_events into all quota-consuming actions
+**Problem:** As the platform scales, the internal usage/cost tracking queries become slower. The cost-tracking system is log-only and not persisted to a DB table. Workflow execution costs are estimated, not actual.
 
-If god files haven't been split, step 2 alone adds 2–3 weeks of "untangling" before billing work can start.
-
-**Impact:** Billing launch delayed by 1–2 months beyond business expectations.
+**Impact:** Team members cannot see accurate cost/spend data, making it harder to control OpenAI/n8n costs.
 
 ### Risk 4: Department Filter Performance at Scale (Month 6–12)
 
@@ -406,41 +382,35 @@ Each problem is scored on two axes:
 - No behavioral changes — pure extraction
 - Components are individually testable
 
-### Wave C: SaaS Foundation & Documentation (Weeks 5–6)
+### Wave C: Internal Platform Polish & Documentation (Weeks 5–6)
 
-**Goal:** Prepare the platform for eventual public SaaS launch by addressing the structural blockers.
+**Goal:** Improve internal platform tooling, consolidate docs, and complete remaining gap items.
 
 | Agent | Task | Effort | Priority |
 |:-----:|------|:------:|:--------:|
-| **Agent 1** | Implement Stripe Checkout flow (route + plan selection UI) | 2–3 days | 🟡 P2 |
-| **Agent 1** | Implement Stripe Webhook handler | 2–3 days | 🟡 P2 |
 | **Agent 1** | Wire usage_events into all quota-consuming actions | 1–2 days | 🟡 P2 |
 | **Agent 2** | Consolidate root documentation → `docs/archive/2026-07/` | 1 day | 🟡 P2 |
 | **Agent 2** | Archive historical audit reports, leave only SSOT | 1 day | 🟡 P2 |
-| **Agent 2** | Add billing-gated feature flags (behind subscription plan) | 2–3 days | 🟡 P2 |
 | **Agent 2** | Complete Spanish locale or hide `es` behind flag | 1 day | 🟢 P3 |
 
 **Deliverables:**
-- Working Stripe Checkout (test mode)
-- Billing webhook syncing subscriptions
+- Full usage tracking across all quota types
 - Clean documentation structure
-- Billing-gated feature infrastructure
+- No remaining Spanish locale gaps
 
 ---
 
-## Appendix A: Architecture Decision Records
-
-### ADR-001: Keep Workspace as Primary Tenancy Boundary
+## Appendix A: Architecture Decision Records### ADR-001: Keep Workspace as Primary Tenancy Boundary
 
 **Context:** No organization layer needed for current internal use.  
 **Decision:** Workspace remains the tenancy unit. Organization layer will be added when enterprise customers demand multi-workspace management.  
 **Status:** Deferred.
 
-### ADR-002: Keep Billing as Scaffold (W2-R3)
+### ADR-002: Internal Platform — No Commercial Billing
 
-**Context:** Platform is pre-revenue, usage tracking is functional.  
-**Decision:** Option B — Keep scaffold, document gaps.  
-**Status:** Documented in `docs/BILLING_STATUS.md`.
+**Context:** Platform is an internal operational HQ for the owner and team.  
+**Decision:** No Stripe integration. Usage/quota tracking is for internal resource governance only.  
+**Status:** Documented in `docs/BILLING_STATUS.md`. Stripe code fully removed.
 
 ### ADR-003: RBAC Source of Truth is `@/lib/auth/rbac`
 

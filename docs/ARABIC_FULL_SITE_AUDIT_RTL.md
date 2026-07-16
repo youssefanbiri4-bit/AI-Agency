@@ -25,7 +25,7 @@
 | 2 | التخطيط الجذر (`layout.tsx`) لا يدير `dir`/`lang` ديناميكياً لـ RTL | عالية |
 | 3 | التقويم يستخدم `isRtl = false` بشكل ثابت بدلاً من ربطه بـ `useLanguage()` | متوسطة |
 | 4 | نصوص إنجليزية ثابتة (hardcoded) في صفحة لوحة التحكم الرئيسية بدلاً من استخدام `t()` | متوسطة |
-| 5 | وجود كود Stripe/Billing غير مستخدم (`stripe-server.ts`) مع بقايا صفحة التسعير | منخفضة |
+| 5 | كود Stripe/Billing كان غير مستخدم — تمت إزالته لاحقاً (المنصة داخلية) | منخفضة |
 
 ---
 
@@ -76,7 +76,7 @@
 - `src/i18n/` — نظام الترجمة (سياق، ملفات locales)
 - `src/lib/supabase-server.ts` — عميل Supabase للخادم
 - `src/lib/supabase-client.ts` — عميل Supabase للمتصفح
-- `src/lib/stripe-server.ts` — كود Stripe (بقايا)
+- `src/lib/stripe-server.ts` — تمت إزالته (المنصة داخلية)
 - `src/lib/security-center.ts` — مركز الأمان
 - `src/lib/alex/` — منطق المساعد أليكس
 - `src/types/` — أنواع TypeScript
@@ -463,7 +463,7 @@ src/i18n/context.tsx:45:5
 | استخدام `getSupabaseAdmin` في صفحة الخادم | منخفضة | يتم استخدام مفتاح الخدمة في `dashboard/page.tsx` لقراءة محاولات النشر. هذا مقبول طالما أنه محصور في الخادم ومحمي بالمصادقة. |
 | 18 Agent متصل بـ n8n webhooks | منخفضة | `src/types/index.ts:105` يظهر `n8nWebhook?: string` في نوع Agent. هذا قد يشير إلى أن webhooks n8n متصلة بعوامل خطيرة. |
 | إعدادات CSP تسمح `unsafe-inline` و `unsafe-eval` | متوسطة | هذه إعدادات افتراضية لـ Next.js ولكنها تقلل من فعالية CSP. في الإنتاج، يجب مراجعة ضرورة `unsafe-eval`. |
-| `stripe-server.ts` يحتوي على مفتاح Stripe | منخفضة | يستخدم `process.env.STRIPE_SECRET_KEY` — آمن طالما أنه لا يُستخدم (كود ميت حالياً). |
+| `stripe-server.ts` كان يحتوي على مفتاح Stripe | منخفضة | تمت إزالة الملف — لا يوجد كود Stripe متبقي. |
 | عدم وجود rate limiting على API route | غير مؤكد | `src/lib/rate-limit.ts` موجود ولكن لم يتم تأكيد استخدامه في جميع المسارات. |
 
 ### صلاحية GitHub و OpenAI
@@ -504,7 +504,7 @@ src/i18n/context.tsx:45:5
 
 | التحسين | دليل الفحص |
 |---------|------------|
-| **إزالة Billing/SaaS** | كود Stripe موجود لكنه معطل وغير مستخدم في الواجهة. لا توجد صفحات فوترة. |
+| **إزالة Billing/SaaS** | تمت إزالة كود Stripe بالكامل — المنصة داخلية ولا توجد فوترة تجارية. |
 | **إصلاح OpenAI parsing** | `checkOpenAITextProviderReadiness` موجود في `src/lib/ai/text-provider.ts` |
 | **صفحة Alex** | موجودة في `src/app/(dashboard)/dashboard/alex/` وتعمل بشكل كامل |
 | **نظام i18n** | مثبت بالكامل مع 4 لغات وتبديل تفاعلي |
@@ -553,9 +553,9 @@ src/i18n/context.tsx:45:5
 
 | الرتبة | المشكلة | المرجع |
 |--------|---------|--------|
-| 11 | كود Stripe/Billing غير مستخدم (dead code) | LOW-01 |
+| 11 | كود Stripe/Billing — تمت إزالته | LOW-01 |
 | 12 | ازدواجية صفحة المراجعات (review/reviews) | LOW-07 |
-| 13 | صفحة تسعير ظاهرة بدون آلية دفع | LOW-08 |
+| 13 | صفحة تسعير — تمت معالجتها | LOW-08 |
 | 14 | تحذير Turbopack NFT build | LOW-05 |
 | 15 | استيراد غير مستخدم | LOW-04 |
 
@@ -575,7 +575,7 @@ src/i18n/context.tsx:45:5
 4. إضافة i18n في التذييل وصفحات المصادقة
 
 ### المرحلة ج: تنظيف الكود
-1. إزالة أو تعطيل كود Stripe/Billing غير المستخدم
+1. ✅ تم — إزالة كود Stripe/Billing غير المستخدم
 2. دمج أو إزالة صفحة المراجعات المكررة
 3. إزالة صفحة التسعير الظاهرة
 4. إزالة الاستيرادات غير المستخدمة

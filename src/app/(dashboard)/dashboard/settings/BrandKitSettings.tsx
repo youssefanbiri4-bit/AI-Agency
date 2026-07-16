@@ -8,7 +8,7 @@ import { Input, Label, Select, Textarea } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { toast } from '@/components/ui/toast';
-import { useActionToast } from '@/components/ui/useActionToast';
+import { useActionToast } from '@/hooks/useActionToast';
 import { defaultBrandKit, type BrandKit } from '@/types/brand-kit';
 import {
   saveBrandKitSettingsAction,

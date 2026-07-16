@@ -5,7 +5,7 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { listAgentCatalog } from '@/lib/data/agents';
-import { listTasks } from '@/lib/data/tasks';
+import { listTasks } from '@/features/tasks/data/tasks';
 import { Notice } from '@/components/ui/Notice';
 
 function firstParam(value: string | string[] | undefined) {

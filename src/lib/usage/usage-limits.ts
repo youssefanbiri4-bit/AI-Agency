@@ -48,6 +48,14 @@ export const PLAN_LIMITS: Record<BillingPlan, PlanLimits> = {
     max_tasks: 1000,
     max_reels_publishes_per_month: 200,
   },
+  enterprise: {
+    plan: 'enterprise',
+    max_ai_generations_per_month: 5000,
+    max_creative_assets: 10000,
+    max_content_items: 5000,
+    max_tasks: 10000,
+    max_reels_publishes_per_month: 2000,
+  },
   agency: {
     plan: 'agency',
     max_ai_generations_per_month: null,
@@ -176,60 +184,44 @@ export async function getUsageCounters(
 export async function incrementUsageCounter(
   workspaceId: string,
   type: QuotaType,
-  amount = 1
+  amount = 1,
+  userId?: string | null
 ): Promise<void> {
   const supabase = getAdminClient();
 
-  const { data: existing, error: readError } = await supabase
-    .from('usage_limits')
-    .select('metadata')
-    .eq('workspace_id', workspaceId)
-    .maybeSingle();
+  const { error: rpcError } = await supabase.rpc('increment_usage_counter_metadata', {
+    p_workspace_id: workspaceId,
+    p_quota_type: type,
+    p_amount: amount,
+  });
 
-  if (readError) {
-    usageLog.error('Failed to read usage_limits for increment', {
-      workspaceId,
-      type,
-      error: readError.message,
-    });
-    throw new Error('Failed to read usage counters');
-  }
-
-  if (!existing) {
-    await ensureUsageLimitsRow(workspaceId);
-  }
-
-  const metadata: JsonObject = { ...((existing?.metadata as JsonObject) ?? {}) };
-  const counterKey = `current_${type}`;
-  const current = typeof metadata[counterKey] === 'number' ? (metadata[counterKey] as number) : 0;
-
-  metadata[counterKey] = current + amount;
-  metadata.last_updated = new Date().toISOString();
-
-  const { error: updateError } = await supabase
-    .from('usage_limits')
-    .update({ metadata, updated_at: new Date().toISOString() })
-    .eq('workspace_id', workspaceId);
-
-  if (updateError) {
-    usageLog.error('Failed to increment usage counter', {
+  if (rpcError) {
+    usageLog.error('Failed to increment usage counter atomically', {
       workspaceId,
       type,
       amount,
-      error: updateError.message,
+      error: rpcError.message,
     });
     throw new Error('Failed to increment usage counter');
   }
 
   usageLog.info('Usage counter incremented', { workspaceId, type, amount });
 
+  // Best-effort cache invalidation so dashboards/analytics stop serving stale
+  // aggregates after a usage write (W19-T2). Fire-and-forget; never blocks the
+  // write path or throws into business logic.
+  void import('@/lib/data/query-cache')
+    .then((m) => m.clearWorkspaceCaches(workspaceId))
+    .catch(() => {});
+
   try {
     await recordUsageEvent({
       workspaceId,
+      userId,
       eventType: `${type}_increment`,
       quotaType: type,
       amount,
-      metadata: { counter_source: 'metadata' },
+      metadata: { counter_source: 'rpc' },
     });
   } catch (eventError) {
     usageLog.warn('Failed to record usage event for monthly aggregation', {
@@ -301,6 +293,33 @@ export async function getMonthlyUsageByType(
   }
 
   return data.reduce((sum, row) => sum + (row.amount || 0), 0);
+}
+
+/**
+ * Read pre-computed counters from the usage_counters table (trigger-maintained).
+ * Replaces expensive COUNT(*) queries with a single fast read.
+ */
+export async function getUsageCountersFromTable(
+  workspaceId: string
+): Promise<Partial<Record<QuotaType, number>>> {
+  const supabase = getAdminClient();
+
+  const { data, error } = await supabase
+    .from('usage_counters')
+    .select('quota_type, count')
+    .eq('workspace_id', workspaceId);
+
+  if (error) {
+    usageLog.warn('Failed to load usage_counters table', { workspaceId, error: error.message });
+    return {};
+  }
+
+  const counters: Partial<Record<QuotaType, number>> = {};
+  for (const row of data ?? []) {
+    counters[row.quota_type as QuotaType] = row.count;
+  }
+
+  return counters;
 }
 
 export async function getMonthlyUsageSummary(

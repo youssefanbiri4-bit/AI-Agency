@@ -2,8 +2,8 @@ import 'server-only';
 
 import { createSupabaseServerClient, getActiveWorkspaceIdFromCookie } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { listTasks } from '@/lib/data/tasks';
-import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
+import { listTasks } from '@/features/tasks/data/tasks';
+import { listContentStudioItemsForWorkspace } from '@/features/content-studio/data/content-studio';
 import { listProjectsForWorkspace } from '@/lib/data/projects';
 import { listReleasesForWorkspace } from '@/lib/data/releases';
 import { listBackupRecordsForWorkspace } from '@/lib/data/backup-records';

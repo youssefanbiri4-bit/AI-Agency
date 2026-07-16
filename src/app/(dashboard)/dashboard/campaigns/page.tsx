@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import {
   CheckCircle2,
   Clock3,
@@ -28,7 +29,7 @@ import {
   type GoogleAdsConfigReadiness,
 } from '@/lib/ads/google-ads';
 import { listAgentCatalog } from '@/lib/data/agents';
-import { listTasks } from '@/lib/data/tasks';
+import { listTasks } from '@/features/tasks/data/tasks';
 import { extractStructuredOutput } from '@/lib/task-results';
 import { cn, formatDateTime } from '@/lib/utils';
 import { buttonStyles } from '@/components/ui/Button';
@@ -530,7 +531,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
   ] = await Promise.all([
     listAgentCatalog(supabase),
     workspaceId
-      ? listTasks({ workspaceId }, supabase)
+      ? listTasks({ workspaceId, limit: 500 }, supabase)
       : Promise.resolve({ data: [], error: null, isConfigured: true }),
     workspaceId && user?.id
       ? getMetaConnectionStatus(workspaceId, user.id)
@@ -775,12 +776,14 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         />
       </Card>
 
-      <CampaignsClient
-        campaignBoardItems={campaignBoardItems}
-        campaignReports={campaignReports}
-        pendingCampaignTasks={pendingCampaignTasks}
-        preferredAgentName={preferredAgent?.name ?? 'Social Media Content Agent'}
-      />
+      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-white p-6 h-48" />}>
+        <CampaignsClient
+          campaignBoardItems={campaignBoardItems}
+          campaignReports={campaignReports}
+          pendingCampaignTasks={pendingCampaignTasks}
+          preferredAgentName={preferredAgent?.name ?? 'Social Media Content Agent'}
+        />
+      </Suspense>
     </div>
   );
 }

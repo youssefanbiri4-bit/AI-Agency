@@ -1,10 +1,11 @@
 import { z } from 'zod';
-import { taskQueue } from '@/lib/queue/queues';
+import { getTaskQueue } from '@/lib/queue/queues';
 import { logger } from '@/lib/logger';
 import { getWorkspace } from '@/lib/data/workspaces-server';
-import { getTaskById, updateTaskExecutionState } from '@/lib/data/tasks';
+import { getTaskById, updateTaskExecutionState } from '@/features/tasks/data/tasks';
 import { createErrorResponse, AppError, ErrorLevel } from '@/lib/error-handler';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkSlidingWindowRateLimit, buildIpRateLimitKey, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
 import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
 
 const jsonValueSchema: z.ZodType<import('@/types').JsonValue> = z.lazy(() =>
@@ -64,12 +65,11 @@ export async function POST(req: Request) {
     });
 
     if (!rateLimitResult.allowed) {
-      log.warn('Rate limit exceeded for task execution', {
+      log.warn('Rate limit exceeded for task execution (fixed window)', {
         clientIp,
         workspaceId: workspaceIdForRateLimit,
       });
 
-      // Preserve the same error response envelope as the rest of this endpoint.
       throw new AppError(
         'Rate limit exceeded',
         429,
@@ -77,6 +77,32 @@ export async function POST(req: Request) {
         {
           retryAfterSeconds: Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000),
           resetAt: new Date(rateLimitResult.resetAt).toISOString(),
+        }
+      );
+    }
+
+    // Sliding window rate limit check (additional granularity with IP scoping)
+    const slidingResult = await checkSlidingWindowRateLimit({
+      key: `sw:api:tasks:execute:${clientIp}:${workspaceIdForRateLimit ?? 'unknown'}`,
+      limit: 30,
+      windowMs: 60_000, // 30 requests per minute per IP + workspace
+    });
+
+    if (!slidingResult.allowed) {
+      log.warn('Sliding window rate limit exceeded for task execution', {
+        clientIp,
+        workspaceId: workspaceIdForRateLimit,
+      });
+
+      throw new AppError(
+        'Too many task execution requests. Please wait before retrying.',
+        429,
+        ErrorLevel.LOW,
+        {
+          retryAfterSeconds: Math.ceil(slidingResult.resetInMs / 1000),
+          resetAt: new Date(slidingResult.windowEnd).toISOString(),
+          limit: slidingResult.limit,
+          remaining: slidingResult.remaining,
         }
       );
     }
@@ -194,7 +220,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const job = await taskQueue.add('execute-task', {
+    const job = await getTaskQueue().add('execute-task', {
       taskExecutionId: taskExecutionId ?? null,
       // canonical DB id
       task_id: taskId,

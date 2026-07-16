@@ -14,7 +14,7 @@ import { createBackupAction, type BackupCenterState } from './actions';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Notice } from '@/components/ui/Notice';
-import { useActionToast } from '@/components/ui/useActionToast';
+import { useActionToast } from '@/hooks/useActionToast';
 import { toast } from '@/components/ui/toast';
 import type { BackupCategory } from '@/lib/backup-center';
 import type { BackupRecord } from '@/lib/data/backup-records';

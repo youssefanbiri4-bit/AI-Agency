@@ -14,23 +14,23 @@ interface NoticeProps {
 const toneStyles = {
   info: {
     icon: Info,
-    className: 'border-[#F7CBCA]/18 bg-white/78 text-black shadow-[0_12px_30px_rgba(93,107,107,0.05)] backdrop-blur-[16px]',
-    iconClassName: 'text-[#F7CBCA]',
+    className: 'border-status-info-bg bg-status-info-bg text-foreground',
+    iconClassName: 'text-status-info-text',
   },
   success: {
     icon: CheckCircle2,
-    className: 'border-black/12 bg-black text-white',
-    iconClassName: 'text-white',
+    className: 'border-status-success-bg bg-status-success-bg text-status-success-text',
+    iconClassName: 'text-status-success-text',
   },
   warning: {
     icon: ShieldAlert,
-    className: 'border-[#F7CBCA]/20 bg-[#F1F7F7]/88 text-black shadow-[0_12px_30px_rgba(93,107,107,0.05)]',
-    iconClassName: 'text-[#F7CBCA]',
+    className: 'border-status-warning-bg bg-status-warning-bg text-status-warning-text',
+    iconClassName: 'text-status-warning-text',
   },
   danger: {
     icon: AlertCircle,
-    className: 'border-[#F7CBCA]/22 bg-[#F1F7F7]/92 text-black shadow-[0_12px_30px_rgba(93,107,107,0.05)]',
-    iconClassName: 'text-[#F7CBCA]',
+    className: 'border-status-danger-bg bg-status-danger-bg text-status-danger-text',
+    iconClassName: 'text-status-danger-text',
   },
 };
 

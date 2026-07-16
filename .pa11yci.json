@@ -13,5 +13,6 @@
   ],
   "headers": {
     "Accept-Language": "en-US"
-  }
+  },
+  "_note": "pa11y-ci is not installed. Install manually: npm install --save-dev pa11y pa11y-ci. Requires Chrome/Chromium. See docs/orchestrator/reports/W8-T8-A11Y-TOOLING.md"
 }

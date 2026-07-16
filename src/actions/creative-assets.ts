@@ -5,7 +5,7 @@
 import 'server-only';
 import { assertProductionGate } from '@/lib/production/gate';
 import { generateImageAction as originalGenerate } from '@/app/(dashboard)/dashboard/creative-assets/actions';
-import { checkQuota, incrementUsage } from '@/lib/usage/quotas';
+import { enforceQuota, incrementUsage } from '@/lib/usage/quotas';
 import { getRBACContext, requireWorkspaceAccessWithRBAC } from '@/lib/auth/rbac';
 
 export async function gatedGenerateImage(assetIdOrForm: string | FormData) {
@@ -19,18 +19,17 @@ export async function gatedGenerateImage(assetIdOrForm: string | FormData) {
       throw new Error(rbac.error || 'Editor role required for creative assets.');
     }
 
+    const userId = access.data?.user?.id;
+
     await assertProductionGate(workspaceId);
 
-    const quota = await checkQuota(workspaceId, 'ai_generations');
-    if (!quota.allowed) {
-      throw new Error(quota.message || 'AI image generation quota exceeded.');
-    }
+    await enforceQuota(workspaceId, 'ai_generations');
 
     const result = await originalGenerate(assetIdOrForm);
 
     if (result && !result.error) {
-      await incrementUsage(workspaceId, 'ai_generations', 1);
-      await incrementUsage(workspaceId, 'creative_assets', 1);
+      await incrementUsage(workspaceId, 'ai_generations', 1, userId);
+      await incrementUsage(workspaceId, 'creative_assets', 1, userId);
     }
 
     return result;

@@ -1,12 +1,10 @@
 import type { JsonObject, JsonValue } from '@/types';
 import type {
-  Database,
   ProjectPriority,
   ProjectRecord,
   ProjectStatus,
   ProjectType,
 } from '@/types/database';
-import { emptyDataResult, errorDataResult, type DataResult } from './types';
 import { buildGitHubRepoUrl, parseGitHubRepoUrl } from '@/lib/github-url';
 
 export interface ProjectDeploymentMetadata extends JsonObject {

@@ -2,7 +2,7 @@
  * Cost Tracking for OpenAI + n8n executions
  *
  * Estimates costs in USD for AI generations and workflow executions.
- * Used together with quotas for billing awareness and hard/soft limits.
+ * Used together with quotas for cost awareness and hard/soft limits.
  *
  * Pricing based on current OpenAI rates (approximate as of 2026):
  * - GPT-4o: ~$2.50 / 1M input tokens, $10 / 1M output
@@ -13,8 +13,19 @@
 import 'server-only';
 
 import { logger } from '@/lib/logger';
+import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 const costLog = logger.child('usage:cost');
+
+export interface WorkspaceCostBreakdown {
+  totalCost: number;
+  openaiCost: number;
+  n8nCost: number;
+  totalTokens: number;
+  operations: number;
+  since: string;
+  until: string;
+}
 
 export interface CostEstimate {
   estimatedCostUsd: number;
@@ -29,7 +40,7 @@ export interface CostEstimate {
 
 export interface CostRecordInput {
   workspaceId: string;
-  operationType: 'image_generation' | 'text_generation' | 'task_execution' | 'reel_generation' | 'video_generation';
+  operationType: 'image_generation' | 'text_generation' | 'task_execution' | 'reel_generation' | 'video_generation' | 'orchestrator_tool';
   model?: string;
   inputTokens?: number;
   outputTokens?: number;
@@ -107,8 +118,8 @@ export function estimateTotalCost(params: {
 }
 
 /**
- * Record cost (for future persistence, currently logs + can update usage metadata)
- * In real impl, would insert into a costs table or update usage_limits metadata.
+ * Record cost — persists a row to `usage_costs` (W19-T2 migration) and emits a
+ * cost metric. Falls back to logging only when the admin client is unavailable.
  */
 export async function recordCost(input: CostRecordInput): Promise<CostEstimate> {
   const estimate = estimateTotalCost({
@@ -126,23 +137,81 @@ export async function recordCost(input: CostRecordInput): Promise<CostEstimate> 
     metadata: input.metadata,
   });
 
-  // TODO: In production, persist:
-  // await supabase.from('usage_costs').insert({ ... })
-  // Or increment in usage_limits.metadata.total_cost
+  try {
+    const { client, error } = getSupabaseAdmin();
+    if (client && !error) {
+      await client.from('usage_costs').insert({
+        workspace_id: input.workspaceId,
+        user_id: (input.metadata?.userId as string) ?? null,
+        operation_type: input.operationType,
+        model: input.model ?? null,
+        input_tokens: input.inputTokens ?? 0,
+        output_tokens: input.outputTokens ?? 0,
+        image_count: input.imageCount ?? 0,
+        n8n_executions: input.n8nExecutions ?? 0,
+        estimated_cost_usd: estimate.estimatedCostUsd,
+      });
+    }
+  } catch (err) {
+    costLog.warn('Failed to persist cost row', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 
   return estimate;
 }
 
-export async function getEstimatedTotalCostForWorkspace(workspaceId: string): Promise<number> {
-  // Placeholder: in real system sum from DB.
-  // For now return 0 or fetch from creative_assets estimated_cost_usd
-  // We can query sum of estimated costs here if column exists.
+/**
+ * Aggregate a workspace's estimated cost over a date range using the
+ * `sum_workspace_cost()` server function (single round-trip, no JS loop).
+ */
+export async function getWorkspaceCostBreakdown(
+  workspaceId: string,
+  sinceDays = 30
+): Promise<WorkspaceCostBreakdown> {
+  const until = new Date();
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
 
-  // For demo, we simulate from recent creative assets
+  try {
+    const { client, error } = getSupabaseAdmin();
+    if (client && !error) {
+      const { data, error: rpcError } = await client
+        .rpc('sum_workspace_cost', {
+          p_workspace_id: workspaceId,
+          p_since: since.toISOString(),
+          p_until: until.toISOString(),
+        })
+        .single();
+
+      if (!rpcError && data) {
+        const row = data as unknown as {
+          total_cost: number;
+          openai_cost: number;
+          n8n_cost: number;
+          total_tokens: number;
+          operations: number;
+        };
+        return {
+          totalCost: Number(row.total_cost ?? 0),
+          openaiCost: Number(row.openai_cost ?? 0),
+          n8nCost: Number(row.n8n_cost ?? 0),
+          totalTokens: Number(row.total_tokens ?? 0),
+          operations: Number(row.operations ?? 0),
+          since: since.toISOString(),
+          until: until.toISOString(),
+        };
+      }
+    }
+  } catch (err) {
+    costLog.warn('Cost aggregation failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // Fallback: sum creative_assets estimated_cost_usd (legacy path).
   try {
     const { createSupabaseServerClient } = await import('@/lib/supabase-server');
     const supabase = await createSupabaseServerClient();
-
     const { data } = await supabase
       .from('creative_assets')
       .select('estimated_cost_usd')
@@ -151,11 +220,36 @@ export async function getEstimatedTotalCostForWorkspace(workspaceId: string): Pr
 
     if (data) {
       const sum = data.reduce((acc, row) => acc + (row.estimated_cost_usd || 0), 0);
-      return Math.round(sum * 100) / 100;
+      return {
+        totalCost: Math.round(sum * 100) / 100,
+        openaiCost: Math.round(sum * 100) / 100,
+        n8nCost: 0,
+        totalTokens: 0,
+        operations: data.length,
+        since: since.toISOString(),
+        until: until.toISOString(),
+      };
     }
-  } catch (e) {
+  } catch {
     costLog.warn('Could not sum costs', { workspaceId });
   }
 
-  return 0;
+  return {
+    totalCost: 0,
+    openaiCost: 0,
+    n8nCost: 0,
+    totalTokens: 0,
+    operations: 0,
+    since: since.toISOString(),
+    until: until.toISOString(),
+  };
+}
+
+/**
+ * @deprecated Use getWorkspaceCostBreakdown for richer data. Kept for backward
+ * compatibility; now delegates to the cost aggregation.
+ */
+export async function getEstimatedTotalCostForWorkspace(workspaceId: string): Promise<number> {
+  const breakdown = await getWorkspaceCostBreakdown(workspaceId, 30);
+  return Math.round(breakdown.totalCost * 100) / 100;
 }

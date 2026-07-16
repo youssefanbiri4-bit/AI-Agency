@@ -9,17 +9,19 @@ import {
   getCurrentWorkspaceMembership,
 } from '@/lib/data/workspaces';
 import { getBrandKitForWorkspace } from '@/lib/data/brand-kit';
-import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
+import { listContentStudioItemsForWorkspace } from '@/features/content-studio/data/content-studio';
 import { listProjectsForWorkspace, normalizeProjectMetadata } from '@/lib/data/projects';
 import { listReleasesForWorkspace } from '@/lib/data/releases';
 import { listBackupRecordsForWorkspace } from '@/lib/data/backup-records';
 import { getSystemHealthSummary } from '@/lib/data/system-health';
-import { listTasks } from '@/lib/data/tasks';
+import { listTasks } from '@/features/tasks/data/tasks';
 import { generateMarketingText } from '@/lib/ai/text-provider';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkSlidingWindowRateLimit, buildUserRateLimitKey, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
+import { incrementUsage } from '@/lib/usage/quotas';
 import { agentCatalog } from '@/data/agents';
 import { buildSecurityCenterSummary } from '@/lib/security-center';
-import type { ContentStudioItemWithAssets } from '@/lib/data/content-studio';
+import type { ContentStudioItemWithAssets } from '@/features/content-studio/data/content-studio';
 import type { ProjectRecord, ReleaseRecord } from '@/types/database';
 import type { Task } from '@/types';
 
@@ -656,6 +658,11 @@ export async function askAgentFlowAssistantAction(
     };
   }
 
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
+  const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
+
   const limiter = await checkRateLimit({
     key: `assistant:${contextResult.context.slice(0, 120)}`,
     limit: 20,
@@ -668,6 +675,23 @@ export async function askAgentFlowAssistantAction(
       answer: 'Please slow down and try again in a moment.',
       links: [{ label: 'Open System Health', href: '/dashboard/system-health' }],
     };
+  }
+
+  // Sliding window rate limit for assistant (per-user scoped)
+  if (userId) {
+    const slidingLimiter = await checkSlidingWindowRateLimit({
+      key: buildUserRateLimitKey(userId, RATE_LIMIT_ACTIONS.AI_CHAT),
+      limit: 10,
+      windowMs: 60_000,
+    });
+
+    if (!slidingLimiter.allowed) {
+      return {
+        status: 'error',
+        answer: 'Assistant rate limit reached. Please wait a moment before asking another question.',
+        links: [{ label: 'Open System Health', href: '/dashboard/system-health' }],
+      };
+    }
   }
 
   const result = await generateMarketingText({
@@ -741,6 +765,10 @@ export async function askAgentFlowAssistantAction(
         { label: 'Open Docs', href: '/dashboard/docs' },
       ],
     };
+  }
+
+  if (userId && activeWorkspaceId) {
+    incrementUsage(activeWorkspaceId, 'ai_generations', 1, userId).catch(() => {});
   }
 
   return {

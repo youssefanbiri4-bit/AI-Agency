@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useActionToast } from '@/components/ui/useActionToast';
+import { useActionToast } from '@/hooks/useActionToast';
 import { toast } from '@/components/ui/toast';
 import type { ContentStudioActionState } from '@/app/(dashboard)/dashboard/content-studio/actions';
 import {

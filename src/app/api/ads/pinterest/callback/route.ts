@@ -6,7 +6,6 @@ import {
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { completePinterestOAuthConnection } from '@/lib/ads/pinterest-publishing';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { getRequestId, nowISO } from '@/lib/api-response';
 
 export const runtime = 'nodejs';
 

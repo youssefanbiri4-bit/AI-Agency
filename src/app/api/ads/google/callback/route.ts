@@ -12,7 +12,6 @@ import {
 } from '@/lib/ads/google-ads';
 import { upsertGoogleAdsConnection } from '@/lib/data/ad-connections';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { getRequestId, nowISO } from '@/lib/api-response';
 import type { JsonObject } from '@/types';
 
 export const runtime = 'nodejs';

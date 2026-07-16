@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase-client';
@@ -22,12 +22,12 @@ export default function SignUpPage() {
     fullName: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
@@ -71,6 +71,24 @@ export default function SignUpPage() {
 
       if (signUpError) throw signUpError;
 
+      // Apply referral (best-effort, non-blocking)
+      try {
+        const refCode = new URLSearchParams(window.location.search).get('ref');
+        if (refCode && data.user?.id) {
+          await fetch('/api/referral/claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              referralCode: refCode,
+              email: formData.email,
+              userId: data.user.id,
+            }),
+          }).catch(() => {});
+        }
+      } catch {
+        // referral application is best-effort
+      }
+
       if (data.session) {
         router.replace('/dashboard');
         router.refresh();
@@ -100,9 +118,21 @@ export default function SignUpPage() {
         </Notice>
       )}
 
-      <form onSubmit={handleSignUp} className="space-y-5">
+      <form onSubmit={handleSignUp} className="space-y-5" noValidate>
+        {error && (
+          <div 
+            role="alert" 
+            className="rounded-lg border border-[#F7CBCA]/20 bg-[#F1F7F7]/50 p-3 text-sm text-black/70"
+          >
+            {error}
+          </div>
+        )}
+
         <div>
-          <Label htmlFor="fullName">Full Name</Label>
+          <Label htmlFor="fullName">
+            Full Name
+            <span className="text-[#F7CBCA] ml-1" aria-hidden="true">*</span>
+          </Label>
           <Input
             type="text"
             id="fullName"
@@ -111,11 +141,22 @@ export default function SignUpPage() {
             onChange={handleChange}
             placeholder="Your name"
             disabled={isLoading}
+            required
+            aria-required="true"
+            aria-invalid={!!error && !formData.fullName}
           />
+          {error && !formData.fullName && (
+            <p className="mt-1 text-sm text-[#F7CBCA]" role="alert">
+              Full name is required
+            </p>
+          )}
         </div>
 
         <div>
-          <Label htmlFor="email">Email Address</Label>
+          <Label htmlFor="email">
+            Email Address
+            <span className="text-[#F7CBCA] ml-1" aria-hidden="true">*</span>
+          </Label>
           <Input
             type="email"
             id="email"
@@ -124,11 +165,22 @@ export default function SignUpPage() {
             onChange={handleChange}
             placeholder="you@example.com"
             disabled={isLoading}
+            required
+            aria-required="true"
+            aria-invalid={!!error && !formData.email}
           />
+          {error && !formData.email && (
+            <p className="mt-1 text-sm text-[#F7CBCA]" role="alert">
+              Email address is required
+            </p>
+          )}
         </div>
 
         <div>
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">
+            Password
+            <span className="text-[#F7CBCA] ml-1" aria-hidden="true">*</span>
+          </Label>
           <div className="relative">
             <Input
               type={showPassword ? 'text' : 'password'}
@@ -139,19 +191,31 @@ export default function SignUpPage() {
               placeholder="Password"
               className="pe-11"
               disabled={isLoading}
+              required
+              aria-required="true"
+              aria-invalid={!!error && formData.password.length < 6}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute end-3 top-2.5 text-black/38 hover:text-black"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
+          {error && formData.password.length < 6 && (
+            <p className="mt-1 text-sm text-[#F7CBCA]" role="alert">
+              Password must be at least 6 characters
+            </p>
+          )}
         </div>
 
         <div>
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Label htmlFor="confirmPassword">
+            Confirm Password
+            <span className="text-[#F7CBCA] ml-1" aria-hidden="true">*</span>
+          </Label>
           <Input
             type={showPassword ? 'text' : 'password'}
             id="confirmPassword"
@@ -160,7 +224,15 @@ export default function SignUpPage() {
             onChange={handleChange}
             placeholder="Confirm password"
             disabled={isLoading}
+            required
+            aria-required="true"
+            aria-invalid={!!error && formData.confirmPassword !== formData.password}
           />
+          {error && formData.confirmPassword !== formData.password && (
+            <p className="mt-1 text-sm text-[#F7CBCA]" role="alert">
+              Passwords do not match
+            </p>
+          )}
         </div>
 
         <Button type="submit" disabled={isLoading} size="lg" className="w-full">

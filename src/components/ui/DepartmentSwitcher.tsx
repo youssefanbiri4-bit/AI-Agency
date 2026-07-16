@@ -66,12 +66,12 @@ export function DepartmentSwitcher({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 rounded-lg border border-[#F7CBCA]/20 bg-white/70 px-3 py-1.5 text-black/80 shadow-sm hover:bg-white hover:text-black focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/30 disabled:opacity-60"
+        className="flex items-center gap-2 rounded-lg border border-primary-light/25 bg-background/70 px-3 py-1.5 text-foreground-muted shadow-sm hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60"
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={isSavingDepartment}
       >
-        <Users className="h-4 w-4 text-[#F7CBCA]" />
+        <Users className="h-4 w-4 text-primary-light" />
         <span className="font-bold">
           {displayLabel}
         </span>
@@ -80,14 +80,14 @@ export function DepartmentSwitcher({
 
       {open && (
         <div
-          className="absolute end-0 z-50 mt-2 w-52 rounded-xl border border-black/10 bg-white p-1 shadow-xl"
+          className="absolute end-0 z-50 mt-2 w-52 rounded-xl border border-border bg-background p-1 shadow-xl"
           role="listbox"
         >
           {allowAll && (
             <button
               className={cn(
-                'w-full rounded-lg px-3 py-2 text-start text-sm hover:bg-[#F1F7F7]',
-                !current && 'bg-[#F7CBCA]/10 font-semibold'
+                'w-full rounded-lg px-3 py-2 text-start text-sm hover:bg-status-neutral-bg',
+                !current && 'bg-primary-light/20 font-semibold'
               )}
               onClick={() => handleSelect(null)}
             >
@@ -103,17 +103,17 @@ export function DepartmentSwitcher({
                 role="option"
                 aria-selected={active}
                 className={cn(
-                  'flex w-full items-center justify-between rounded-lg px-3 py-2 text-start hover:bg-[#F1F7F7]',
-                  active && 'bg-[#F7CBCA]/10 font-semibold'
+                  'flex w-full items-center justify-between rounded-lg px-3 py-2 text-start hover:bg-status-neutral-bg',
+                  active && 'bg-primary-light/20 font-semibold'
                 )}
                 onClick={() => handleSelect(dept)}
               >
                 <span>{label.en}</span>
-                <span className="text-[10px] text-black/40">{label.ar}</span>
+                <span className="text-[10px] text-foreground-muted">{label.ar}</span>
               </button>
             );
           })}
-          <div className="mt-1 border-t border-black/10 pt-1 text-[10px] text-black/45 px-2">
+          <div className="mt-1 border-t border-border pt-1 text-[10px] text-foreground-muted px-2">
             {isSavingDepartment ? 'Saving preference…' : 'Only visible to Admins & Owners'}
           </div>
         </div>

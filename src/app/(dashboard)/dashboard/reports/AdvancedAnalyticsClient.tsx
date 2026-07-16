@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   AlertTriangle,
   CalendarClock,
@@ -19,738 +18,47 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
-import { Button, buttonStyles } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/FormControls';
 import { cn, formatDateTime } from '@/lib/utils';
+import { useAdvancedAnalytics } from './useAdvancedAnalytics';
+import { dateRanges, platforms, statuses, tabs } from './analytics-constants';
+import { label, providerKey, inRange } from './analytics-utils';
+import {
+  MetricTile,
+  AnalyticsSection,
+  CountBars,
+  EmptyState,
+  DataTable,
+  NextActionsList,
+} from './analytics-components';
+import type {
+  AdvancedAnalyticsData,
+  DateRangeFilter,
+  PlatformFilter,
+  StatusFilter,
+  AnalyticsTab,
+} from './analytics-types';
 
-type DateRangeFilter = 'this_month' | 'last_7_days' | 'last_30_days' | 'last_90_days' | 'all_time';
-type PlatformFilter = 'all' | 'instagram' | 'facebook' | 'google_ads' | 'pinterest' | 'linkedin';
-type StatusFilter =
-  | 'all'
-  | 'draft'
-  | 'ready'
-  | 'scheduled'
-  | 'published'
-  | 'failed'
-  | 'setup_required'
-  | 'approval_pending'
-  | 'manual_only';
-type AnalyticsTab =
-  | 'advanced'
-  | 'provider'
-  | 'work'
-  | 'project'
-  | 'security';
-
-export interface AdvancedAnalyticsContentItem {
-  id: string;
-  title: string;
-  platform: string;
-  content_type: string;
-  status: string;
-  provider_status: string | null;
-  provider_error: string | null;
-  schedule_at: string | null;
-  published_at: string | null;
-  scheduled_execution_status: string | null;
-  scheduled_execution_error: string | null;
-  scheduled_execution_started_at?: string | null;
-  scheduled_execution_finished_at: string | null;
-  scheduled_execution_attempts: number;
-  asset_ids: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AdvancedAnalyticsPublishAttempt {
-  id: string;
-  provider: string;
-  action_type: string;
-  status: string;
-  content_item_id: string | null;
-  content_title: string;
-  safe_message: string;
-  external_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AdvancedAnalyticsTask {
-  id: string;
-  title: string;
-  agent_type: string;
-  status: string;
-  priority: string;
-  created_at: string;
-  updated_at: string;
-  completed_at: string | null;
-}
-
-export interface AdvancedAnalyticsProject {
-  id: string;
-  name: string;
-  status: string;
-  priority: string;
-  github_url: string | null;
-  production_url: string | null;
-  updated_at: string;
-  created_at: string;
-}
-
-export interface AdvancedAnalyticsRelease {
-  id: string;
-  title: string;
-  status: string;
-  release_type: string;
-  known_issues: string | null;
-  build_status: string | null;
-  lint_status: string | null;
-  typecheck_status: string | null;
-  deploy_status: string | null;
-  deploy_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AdvancedAnalyticsPrompt {
-  id: string;
-  title: string;
-  category: string;
-  target_tool: string | null;
-  is_favorite: boolean;
-  usage_count: number;
-  last_used_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AdvancedAnalyticsAsset {
-  id: string;
-  title: string;
-  asset_type: string;
-  status: string;
-  has_media: boolean;
-  is_video: boolean;
-  is_linked: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AdvancedAnalyticsProvider {
-  name: string;
-  status: string;
-  missing: string[];
-  nextAction: string;
-}
-
-export interface AdvancedAnalyticsBackup {
-  id: string;
-  categories: string[];
-  status: string;
-  warnings: string | null;
-  created_at: string;
-}
-
-export interface AdvancedAnalyticsSecurityLog {
-  id: string;
-  event_type: string;
-  severity: string;
-  title: string;
-  created_at: string;
-}
-
-export interface AdvancedAnalyticsSafePatchPlan {
-  id: string;
-  title: string;
-  status: string;
-  risk_level: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AdvancedAnalyticsCodeFixProposal {
-  id: string;
-  title: string;
-  issue_type: string;
-  severity: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AdvancedAnalyticsGitHubIssueLink {
-  id: string;
-  github_issue_number: number;
-  github_issue_title: string | null;
-  github_issue_state: string | null;
-  created_at: string;
-}
-
-export interface AdvancedAnalyticsPullRequestReview {
-  id: string;
-  pr_number: number;
-  pr_title: string | null;
-  risk_level: string;
-  recommendation: string;
-  created_at: string;
-}
-
-export interface AdvancedAnalyticsNotification {
-  id: string;
-  type: string;
-  severity: string;
-  title: string;
-  status: string;
-  created_at: string;
-}
-
-export interface AdvancedAnalyticsSystemHealth {
-  score: number;
-  label: string;
-  criticalBlockers: number;
-  needsSetup: number;
-  topActions: Array<{ id: string; title: string; href: string }>;
-}
-
-export interface AdvancedAnalyticsData {
-  workspaceName: string;
-  generatedAt: string;
-  contentItems: AdvancedAnalyticsContentItem[];
-  publishAttempts: AdvancedAnalyticsPublishAttempt[];
-  tasks: AdvancedAnalyticsTask[];
-  reviewsCount: number;
-  projects: AdvancedAnalyticsProject[];
-  releases: AdvancedAnalyticsRelease[];
-  prompts: AdvancedAnalyticsPrompt[];
-  creativeAssets: AdvancedAnalyticsAsset[];
-  providers: AdvancedAnalyticsProvider[];
-  backups: AdvancedAnalyticsBackup[];
-  securityLogs: AdvancedAnalyticsSecurityLog[];
-  safePatchPlans: AdvancedAnalyticsSafePatchPlan[];
-  codeFixProposals: AdvancedAnalyticsCodeFixProposal[];
-  githubIssueLinks: AdvancedAnalyticsGitHubIssueLink[];
-  pullRequestReviews: AdvancedAnalyticsPullRequestReview[];
-  notifications: AdvancedAnalyticsNotification[];
-  systemHealth: AdvancedAnalyticsSystemHealth | null;
-  schedulerConfigured: boolean;
-  schedulerLine: string;
-  optionalWarnings: string[];
-}
-
-interface NextAction {
-  priority: 'critical' | 'high' | 'medium' | 'low';
-  title: string;
-  reason: string;
-  href: string;
-  cta: string;
-}
-
-const dateRanges: Array<{ value: DateRangeFilter; label: string }> = [
-  { value: 'this_month', label: 'This month' },
-  { value: 'last_7_days', label: 'Last 7 days' },
-  { value: 'last_30_days', label: 'Last 30 days' },
-  { value: 'last_90_days', label: 'Last 90 days' },
-  { value: 'all_time', label: 'All time' },
-];
-
-const platforms: Array<{ value: PlatformFilter; label: string }> = [
-  { value: 'all', label: 'All platforms' },
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'facebook', label: 'Facebook' },
-  { value: 'google_ads', label: 'Google Ads' },
-  { value: 'pinterest', label: 'Pinterest' },
-  { value: 'linkedin', label: 'LinkedIn' },
-];
-
-const statuses: Array<{ value: StatusFilter; label: string }> = [
-  { value: 'all', label: 'All statuses' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'ready', label: 'Ready' },
-  { value: 'scheduled', label: 'Scheduled' },
-  { value: 'published', label: 'Published' },
-  { value: 'failed', label: 'Failed' },
-  { value: 'setup_required', label: 'Setup required' },
-  { value: 'approval_pending', label: 'Approval pending' },
-  { value: 'manual_only', label: 'Manual only' },
-];
-
-const tabs: Array<{ value: AnalyticsTab; label: string }> = [
-  { value: 'advanced', label: 'Advanced Analytics' },
-  { value: 'provider', label: 'Provider Analytics' },
-  { value: 'work', label: 'Work Analytics' },
-  { value: 'project', label: 'Project Analytics' },
-  { value: 'security', label: 'Security & Backup' },
-];
-
-function rangeStart(range: DateRangeFilter) {
-  const now = new Date();
-  if (range === 'all_time') return null;
-  if (range === 'this_month') return new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const days = range === 'last_7_days' ? 7 : range === 'last_30_days' ? 30 : 90;
-  return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-}
-
-function inRange(dateValue: string | null | undefined, range: DateRangeFilter) {
-  const start = rangeStart(range);
-  if (!start) return true;
-  if (!dateValue) return false;
-
-  const date = new Date(dateValue);
-  return !Number.isNaN(date.getTime()) && date >= start;
-}
-
-function itemMatchesStatus(item: AdvancedAnalyticsContentItem, status: StatusFilter) {
-  if (status === 'all') return true;
-  if (status === 'manual_only') {
-    return item.provider_status === 'manual_only' || item.content_type === 'linkedin_post_planner';
-  }
-  return item.status === status || item.provider_status === status || item.scheduled_execution_status === status;
-}
-
-function countBy<T>(items: T[], getKey: (item: T) => string | null | undefined) {
-  return items.reduce<Record<string, number>>((counts, item) => {
-    const key = getKey(item) || 'unknown';
-    counts[key] = (counts[key] ?? 0) + 1;
-    return counts;
-  }, {});
-}
-
-function topEntries(counts: Record<string, number>, limit = 6) {
-  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit);
-}
-
-function percent(value: number, total: number) {
-  if (total <= 0) return 0;
-  return Math.min(100, Math.round((value / total) * 100));
-}
-
-function label(value: string | null | undefined) {
-  if (!value) return 'Unknown';
-  return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function safeDashboardHref(href: string) {
-  return href === '/dashboard/provider-setup' ? '/dashboard/settings#provider-setup-wizard' : href;
-}
-
-function providerKey(provider: string) {
-  const normalized = provider.toLowerCase();
-  if (normalized.includes('google')) return 'Google Ads';
-  if (normalized.includes('instagram')) return 'Meta / Instagram / Facebook';
-  if (normalized.includes('facebook') || normalized.includes('meta')) return 'Meta / Instagram / Facebook';
-  if (normalized.includes('pinterest')) return 'Pinterest';
-  if (normalized.includes('linkedin')) return 'LinkedIn';
-  if (normalized.includes('scheduler')) return 'Scheduler';
-  if (normalized.includes('github')) return 'GitHub';
-  if (normalized.includes('openai')) return 'OpenAI';
-  return label(provider);
-}
-
-function safeMarkdownLine(value: string | null | undefined) {
-  return (value || 'None').replace(/\s+/g, ' ').slice(0, 220);
-}
-
-function buildNextActions(input: {
-  content: AdvancedAnalyticsContentItem[];
-  attempts: AdvancedAnalyticsPublishAttempt[];
-  tasks: AdvancedAnalyticsTask[];
-  projects: AdvancedAnalyticsProject[];
-  releases: AdvancedAnalyticsRelease[];
-  providers: AdvancedAnalyticsProvider[];
-  backups: AdvancedAnalyticsBackup[];
-  securityLogs: AdvancedAnalyticsSecurityLog[];
-  safePatchPlans: AdvancedAnalyticsSafePatchPlan[];
-  codeFixProposals: AdvancedAnalyticsCodeFixProposal[];
-  pullRequestReviews: AdvancedAnalyticsPullRequestReview[];
-  systemHealth: AdvancedAnalyticsSystemHealth | null;
-}) {
-  const actions: NextAction[] = [];
-  const blockedProviders = input.providers.filter(
-    (provider) => !['ready', 'manual_only'].includes(provider.status)
-  );
-  const readyMissingAssets = input.content.filter(
-    (item) => ['ready', 'scheduled'].includes(item.status) && item.asset_ids.length === 0
-  );
-  const failedContent = input.content.filter((item) =>
-    ['failed', 'setup_required', 'approval_pending'].includes(item.status)
-  );
-  const failedAttempts = input.attempts.filter((attempt) =>
-    ['failed', 'setup_required', 'approval_pending', 'token_missing', 'quota_limit'].includes(attempt.status)
-  );
-  const reviewTasks = input.tasks.filter((task) => task.status === 'needs_review');
-  const projectsMissingGithub = input.projects.filter((project) => !project.github_url);
-  const projectsMissingProduction = input.projects.filter((project) => !project.production_url);
-  const failedReleases = input.releases.filter(
-    (release) =>
-      release.status === 'failed' ||
-      release.build_status === 'failed' ||
-      release.lint_status === 'failed' ||
-      release.typecheck_status === 'failed' ||
-      release.deploy_status === 'failed'
-  );
-  const latestBackup = input.backups[0];
-  const backupIsStale = !latestBackup || !inRange(latestBackup.created_at, 'last_30_days');
-  const criticalSecurity = input.securityLogs.filter((log) => ['critical', 'high'].includes(log.severity));
-  const riskyPrReviews = input.pullRequestReviews.filter((review) =>
-    ['high', 'critical'].includes(review.risk_level)
-  );
-  const plansNeedingReview = input.safePatchPlans.filter((plan) => plan.status === 'needs_review');
-  const proposalsNeedingReview = input.codeFixProposals.filter((proposal) => proposal.status === 'needs_review');
-
-  if (criticalSecurity.length > 0 || (input.systemHealth?.criticalBlockers ?? 0) > 0) {
-    actions.push({
-      priority: 'critical',
-      title: 'Review critical security or system blockers',
-      reason: `${criticalSecurity.length} high-priority audit records and ${input.systemHealth?.criticalBlockers ?? 0} system blockers need attention.`,
-      href: '/dashboard/security',
-      cta: 'Open Security Center',
-    });
-  }
-
-  if (blockedProviders.length > 0 || failedAttempts.length > 0) {
-    actions.push({
-      priority: 'high',
-      title: 'Resolve provider setup blockers',
-      reason: `${blockedProviders.length} providers are not ready and ${failedAttempts.length} publish attempts need operator review.`,
-      href: '/dashboard/settings#provider-setup-wizard',
-      cta: 'Open Provider Setup',
-    });
-  }
-
-  if (failedContent.length > 0) {
-    actions.push({
-      priority: 'high',
-      title: 'Review failed or setup-blocked content',
-      reason: `${failedContent.length} content items are failed, setup_required, or approval_pending.`,
-      href: '/dashboard/recovery',
-      cta: 'Open Recovery Center',
-    });
-  }
-
-  if (reviewTasks.length > 0) {
-    actions.push({
-      priority: 'medium',
-      title: 'Clear tasks waiting for review',
-      reason: `${reviewTasks.length} pending review tasks are waiting on manager approval.`,
-      href: '/dashboard/tasks',
-      cta: 'Open Tasks',
-    });
-  }
-
-  if (readyMissingAssets.length > 0) {
-    actions.push({
-      priority: 'medium',
-      title: 'Attach creative assets to ready content',
-      reason: `${readyMissingAssets.length} ready or scheduled items have no linked creative asset.`,
-      href: '/dashboard/content-studio',
-      cta: 'Open Content Studio',
-    });
-  }
-
-  if (failedReleases.length > 0) {
-    actions.push({
-      priority: 'medium',
-      title: 'Stabilize failed releases',
-      reason: `${failedReleases.length} release records report failed release/build/lint/typecheck/deploy status.`,
-      href: '/dashboard/releases',
-      cta: 'Open Releases',
-    });
-  }
-
-  if (riskyPrReviews.length > 0) {
-    actions.push({
-      priority: 'medium',
-      title: 'Review risky pull request reports',
-      reason: `${riskyPrReviews.length} PR reviews are marked high or critical risk.`,
-      href: '/dashboard/projects',
-      cta: 'Open Projects',
-    });
-  }
-
-  if (plansNeedingReview.length > 0 || proposalsNeedingReview.length > 0) {
-    actions.push({
-      priority: 'medium',
-      title: 'Review safe patch and fix planning work',
-      reason: `${plansNeedingReview.length} safe patch plans and ${proposalsNeedingReview.length} fix proposals need review.`,
-      href: '/dashboard/safe-patch-planner',
-      cta: 'Open Safe Patch Planner',
-    });
-  }
-
-  if (projectsMissingGithub.length > 0 || projectsMissingProduction.length > 0) {
-    actions.push({
-      priority: 'low',
-      title: 'Complete project operational links',
-      reason: `${projectsMissingGithub.length} projects are missing GitHub URLs and ${projectsMissingProduction.length} are missing production URLs.`,
-      href: '/dashboard/projects',
-      cta: 'Open Projects',
-    });
-  }
-
-  if (backupIsStale) {
-    actions.push({
-      priority: 'low',
-      title: 'Create a fresh workspace backup',
-      reason: latestBackup
-        ? `Latest backup was created on ${formatDateTime(latestBackup.created_at)}.`
-        : 'No backup history is available yet.',
-      href: '/dashboard/backups',
-      cta: 'Open Backup Center',
-    });
-  }
-
-  return actions.sort((a, b) => {
-    const weights = { critical: 4, high: 3, medium: 2, low: 1 };
-    return weights[b.priority] - weights[a.priority];
-  });
-}
-
-function buildMarkdownReport(input: {
-  data: AdvancedAnalyticsData;
-  rangeLabel: string;
-  content: AdvancedAnalyticsContentItem[];
-  attempts: AdvancedAnalyticsPublishAttempt[];
-  tasks: AdvancedAnalyticsTask[];
-  projects: AdvancedAnalyticsProject[];
-  releases: AdvancedAnalyticsRelease[];
-  prompts: AdvancedAnalyticsPrompt[];
-  assets: AdvancedAnalyticsAsset[];
-  backups: AdvancedAnalyticsBackup[];
-  securityLogs: AdvancedAnalyticsSecurityLog[];
-  safePatchPlans: AdvancedAnalyticsSafePatchPlan[];
-  codeFixProposals: AdvancedAnalyticsCodeFixProposal[];
-  githubIssueLinks: AdvancedAnalyticsGitHubIssueLink[];
-  pullRequestReviews: AdvancedAnalyticsPullRequestReview[];
-  providers: AdvancedAnalyticsProvider[];
-  nextActions: NextAction[];
-}) {
-  const contentStatus = countBy(input.content, (item) => item.status);
-  const platformCounts = countBy(input.content, (item) => item.platform);
-  const attemptStatus = countBy(input.attempts, (attempt) => attempt.status);
-  const taskStatus = countBy(input.tasks, (task) => task.status);
-  const projectStatus = countBy(input.projects, (project) => project.status);
-  const releaseStatus = countBy(input.releases, (release) => release.status);
-  const promptCategories = countBy(input.prompts, (prompt) => prompt.category);
-  const blockerProviders = input.providers.filter((provider) => !['ready', 'manual_only'].includes(provider.status));
-
-  return [
-    '# AgentFlow AI Advanced Analytics Report',
-    '',
-    `- Generated: ${formatDateTime(input.data.generatedAt)}`,
-    `- Workspace: ${safeMarkdownLine(input.data.workspaceName)}`,
-    `- Date range: ${input.rangeLabel}`,
-    '',
-    '## Executive Summary',
-    `- Total content items: ${input.content.length}`,
-    `- Ready content: ${contentStatus.ready ?? 0}`,
-    `- Scheduled content: ${contentStatus.scheduled ?? 0}`,
-    `- Published content: ${contentStatus.published ?? 0}`,
-    `- Failed/setup required content: ${(contentStatus.failed ?? 0) + (contentStatus.setup_required ?? 0)}`,
-    `- Total tasks: ${input.tasks.length}`,
-    `- Completed tasks: ${taskStatus.completed ?? 0}`,
-    `- Tasks needing review: ${taskStatus.needs_review ?? 0}`,
-    `- Active projects: ${projectStatus.active ?? 0}`,
-    `- Deployed releases: ${releaseStatus.deployed ?? 0}`,
-    `- Provider blockers: ${blockerProviders.length}`,
-    '',
-    '## Content Analytics',
-    ...topEntries(platformCounts, 8).map(([key, value]) => `- ${label(key)}: ${value}`),
-    ...topEntries(contentStatus, 8).map(([key, value]) => `- Status ${label(key)}: ${value}`),
-    '',
-    '## Provider Blockers',
-    ...(blockerProviders.length > 0
-      ? blockerProviders.map((provider) => `- ${provider.name}: ${provider.status}. ${provider.nextAction}`)
-      : ['- No provider blockers detected in current data.']),
-    '',
-    '## Publishing Attempts',
-    ...topEntries(attemptStatus, 10).map(([key, value]) => `- ${label(key)}: ${value}`),
-    '',
-    '## Scheduler Summary',
-    `- Configured: ${input.data.schedulerConfigured ? 'yes' : 'no'}`,
-    `- ${input.data.schedulerLine}`,
-    '',
-    '## Task & Agent Analytics',
-    ...topEntries(taskStatus, 10).map(([key, value]) => `- ${label(key)}: ${value}`),
-    '',
-    '## Project & Release Analytics',
-    ...topEntries(projectStatus, 10).map(([key, value]) => `- Project ${label(key)}: ${value}`),
-    ...topEntries(releaseStatus, 10).map(([key, value]) => `- Release ${label(key)}: ${value}`),
-    '',
-    '## Prompt Library',
-    `- Total prompts: ${input.prompts.length}`,
-    ...topEntries(promptCategories, 8).map(([key, value]) => `- ${label(key)}: ${value}`),
-    '',
-    '## Backup, Security, System Health',
-    `- Backup records: ${input.backups.length}`,
-    `- Security audit records: ${input.securityLogs.length}`,
-    `- System health: ${input.data.systemHealth ? `${input.data.systemHealth.score}% (${input.data.systemHealth.label})` : 'not available'}`,
-    '',
-    '## Safe Patch, Code Fix, GitHub Workflow',
-    `- Safe patch plans: ${input.safePatchPlans.length}`,
-    `- Code fix proposals: ${input.codeFixProposals.length}`,
-    `- GitHub issues converted to tasks: ${input.githubIssueLinks.length}`,
-    `- Pull request reviews: ${input.pullRequestReviews.length}`,
-    '',
-    '## Next Best Actions',
-    ...(input.nextActions.length > 0
-      ? input.nextActions.map((action) => `- ${action.priority.toUpperCase()}: ${action.title}. ${action.reason}`)
-      : ['- No urgent next action detected from current records.']),
-    '',
-    '## Guardrails',
-    '- Metrics are operational records only.',
-    '- No fake impressions, clicks, spend, conversions, revenue, ROI, or engagement rates are included.',
-    '- Secrets, tokens, raw environment values, and provider credentials are not included.',
-  ].join('\n');
-}
-
-function MetricTile({
-  label: metricLabel,
-  value,
-  helper,
-  icon: Icon,
-}: {
-  label: string;
-  value: number | string;
-  helper?: string;
-  icon: typeof Layers3;
-}) {
-  return (
-    <div className="min-w-0 rounded-2xl border border-black/7 bg-white p-4 shadow-[0_14px_36px_rgba(93,107,107,0.06)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">{metricLabel}</p>
-          <p className="mt-2 break-words text-2xl font-black tracking-normal text-[#5D6B6B]">{value}</p>
-        </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D5E5E5]/72 text-[#F7CBCA]">
-          <Icon className="h-5 w-5" />
-        </span>
-      </div>
-      {helper ? <p className="mt-3 text-sm font-semibold leading-6 text-black/55">{helper}</p> : null}
-    </div>
-  );
-}
-
-function AnalyticsSection({
-  title,
-  description,
-  children,
-  action,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-2xl border border-black/7 bg-white/92 p-5 shadow-[0_18px_48px_rgba(93,107,107,0.07)]">
-      <div className="mb-5 flex min-w-0 flex-col gap-3 border-b border-black/6 pb-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h3 className="text-lg font-black text-[#5D6B6B]">{title}</h3>
-          {description ? <p className="mt-1 text-sm leading-6 text-black/58">{description}</p> : null}
-        </div>
-        {action ? <div className="flex max-w-full shrink-0 flex-wrap gap-2">{action}</div> : null}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function ProgressRow({ name, value, total }: { name: string; value: number; total: number }) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="min-w-0 whitespace-normal break-words text-sm font-bold text-black/70">{name}</span>
-        <span className="font-mono text-sm font-black text-[#5D6B6B]">{value}</span>
-      </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-[#F1F7F7] ring-1 ring-black/5">
-        <div className="h-full rounded-full bg-[#F7CBCA]" style={{ width: `${percent(value, total)}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function CountBars({ counts, total, emptyText }: { counts: Record<string, number>; total: number; emptyText: string }) {
-  const entries = topEntries(counts, 8);
-
-  if (entries.length === 0) {
-    return <EmptyState title={emptyText} />;
-  }
-
-  return (
-    <div className="space-y-4">
-      {entries.map(([key, value]) => (
-        <ProgressRow key={key} name={label(key)} value={value} total={total} />
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ title, helper }: { title: string; helper?: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-black/12 bg-[#F1F7F7]/62 p-6 text-center">
-      <p className="font-black text-[#5D6B6B]">{title}</p>
-      {helper ? <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-black/56">{helper}</p> : null}
-    </div>
-  );
-}
-
-function DataTable({
-  headers,
-  rows,
-  emptyText,
-}: {
-  headers: string[];
-  rows: string[][];
-  emptyText: string;
-}) {
-  if (rows.length === 0) {
-    return <EmptyState title={emptyText} />;
-  }
-
-  return (
-    <>
-    <div className="grid gap-3 md:hidden">
-      {rows.map((row) => (
-        <article key={row.join('|')} className="rounded-2xl border border-black/7 bg-white p-4">
-          <dl className="space-y-3">
-            {row.map((cell, index) => (
-              <div key={`${cell}-${index}`} className="min-w-0">
-                <dt className="text-xs font-black uppercase tracking-[0.1em] text-black/42">{headers[index]}</dt>
-                <dd className="mt-1 whitespace-normal break-words text-sm font-semibold leading-6 text-black/64">{cell}</dd>
-              </div>
-            ))}
-          </dl>
-        </article>
-      ))}
-    </div>
-    <div className="hidden overflow-x-auto rounded-2xl border border-black/7 md:block">
-      <table className="w-full min-w-[860px] table-auto divide-y divide-black/7 text-left text-sm">
-        <thead className="bg-[#F1F7F7]">
-          <tr>
-            {headers.map((header) => (
-              <th key={header} className="px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-black/45">
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-black/7 bg-white">
-          {rows.map((row) => (
-            <tr key={row.join('|')} className="align-top">
-              {row.map((cell, index) => (
-                <td key={`${cell}-${index}`} className="min-w-[9rem] max-w-[24rem] whitespace-normal break-words px-4 py-3 font-semibold leading-6 text-black/62">
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    </>
-  );
-}
+export type {
+  AdvancedAnalyticsContentItem,
+  AdvancedAnalyticsPublishAttempt,
+  AdvancedAnalyticsTask,
+  AdvancedAnalyticsProject,
+  AdvancedAnalyticsRelease,
+  AdvancedAnalyticsPrompt,
+  AdvancedAnalyticsAsset,
+  AdvancedAnalyticsProvider,
+  AdvancedAnalyticsBackup,
+  AdvancedAnalyticsSecurityLog,
+  AdvancedAnalyticsSafePatchPlan,
+  AdvancedAnalyticsCodeFixProposal,
+  AdvancedAnalyticsGitHubIssueLink,
+  AdvancedAnalyticsPullRequestReview,
+  AdvancedAnalyticsNotification,
+  AdvancedAnalyticsSystemHealth,
+  AdvancedAnalyticsData,
+} from './analytics-types';
 
 export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData }) {
   const [range, setRange] = useState<DateRangeFilter>('last_30_days');
@@ -759,143 +67,7 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
   const [activeTab, setActiveTab] = useState<AnalyticsTab>('advanced');
   const [copyState, setCopyState] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    const content = data.contentItems.filter(
-      (item) =>
-        inRange(item.updated_at || item.created_at, range) &&
-        (platform === 'all' || item.platform === platform) &&
-        itemMatchesStatus(item, status)
-    );
-    const contentIds = new Set(content.map((item) => item.id));
-    const attempts = data.publishAttempts.filter((attempt) => {
-      const platformMatch =
-        platform === 'all' ||
-        (attempt.content_item_id ? contentIds.has(attempt.content_item_id) : providerKey(attempt.provider).toLowerCase().includes(platform.replace('_', ' ')));
-      const statusMatch = status === 'all' || attempt.status === status;
-      return inRange(attempt.created_at, range) && platformMatch && statusMatch;
-    });
-    const tasks = data.tasks.filter((task) => inRange(task.updated_at || task.created_at, range));
-    const projects = data.projects.filter((project) => inRange(project.updated_at || project.created_at, range));
-    const releases = data.releases.filter((release) => inRange(release.updated_at || release.created_at, range));
-    const prompts = data.prompts.filter((prompt) => inRange(prompt.updated_at || prompt.created_at, range));
-    const assets = data.creativeAssets.filter((asset) => inRange(asset.updated_at || asset.created_at, range));
-    const backups = data.backups.filter((backup) => inRange(backup.created_at, range));
-    const securityLogs = data.securityLogs.filter((log) => inRange(log.created_at, range));
-    const safePatchPlans = data.safePatchPlans.filter((plan) => inRange(plan.updated_at || plan.created_at, range));
-    const codeFixProposals = data.codeFixProposals.filter((proposal) => inRange(proposal.updated_at || proposal.created_at, range));
-    const githubIssueLinks = data.githubIssueLinks.filter((link) => inRange(link.created_at, range));
-    const pullRequestReviews = data.pullRequestReviews.filter((review) => inRange(review.created_at, range));
-    const notifications = data.notifications.filter((notification) => inRange(notification.created_at, range));
-
-    return {
-      content,
-      attempts,
-      tasks,
-      projects,
-      releases,
-      prompts,
-      assets,
-      backups,
-      securityLogs,
-      safePatchPlans,
-      codeFixProposals,
-      githubIssueLinks,
-      pullRequestReviews,
-      notifications,
-    };
-  }, [data, platform, range, status]);
-
-  const analytics = useMemo(() => {
-    const contentStatusCounts = countBy(filtered.content, (item) => item.status);
-    const contentPlatformCounts = countBy(filtered.content, (item) => item.platform);
-    const contentTypeCounts = countBy(filtered.content, (item) => item.content_type);
-    const attemptStatusCounts = countBy(filtered.attempts, (attempt) => attempt.status);
-    const attemptProviderCounts = countBy(filtered.attempts, (attempt) => providerKey(attempt.provider));
-    const taskStatusCounts = countBy(filtered.tasks, (task) => task.status);
-    const taskPriorityCounts = countBy(filtered.tasks, (task) => task.priority);
-    const taskAgentCounts = countBy(filtered.tasks, (task) => task.agent_type);
-    const projectStatusCounts = countBy(filtered.projects, (project) => project.status);
-    const releaseStatusCounts = countBy(filtered.releases, (release) => release.status);
-    const releaseTypeCounts = countBy(filtered.releases, (release) => release.release_type);
-    const promptCategoryCounts = countBy(filtered.prompts, (prompt) => prompt.category);
-    const promptToolCounts = countBy(filtered.prompts, (prompt) => prompt.target_tool);
-    const assetTypeCounts = countBy(filtered.assets, (asset) => asset.asset_type);
-    const assetStatusCounts = countBy(filtered.assets, (asset) => asset.status);
-    const safePatchStatusCounts = countBy(filtered.safePatchPlans, (plan) => plan.status);
-    const safePatchRiskCounts = countBy(filtered.safePatchPlans, (plan) => plan.risk_level);
-    const codeFixIssueCounts = countBy(filtered.codeFixProposals, (proposal) => proposal.issue_type);
-    const codeFixSeverityCounts = countBy(filtered.codeFixProposals, (proposal) => proposal.severity);
-    const prRiskCounts = countBy(filtered.pullRequestReviews, (review) => review.risk_level);
-    const prRecommendationCounts = countBy(filtered.pullRequestReviews, (review) => review.recommendation);
-    const securitySeverityCounts = countBy(filtered.securityLogs, (log) => log.severity);
-    const notificationSeverityCounts = countBy(filtered.notifications, (notification) => notification.severity);
-    const providerBlockedItems = data.providers.map((provider) => {
-      const name = provider.name;
-      const providerContent = filtered.content.filter((item) => providerKey(item.platform) === providerKey(name) || name.toLowerCase().includes(item.platform.replace('_', ' ')));
-      const blockers = providerContent.filter((item) =>
-        ['failed', 'setup_required', 'approval_pending', 'manual_only'].includes(item.status) ||
-        ['failed', 'setup_required', 'approval_pending', 'manual_only'].includes(item.provider_status ?? '')
-      );
-
-      return {
-        provider: name,
-        status: provider.status,
-        blockedItems: blockers.length,
-        commonBlocker: provider.missing[0] || blockers[0]?.provider_error || provider.nextAction,
-        nextAction: provider.nextAction,
-      };
-    });
-    const nextActions = buildNextActions({
-      content: filtered.content,
-      attempts: filtered.attempts,
-      tasks: filtered.tasks,
-      projects: filtered.projects,
-      releases: filtered.releases,
-      providers: data.providers,
-      backups: data.backups,
-      securityLogs: filtered.securityLogs,
-      safePatchPlans: filtered.safePatchPlans,
-      codeFixProposals: filtered.codeFixProposals,
-      pullRequestReviews: filtered.pullRequestReviews,
-      systemHealth: data.systemHealth,
-    });
-    const markdownReport = buildMarkdownReport({
-      data,
-      rangeLabel: dateRanges.find((entry) => entry.value === range)?.label ?? 'Custom',
-      providers: data.providers,
-      nextActions,
-      ...filtered,
-    });
-
-    return {
-      contentStatusCounts,
-      contentPlatformCounts,
-      contentTypeCounts,
-      attemptStatusCounts,
-      attemptProviderCounts,
-      taskStatusCounts,
-      taskPriorityCounts,
-      taskAgentCounts,
-      projectStatusCounts,
-      releaseStatusCounts,
-      releaseTypeCounts,
-      promptCategoryCounts,
-      promptToolCounts,
-      assetTypeCounts,
-      assetStatusCounts,
-      safePatchStatusCounts,
-      safePatchRiskCounts,
-      codeFixIssueCounts,
-      codeFixSeverityCounts,
-      prRiskCounts,
-      prRecommendationCounts,
-      securitySeverityCounts,
-      notificationSeverityCounts,
-      providerBlockedItems,
-      nextActions,
-      markdownReport,
-    };
-  }, [data, filtered, range]);
+  const { filtered, analytics } = useAdvancedAnalytics(data, range, platform, status);
 
   const copyText = async (labelText: string, value: string) => {
     await navigator.clipboard.writeText(value);
@@ -926,7 +98,7 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
   const scheduledContent = filtered.content.filter((item) => item.status === 'scheduled').length;
   const publishedContent = filtered.content.filter((item) => item.status === 'published').length;
   const failedOrSetup = filtered.content.filter((item) =>
-    ['failed', 'setup_required'].includes(item.status)
+    ['failed', 'setup_required'].includes(item.status),
   ).length;
   const tasksNeedingReview = filtered.tasks.filter((task) => task.status === 'needs_review').length;
   const completedTasks = filtered.tasks.filter((task) => task.status === 'completed').length;
@@ -936,7 +108,7 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
   const securityIssues = filtered.securityLogs.filter((log) => ['critical', 'high', 'medium'].includes(log.severity)).length;
   const latestBackup = data.backups[0];
   const scheduledPending = filtered.content.filter(
-    (item) => item.status === 'scheduled' && (!item.scheduled_execution_status || item.scheduled_execution_status === 'pending')
+    (item) => item.status === 'scheduled' && (!item.scheduled_execution_status || item.scheduled_execution_status === 'pending'),
   ).length;
   const schedulerSucceeded = filtered.content.filter((item) => item.scheduled_execution_status === 'succeeded').length;
   const schedulerFailed = filtered.content.filter((item) => item.scheduled_execution_status === 'failed').length;
@@ -945,7 +117,7 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
   const missingSchedule = filtered.content.filter((item) => item.status === 'ready' && !item.schedule_at).length;
   const manualOnly = filtered.content.filter((item) => item.provider_status === 'manual_only' || item.content_type === 'linkedin_post_planner').length;
   const blockedByProvider = filtered.content.filter((item) =>
-    ['setup_required', 'approval_pending', 'failed', 'manual_only'].includes(item.provider_status ?? '')
+    ['setup_required', 'approval_pending', 'failed', 'manual_only'].includes(item.provider_status ?? ''),
   ).length;
   const unlinkedAssets = filtered.assets.filter((asset) => !asset.is_linked).length;
   const assetsMissingMedia = filtered.assets.filter((asset) => !asset.has_media).length;
@@ -1028,7 +200,7 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
               'shrink-0 rounded-lg border px-3 py-2 text-sm font-black transition-colors',
               activeTab === tab.value
                 ? 'border-[#F7CBCA] bg-[#F7CBCA] text-white'
-                : 'border-black/10 bg-white text-black/62 hover:border-[#F7CBCA]/35 hover:text-[#F7CBCA]'
+                : 'border-black/10 bg-white text-black/62 hover:border-[#F7CBCA]/35 hover:text-[#F7CBCA]',
             )}
           >
             {tab.label}
@@ -1115,20 +287,7 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
           </AnalyticsSection>
 
           <AnalyticsSection title="Next Best Actions" description="Ranked from real blockers, review queues, and setup status.">
-            <div className="space-y-3">
-              {analytics.nextActions.length > 0 ? analytics.nextActions.map((action) => (
-                <div key={`${action.priority}-${action.title}`} className="flex min-w-0 flex-col gap-3 rounded-2xl border border-black/7 bg-[#F1F7F7]/55 p-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="font-black text-[#5D6B6B]">{action.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-black/58">{action.reason}</p>
-                    <p className="mt-2 text-xs font-black uppercase tracking-[0.12em] text-[#F7CBCA]">{action.priority}</p>
-                  </div>
-                  <Link href={safeDashboardHref(action.href)} className={buttonStyles({ variant: 'outline', size: 'sm' })}>
-                    {action.cta}
-                  </Link>
-                </div>
-              )) : <EmptyState title="No urgent next actions detected" helper="The selected filters do not show urgent operational blockers." />}
-            </div>
+            <NextActionsList actions={analytics.nextActions} />
           </AnalyticsSection>
         </div>
       ) : null}
@@ -1286,10 +445,10 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
               <CountBars counts={analytics.securitySeverityCounts} total={filtered.securityLogs.length} emptyText="No security audit records yet" />
               <div className="space-y-3">
                 {(data.systemHealth?.topActions ?? []).length > 0 ? data.systemHealth?.topActions.map((action) => (
-                  <Link key={action.id} href={safeDashboardHref(action.href)} className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-black/7 bg-[#F1F7F7]/62 p-3 hover:bg-white">
+                  <a key={action.id} href={action.href} className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-black/7 bg-[#F1F7F7]/62 p-3 hover:bg-white">
                     <span className="min-w-0 truncate text-sm font-black text-[#5D6B6B]">{action.title}</span>
                     <ExternalLink className="h-4 w-4 shrink-0 text-[#F7CBCA]" />
-                  </Link>
+                  </a>
                 )) : <EmptyState title="No system health actions yet" />}
               </div>
             </div>

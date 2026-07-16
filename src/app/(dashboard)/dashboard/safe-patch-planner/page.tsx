@@ -29,7 +29,7 @@ export default async function SafePatchPlannerPage({
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
   const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
   const projectsResult = workspaceResult.data
-    ? await listProjectsForWorkspace(workspaceResult.data.id, supabase)
+    ? await listProjectsForWorkspace(workspaceResult.data.id, supabase, { limit: 200 })
     : { data: [], error: workspaceResult.error ?? 'Workspace not found.', isConfigured: true };
   const selectedProjectId =
     query.project && projectsResult.data.some((project) => project.id === query.project)

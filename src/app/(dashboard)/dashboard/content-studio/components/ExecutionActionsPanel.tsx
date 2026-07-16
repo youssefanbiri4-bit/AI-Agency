@@ -3,13 +3,11 @@
 import { CalendarClock, Copy, Send } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
-import { Notice } from '@/components/ui/Notice';
 import type { ContentStudioItemView } from '../shared';
 import type { ContentStudioType } from '@/types/database';
 import type { ProviderReadinessResult } from '@/lib/content-studio/provider-types';
 import {
   isMetaAdContentType,
-  providerActionLabel,
   providerActionProgressLabel,
   safeProviderActionLabel,
 } from '../ContentStudioClient';
@@ -30,7 +28,8 @@ interface ExecutionActionsPanelProps {
   selectedHasBudget: boolean;
   selectedMetaAdAccountName: string | null;
   selectedPinterestBoardName: string | null;
-  selectedAssets: ContentStudioItemView['asset_ids'] extends Array<infer T> ? Array<{ id: string; metadata?: Record<string, unknown> }> : never;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- conditional type inference
+  selectedAssets: ContentStudioItemView['asset_ids'] extends Array<infer _T> ? Array<{ id: string; metadata?: Record<string, unknown> }> : never;
   selectedPublicImageAsset: { id: string } | undefined;
   selectedSignedImageAsset: { id: string } | undefined;
   readCampaignString: (item: ContentStudioItemView | null, key: string) => string;
@@ -50,7 +49,6 @@ function ReadinessCheckCard({ label, status }: { label: string; status: string }
 
 export function ExecutionActionsPanel({
   selectedItem,
-  selectedType,
   selectedProviderReadiness,
   providerPending,
   savePending,

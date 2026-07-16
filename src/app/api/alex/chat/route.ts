@@ -8,6 +8,7 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkSlidingWindowRateLimit, buildUserRateLimitKey, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
 import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
 import { getRequestId, nowISO } from '@/lib/api-response';
 import {
@@ -260,6 +261,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // Fixed-window rate limit (existing)
     const limiter = await checkRateLimit({
       key: `alex-chat:${user.id}`,
       limit: ALEX_CHAT_RATE_LIMIT,
@@ -273,6 +275,30 @@ export async function POST(request: Request) {
         429,
         requestId
       );
+    }
+
+    // Sliding window rate limit for Alex chat (more accurate per-minute rate limiting)
+    const slidingLimiter = await checkSlidingWindowRateLimit({
+      key: buildUserRateLimitKey(user.id, RATE_LIMIT_ACTIONS.AI_CHAT),
+      limit: 15,
+      windowMs: 60_000, // 15 messages per minute
+    });
+
+    if (!slidingLimiter.allowed) {
+      return NextResponse.json({
+        error: 'Alex chat rate limit reached. Please wait a moment before sending another message.',
+        category: 'rate_limited',
+        requestId,
+        timestamp: nowISO(),
+        retryAfterMs: slidingLimiter.resetInMs,
+      }, {
+        status: 429,
+        headers: {
+          'X-Request-ID': requestId,
+          'Retry-After': String(Math.ceil(slidingLimiter.resetInMs / 1000)),
+          'X-RateLimit-Remaining': '0',
+        },
+      });
     }
 
     const apiKey = getOpenAIKey();

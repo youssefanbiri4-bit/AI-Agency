@@ -6,7 +6,6 @@ import { getClientIpFromHeaders, checkRateLimit } from '@/lib/rate-limit';
 import {
   evaluateSessionActivity,
   evaluateSessionIpMismatch,
-  invalidateOtherSessions,
   refreshAuthSession,
   signOutCurrentSession,
 } from '@/lib/auth/session-management';

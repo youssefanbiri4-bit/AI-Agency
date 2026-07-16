@@ -1,5 +1,9 @@
 import 'server-only';
 
+import {
+  withCircuitBreaker,
+  CIRCUIT_BREAKER_PROVIDERS,
+} from '@/lib/circuit-breaker';
 import { decryptToken, encryptToken } from '@/lib/ads/encryption';
 import {
   getGoogleAdsConfigReadiness,
@@ -151,11 +155,15 @@ async function loadGoogleAdsConnectionRow(workspaceId: string, userId: string) {
 }
 
 async function listAccessibleCustomers(accessToken: string) {
-  const response = await fetch(buildGoogleAdsApiUrl('/customers:listAccessibleCustomers'), {
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.GOOGLE_ADS_API,
+    () =>
+      fetch(buildGoogleAdsApiUrl('/customers:listAccessibleCustomers'), {
     method: 'GET',
-    headers: buildHeaders(accessToken),
-    cache: 'no-store',
-  });
+        headers: buildHeaders(accessToken),
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as GoogleAdsCustomersResponse | null;
 
   if (!response.ok || payload?.error) {
@@ -281,14 +289,18 @@ async function mutateGoogleAdsResource<TPayload extends Record<string, unknown>>
   accessToken: string;
   payload: TPayload;
 }) {
-  const response = await fetch(
-    buildGoogleAdsApiUrl(`/customers/${customerId}/${path.replace(/^\/+/, '')}`),
-    {
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.GOOGLE_ADS_API,
+    () =>
+      fetch(
+        buildGoogleAdsApiUrl(`/customers/${customerId}/${path.replace(/^\/+/, '')}`),
+        {
       method: 'POST',
       headers: buildHeaders(accessToken, true),
-      body: JSON.stringify(payload),
-      cache: 'no-store',
-    }
+          body: JSON.stringify(payload),
+          cache: 'no-store',
+        }
+      )
   );
   const data = (await response.json().catch(() => null)) as GoogleAdsMutateResponse | null;
 

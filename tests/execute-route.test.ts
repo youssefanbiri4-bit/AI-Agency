@@ -19,7 +19,7 @@ vi.mock('@/lib/data/tasks', async () => {
 
 const mockAdd = vi.fn();
 vi.mock('@/lib/queue/queues', () => ({
-  taskQueue: { add: (...args: unknown[]) => mockAdd(...args) },
+  getTaskQueue: () => ({ add: (...args: unknown[]) => mockAdd(...args) }),
 }));
 
 const VALID_WORKSPACE_ID = '550e8400-e29b-41d4-a716-446655440000';

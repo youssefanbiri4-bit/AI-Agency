@@ -9,8 +9,6 @@ import type { Database, WorkspaceMemberRecord, WorkspaceRecord } from '@/types/d
 import type {
   Department,
   RBACRole,
-  RBACPermissionContext,
-  PermissionAction,
 } from '@/types/auth';
 import { isDepartment } from '@/types/auth';
 import { cookies, headers } from 'next/headers';

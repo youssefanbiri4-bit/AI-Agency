@@ -52,7 +52,7 @@ describe('supabase-public-env', () => {
       expect(isForbiddenBrowserSupabaseKey('')).toBe(false);
     });
 
-    it('flags sk_ prefix as forbidden (e.g. Stripe secret keys)', () => {
+    it('flags sk_ prefix as forbidden (e.g. API secret keys)', () => {
       expect(isForbiddenBrowserSupabaseKey('sk_live_abc123')).toBe(true);
     });
   });

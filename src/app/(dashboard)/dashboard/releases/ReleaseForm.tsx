@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Input, Label, Select, Textarea } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
-import { useActionToast } from '@/components/ui/useActionToast';
+import { useActionToast } from '@/hooks/useActionToast';
 import { formatReleaseStatus, formatReleaseType, releaseStatuses, releaseTypes } from '@/lib/data/releases';
 import type { ProjectRecord, ReleaseRecord } from '@/types/database';
 import { createReleaseAction, updateReleaseAction, type ReleaseFormState } from './actions';

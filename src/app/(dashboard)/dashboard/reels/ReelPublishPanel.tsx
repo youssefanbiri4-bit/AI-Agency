@@ -10,7 +10,7 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Notice } from '@/components/ui/Notice';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { toast } from '@/components/ui/toast';
-import { useActionToast } from '@/components/ui/useActionToast';
+import { useActionToast } from '@/hooks/useActionToast';
 import type { InstagramPublishingState } from '@/lib/ads/instagram-publishing';
 import type { ReelStatus } from '@/types/database';
 

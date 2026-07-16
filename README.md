@@ -90,10 +90,9 @@ These are set in **Vercel → Production** only. Do not add them to `.env.local`
 | `PRODUCTION_AUDIT_DATE` | Audit timestamp |
 | `PRODUCTION_AUDIT_COMMIT_SHA` | Git commit SHA of the audited build |
 | `OPERATIONAL_LOG_VISIBILITY_CONFIRMED` | Confirms Vercel logs/deploy visibility for operators |
-| `STRIPE_ALLOW_LIVE_MODE` | Must be `true` to enable live Stripe keys |
 | `VERCEL_URL` | Auto-injected by Vercel — do not set manually |
 
-Provider OAuth variables (`META_*`, `GOOGLE_ADS_*`, `PINTEREST_*`) and `STRIPE_*` billing keys are only needed when enabling those integrations. See `.env.example` for the full list with comments.
+Provider OAuth variables (`META_*`, `GOOGLE_ADS_*`, `PINTEREST_*`) are only needed when enabling those integrations. See `.env.example` for the full list with comments.
 
 #### 5. Verify configuration
 

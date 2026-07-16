@@ -17,13 +17,14 @@ import {
   type CreateReelInput,
   type UpdateReelInput,
 } from '@/lib/data/reels';
-import { createTask } from '@/lib/data/tasks';
+import { createTask } from '@/features/tasks/data/tasks';
 import { createNotification } from '@/lib/data/notifications';
 import {
   checkInstagramPublishingReadiness,
   mapMetaErrorToSafeMessage,
   publishInstagramReel,
 } from '@/lib/ads/instagram-publishing';
+import { incrementUsage } from '@/lib/usage/quotas';
 import type { AgentType } from '@/types';
 import type { NotificationType, ReelRecord, ReelStatus } from '@/types/database';
 
@@ -843,6 +844,8 @@ export async function publishReelAction(
       publishResult.permalink || '',
       supabase
     );
+
+    await incrementUsage(workspace.id, 'reels_publishes', 1, user.id).catch(() => {});
 
     await createReelNotification({
       workspaceId: workspace.id,

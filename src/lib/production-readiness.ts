@@ -11,6 +11,7 @@ import { listBackupRecordsForWorkspace } from '@/lib/data/backup-records';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { checkRateLimit, getRateLimitStoreMode } from '@/lib/rate-limit';
+import { isRedisAvailable } from '@/lib/redis';
 import { setupBlockerMessage } from '@/lib/safe-messages';
 
 export type ProductionReadinessStatus = 'ready' | 'blocked' | 'warning';
@@ -583,6 +584,10 @@ export async function getProductionReadiness({
     },
     checkProductionAuditMarker(),
   ];
+  const rateLimitStoreMode = getRateLimitStoreMode();
+  const redisAvailable = isRedisAvailable();
+  const hasPersistentStore = rateLimitStoreMode === 'upstash' || rateLimitStoreMode === 'redis' || redisAvailable;
+
   const rateLimits: ProductionCheck[] = [
     {
       key: 'rate-limit:memory',
@@ -593,14 +598,27 @@ export async function getProductionReadiness({
     {
       key: 'rate-limit:persistent',
       label: 'Persistent rate limits',
-      status: getRateLimitStoreMode() === 'upstash' ? 'ready' : 'blocked',
-      message:
-        getRateLimitStoreMode() === 'upstash'
-          ? 'Upstash/Redis persistent rate limit env is configured.'
+      status: hasPersistentStore ? 'ready' : 'blocked',
+      message: hasPersistentStore
+        ? `Persistent rate limit store active (${rateLimitStoreMode}).`
+        : setupBlockerMessage({
+            missing: 'persistent Redis/Upstash rate limiting',
+            reason: 'serverless in-memory limits do not protect full production across instances',
+            next: 'set RATE_LIMIT_STORE=upstash with UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN, or set REDIS_HOST/REDIS_PORT for ioredis',
+          }),
+    },
+    {
+      key: 'rate-limit:redis-connection',
+      label: 'Redis connection status',
+      status: redisAvailable ? 'ready' : (getRateLimitStoreMode() === 'upstash' ? 'warning' : 'blocked'),
+      message: redisAvailable
+        ? 'Redis client is connected and ready.'
+        : getRateLimitStoreMode() === 'upstash'
+          ? 'Using Upstash REST (ioredis not required).'
           : setupBlockerMessage({
-              missing: 'persistent Redis/Upstash rate limiting',
-              reason: 'serverless in-memory limits do not protect full production across instances',
-              next: 'set RATE_LIMIT_STORE=upstash with UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN',
+              missing: 'reachable Redis instance',
+              reason: 'persistent sliding window, concurrency, and circuit breaker stores need Redis',
+              next: 'verify REDIS_HOST and REDIS_PORT env vars and ensure Redis is reachable',
             }),
     },
   ];

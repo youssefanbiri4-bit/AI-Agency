@@ -20,7 +20,7 @@ import { Button, buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Input, Label, Select, Textarea } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
-import { useActionToast } from '@/components/ui/useActionToast';
+import { useActionToast } from '@/hooks/useActionToast';
 import { cn } from '@/lib/utils';
 import type { SoftwareProjectPlan } from '@/lib/software-planner';
 import type { ProjectRecord } from '@/types/database';
@@ -234,7 +234,7 @@ export function SoftwarePlannerClient({ projects, selectedProjectId }: SoftwareP
             <Field name="authRequirement" label="Auth" placeholder="Supabase Auth" />
             <Field name="storageRequirement" label="File upload/storage" placeholder="Supabase Storage" />
             <Field name="aiRequirement" label="AI integration" placeholder="OpenAI server-side" />
-            <Field name="paymentRequirement" label="Payments" placeholder="Stripe later" />
+            <Field name="paymentRequirement" label="Payments" placeholder="Not needed for internal platform" />
             <Field name="deploymentTarget" label="Deployment target" placeholder="Vercel" />
             <Field name="integrationsNeeded" label="Integrations" placeholder="GitHub, Slack, email..." />
           </div>

@@ -6,10 +6,6 @@ import { reportAppError } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ ok: false, error: message }, { status });
-}
-
 export async function GET(request: Request) {
   const requestId = request?.headers?.get('X-Request-ID') ?? `req-${crypto.randomUUID().slice(0, 8)}`;
   try {

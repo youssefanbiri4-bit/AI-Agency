@@ -16,7 +16,7 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { getAgentById, listAgents } from '@/lib/data/agents';
-import { listTasks } from '@/lib/data/tasks';
+import { listTasks } from '@/features/tasks/data/tasks';
 import { getTaskStats } from '@/lib/stats';
 import type { AgentType } from '@/types';
 import { AgentAvatar } from '@/components/ui/AgentAvatar';

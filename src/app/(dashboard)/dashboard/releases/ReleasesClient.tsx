@@ -7,7 +7,9 @@ import { Button, buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input, Label, Select } from '@/components/ui/FormControls';
+import { PaginationControls } from '@/components/ui/PaginationControls';
 import { StatCard } from '@/components/ui/StatCard';
+import { usePagination } from '@/hooks/usePagination';
 import { toast } from '@/components/ui/toast';
 import { buildReleaseReport, formatReleaseType, getReleaseNextAction, releaseTypes } from '@/lib/data/releases';
 import { formatDateTime } from '@/lib/utils';
@@ -35,6 +37,18 @@ export function ReleasesClient({ releases, projects }: ReleasesClientProps) {
       return (!query || text.includes(query)) && (status === 'all' || release.status === status) && (type === 'all' || release.release_type === type);
     });
   }, [releases, search, status, type]);
+
+  const {
+    pageItems,
+    currentPage,
+    totalPages,
+    totalItems,
+    startIndex,
+    endIndex,
+    nextPage,
+    prevPage,
+    goToPage,
+  } = usePagination(filtered, 50);
 
   const copySummary = async (release: ReleaseRecord) => {
     await navigator.clipboard.writeText(buildReleaseReport(release, release.project_id ? projectNames.get(release.project_id) : null));
@@ -64,7 +78,7 @@ export function ReleasesClient({ releases, projects }: ReleasesClientProps) {
       {showForm && <ReleaseForm mode="create" projects={projects} onCancel={() => setShowForm(false)} />}
 
       <Card>
-        <CardHeader title="Release Records" description="Search and filter release documentation from real workspace rows." action={<span className="text-sm font-bold text-black/56">Showing {filtered.length} of {releases.length}</span>} />
+        <CardHeader title="Release Records" description="Search and filter release documentation from real workspace rows." action={<span className="text-sm font-bold text-black/56">{filtered.length === releases.length ? `${releases.length} release${releases.length === 1 ? '' : 's'}` : `Showing ${filtered.length} of ${releases.length}`}</span>} />
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
           <div className="relative"><Label htmlFor="release-search">Search releases</Label><Search className="pointer-events-none absolute bottom-3 end-3.5 h-4 w-4 text-black/34" /><Input id="release-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search title, phase, version, summary" /></div>
           <div><Label htmlFor="status-filter">Status</Label><Select id="status-filter" value={status} onChange={(event) => setStatus(event.target.value as 'all' | ReleaseStatus)}>{statuses.map((item) => <option key={item} value={item}>{item === 'all' ? 'All Statuses' : item.replace(/_/g, ' ')}</option>)}</Select></div>
@@ -75,8 +89,9 @@ export function ReleasesClient({ releases, projects }: ReleasesClientProps) {
       {releases.length === 0 ? (
         <EmptyState icon={Rocket} title="No releases yet" description="Create your first release record to track features, build results, deployment URLs, and rollback notes." action={<Button onClick={() => setShowForm(true)}>Create Release</Button>} />
       ) : (
+        <div>
         <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
-          {filtered.map((release) => (
+          {pageItems.map((release) => (
             <article key={release.id} className="card-lift rounded-lg border border-[#F7CBCA]/10 bg-white/90 p-5 shadow-[0_18px_42px_rgba(93,107,107,0.06)]">
               <h2 className="break-words text-lg font-black leading-snug text-[#5D6B6B]">{release.title}</h2>
               <div className="mt-3 flex flex-wrap gap-2"><ReleaseStatusBadge status={release.status} /><ReleaseTypeBadge type={release.release_type} /></div>
@@ -98,6 +113,17 @@ export function ReleasesClient({ releases, projects }: ReleasesClientProps) {
               </div>
             </article>
           ))}
+        </div>
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            onPrev={prevPage}
+            onNext={nextPage}
+            onGoToPage={goToPage}
+          />
         </div>
       )}
     </div>

@@ -10,6 +10,7 @@ import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
 import { hasPermission } from '@/lib/auth/rbac';
 import type { StrictWorkspaceRole } from '@/lib/permissions-matrix';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkWorkspaceUserRateLimit, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
 import {
   buildBrandKitGenerationContext,
   getBrandKitForWorkspace,
@@ -390,14 +391,27 @@ function assertCanGenerateAssets(role: StrictWorkspaceRole) {
 }
 
 async function assertCreativeGenerationLimit(workspaceId: string, userId: string) {
-  const limiter = await checkRateLimit({
+  // Fixed-window rate limit (existing)
+  const fixedLimiter = await checkRateLimit({
     key: `creative-generation:${workspaceId}:${userId}`,
     limit: 10,
     windowMs: 10 * 60 * 1000,
   });
 
-  if (!limiter.allowed) {
+  if (!fixedLimiter.allowed) {
     throw new Error('وصلتي للحد المؤقت لتوليد الأصول الإبداعية. عاود المحاولة بعد شوية.');
+  }
+
+  // Sliding window rate limit for AI image generation
+  const slidingLimiter = await checkWorkspaceUserRateLimit(
+    workspaceId,
+    userId,
+    RATE_LIMIT_ACTIONS.AI_GENERATE_IMAGE,
+    { limit: 5, windowMs: 60_000 } // 5 image generations per minute
+  );
+
+  if (!slidingLimiter.allowed) {
+    throw new Error(`AI image generation rate limit reached. Please wait ${Math.ceil(slidingLimiter.resetInMs / 1000)} seconds before retrying.`);
   }
 }
 

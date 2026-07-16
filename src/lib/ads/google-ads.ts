@@ -1,5 +1,10 @@
 import 'server-only';
 
+import {
+  withCircuitBreaker,
+  CIRCUIT_BREAKER_PROVIDERS,
+} from '@/lib/circuit-breaker';
+
 const GOOGLE_ADS_OAUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_OAUTH_TOKEN_URL = 'https://www.googleapis.com/oauth2/v3/token';
 const DEFAULT_GOOGLE_ADS_API_VERSION = 'v22';
@@ -410,7 +415,10 @@ export function getGoogleAdsCampaignMetricsFields() {
 async function fetchGoogleOAuthToken(
   body: URLSearchParams
 ): Promise<GoogleOAuthToken> {
-  const response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.GOOGLE_ADS,
+    () =>
+      fetch(GOOGLE_OAUTH_TOKEN_URL, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -418,7 +426,8 @@ async function fetchGoogleOAuthToken(
     },
     body,
     cache: 'no-store',
-  });
+      })
+  );
   const payload = (await response.json().catch(() => null)) as
     | GoogleOAuthTokenPayload
     | null;
@@ -501,11 +510,15 @@ export async function listAccessibleGoogleAdsCustomers(
   const env = getGoogleAdsEnv();
   const headers = buildGoogleAdsApiHeaders(accessToken, env);
 
-  const response = await fetch(buildGoogleAdsApiUrl('/customers:listAccessibleCustomers', env), {
-    method: 'GET',
-    headers,
-    cache: 'no-store',
-  });
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.GOOGLE_ADS_API,
+    () =>
+      fetch(buildGoogleAdsApiUrl('/customers:listAccessibleCustomers', env), {
+        method: 'GET',
+        headers,
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as
     | GoogleAdsAccessibleCustomersResponse
     | null;
@@ -632,16 +645,20 @@ export async function fetchGoogleAdsCampaignMetrics(
   }
 
   const env = getGoogleAdsEnv();
-  const response = await fetch(
-    buildGoogleAdsApiUrl(`/customers/${customerId}/googleAds:searchStream`, env),
-    {
-      method: 'POST',
-      headers: buildGoogleAdsApiHeaders(accessToken, env, { hasJsonBody: true }),
-      body: JSON.stringify({
-        query: buildGoogleAdsCampaignMetricsQuery(options.limit ?? 50),
-      }),
-      cache: 'no-store',
-    }
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.GOOGLE_ADS_API,
+    () =>
+      fetch(
+        buildGoogleAdsApiUrl(`/customers/${customerId}/googleAds:searchStream`, env),
+        {
+          method: 'POST',
+          headers: buildGoogleAdsApiHeaders(accessToken, env, { hasJsonBody: true }),
+          body: JSON.stringify({
+            query: buildGoogleAdsCampaignMetricsQuery(options.limit ?? 50),
+          }),
+          cache: 'no-store',
+        }
+      )
   );
   const payload = (await response.json().catch(() => null)) as unknown;
   const errorPayload = getGoogleAdsSearchStreamErrorPayload(payload);

@@ -1,29 +1,25 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { BookOpen, Filter, Layers3, Plus, Search } from 'lucide-react';
+import { Filter, Plus, Search } from 'lucide-react';
 import {
   createSupabaseServerClient,
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
+import { listContentStudioItemsForWorkspace } from '@/features/content-studio/data/content-studio';
 import { buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Input, Label, Select } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { formatDateTime } from '@/lib/utils';
 import {
   contentStudioStatusOptions,
   contentStudioTabOptions,
   contentStudioTypeOptions,
-  formatContentStudioPlatformLabel,
-  formatContentStudioTypeLabel,
-  getTabForContentType,
   type ContentStudioItemView,
   type ContentStudioTab,
 } from '../content-studio/shared';
+import { PaginatedContentLibraryTable } from './PaginatedContentLibraryTable';
 import type {
   ContentStudioPlatform,
   ContentStudioStatus,
@@ -64,32 +60,6 @@ function readStatus(value?: string): ContentStudioStatus | 'all' {
 function readContentType(value?: string): ContentStudioType | 'all' {
   const types = contentStudioTypeOptions.map((option) => option.value);
   return types.includes(value as ContentStudioType) ? (value as ContentStudioType) : 'all';
-}
-
-function buildStudioHref(item: ContentStudioItemView) {
-  const tab = getTabForContentType(item.content_type);
-  const params = new URLSearchParams({
-    item: item.id,
-  });
-
-  if (tab !== 'all') {
-    params.set('tab', tab);
-  }
-
-  return `/dashboard/content-studio?${params.toString()}`;
-}
-
-function actionTypeLabel(item: ContentStudioItemView) {
-  if (item.status === 'setup_required') return 'Setup Required';
-  if (item.status === 'approval_pending') return 'Approval Pending';
-  if (item.content_type === 'linkedin_post_planner') return 'Manual-only / Copy LinkedIn Package';
-  if (item.content_type === 'google_ads_campaign_draft') return 'Create Paused Google Ads Campaign Draft';
-  if (item.content_type === 'pinterest_pin') return 'Publish to Pinterest';
-  if (item.content_type === 'facebook_post') return 'Publish to Facebook Page';
-  if (item.content_type === 'instagram_post') return 'Publish to Instagram';
-  if (item.content_type === 'instagram_reel') return 'Publish Reel to Instagram';
-  if (item.content_type.includes('_ad')) return 'Create Paused Meta Ad Draft';
-  return 'Unsupported';
 }
 
 function itemMatchesQuery(item: ContentStudioItemView, query: string) {
@@ -134,7 +104,7 @@ export default async function ContentLibraryPage({ searchParams }: ContentLibrar
     redirect('/onboarding');
   }
 
-  const itemsResult = await listContentStudioItemsForWorkspace(workspaceResult.data.id, supabase);
+  const itemsResult = await listContentStudioItemsForWorkspace(workspaceResult.data.id, supabase, { limit: 500 });
   const items = (itemsResult.error ? [] : itemsResult.data).filter((item) => {
     if (platform !== 'all' && item.platform !== platform) return false;
     if (status !== 'all' && item.status !== status) return false;
@@ -230,86 +200,7 @@ export default async function ContentLibraryPage({ searchParams }: ContentLibrar
         </form>
       </Card>
 
-      <Card>
-        <CardHeader
-          title="Saved Content Items"
-          description={`${items.length} item${items.length === 1 ? '' : 's'} match the current filters.`}
-          action={<BookOpen className="h-5 w-5 text-[#F7CBCA]" />}
-        />
-
-        {items.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-black/10 bg-[#D5E5E5]/28 px-5 py-12 text-center">
-            <Layers3 className="mx-auto h-10 w-10 text-[#F7CBCA]" />
-            <p className="mt-4 text-base font-bold text-black">No content items match this library view</p>
-            <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-black/54">
-              Create a platform draft in Content & Ads Studio, then return here to manage saved items, linked assets, provider status, and planned times.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] border-separate border-spacing-0 text-left text-sm">
-              <thead>
-                <tr className="bg-[#F1F7F7] text-xs font-black uppercase tracking-[0.14em] text-black/42">
-                  <th className="rounded-l-xl border-y border-l border-black/7 px-3 py-3">Item</th>
-                  <th className="border-y border-black/7 px-3 py-3">Platform</th>
-                  <th className="border-y border-black/7 px-3 py-3">Content Type</th>
-                  <th className="border-y border-black/7 px-3 py-3">Status</th>
-                  <th className="border-y border-black/7 px-3 py-3">Provider</th>
-                  <th className="border-y border-black/7 px-3 py-3">Assets</th>
-                  <th className="border-y border-black/7 px-3 py-3">Planned Time</th>
-                  <th className="border-y border-black/7 px-3 py-3">Safe Action</th>
-                  <th className="rounded-r-xl border-y border-r border-black/7 px-3 py-3">Open</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className="align-top transition-colors hover:bg-[#F1F7F7]/75">
-                    <td className="border-b border-black/6 px-3 py-4">
-                      <Link href={buildStudioHref(item)} className="font-black text-[#5D6B6B] hover:text-[#F7CBCA]">
-                        {item.title}
-                      </Link>
-                      <p className="mt-1 max-w-[260px] text-xs leading-5 text-black/46">
-                        Updated {formatDateTime(item.updated_at)}
-                      </p>
-                    </td>
-                    <td className="border-b border-black/6 px-3 py-4 font-bold text-black/64">
-                      {formatContentStudioPlatformLabel(item.platform)}
-                    </td>
-                    <td className="border-b border-black/6 px-3 py-4 text-black/62">
-                      {formatContentStudioTypeLabel(item.content_type)}
-                    </td>
-                    <td className="border-b border-black/6 px-3 py-4">
-                      <StatusBadge status={item.status} type="task" size="sm" />
-                    </td>
-                    <td className="border-b border-black/6 px-3 py-4">
-                      <span className="font-semibold text-black/62">
-                        {item.provider_status?.replace(/_/g, ' ') || 'not checked'}
-                      </span>
-                      {item.provider_error ? (
-                        <p className="mt-1 max-w-[220px] text-xs leading-5 text-black/46">{item.provider_error}</p>
-                      ) : null}
-                    </td>
-                    <td className="border-b border-black/6 px-3 py-4 font-mono text-sm font-black text-[#5D6B6B]">
-                      {item.asset_count}
-                    </td>
-                    <td className="border-b border-black/6 px-3 py-4 text-black/62">
-                      {item.schedule_at ? formatDateTime(item.schedule_at) : 'Not planned'}
-                    </td>
-                    <td className="border-b border-black/6 px-3 py-4 text-black/62">
-                      {actionTypeLabel(item)}
-                    </td>
-                    <td className="border-b border-black/6 px-3 py-4">
-                      <Link href={buildStudioHref(item)} className={buttonStyles({ variant: 'outline', size: 'sm' })}>
-                        Open/Edit
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      <PaginatedContentLibraryTable items={items} />
     </div>
   );
 }

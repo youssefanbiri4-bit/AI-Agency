@@ -27,6 +27,7 @@ const creativeAssetsLog = logger.child('data:creative-assets');
 
 export interface ListCreativeAssetsOptions {
   limit?: number;
+  offset?: number;
   includeSignedUrls?: boolean;
   /** @deprecated Not used in the query yet — reserved for RBAC scoping */
   departmentScope?: unknown;
@@ -171,6 +172,10 @@ export async function listCreativeAssetsForWorkspace(
 
   if (options.limit && options.limit > 0) {
     query = query.limit(options.limit);
+  }
+
+  if (options.offset && options.offset > 0 && options.limit && options.limit > 0) {
+    query = query.range(options.offset, options.offset + options.limit - 1);
   }
 
   const { data, error } = await query;

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, ClipboardCheck, CopyPlus, ExternalLink, FileText, GitBranch, Workflow, Zap } from 'lucide-react';
 import { RunTaskButton } from '@/components/tasks/RunTaskButton';
-import { buildTaskExecutionPayload } from '@/lib/tasks/execution-payload';
+import { buildTaskExecutionPayload } from '@/features/tasks/service/execution-payload';
 import { TaskProcessingPoller } from './TaskProcessingPoller';
 import { ReviewForm } from '../../review/ReviewForm';
 import {
@@ -9,7 +9,7 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { getTaskById } from '@/lib/data/tasks';
+import { getTaskById } from '@/features/tasks/data/tasks';
 import { listAgents } from '@/lib/data/agents';
 import { listTaskReviews } from '@/lib/data/reviews';
 import { ReviewHistory } from '@/components/reviews/ReviewHistory';
@@ -73,7 +73,7 @@ export default async function TaskDetailsPage({
   const userRole = rbacCtx.data?.rbacRole || 'viewer';
   const canExecute = hasPermission(userRole, 'operator');
   const canReview = hasPermission(userRole, 'operator');
-  const canManage = hasPermission(userRole, 'admin');
+
 
   const githubInput =
     task.input_data?.source === 'github_issue' &&

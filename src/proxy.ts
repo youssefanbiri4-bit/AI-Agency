@@ -2,57 +2,15 @@ import { createServerClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/types/database';
 import { logger } from '@/lib/logger';
+import {
+  applySecurityHeaders,
+  buildContentSecurityPolicy,
+  createNonce,
+} from '@/lib/security/security-headers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const PROXY_AUTH_TIMEOUT_MS = 4_000;
-
-function createNonce() {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-function buildContentSecurityPolicy(nonce: string) {
-  const directives = [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "frame-ancestors 'none'",
-    "form-action 'self'",
-    "object-src 'none'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    `style-src 'self' 'nonce-${nonce}'`,
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co https://api.openai.com https://graph.facebook.com https://graph.instagram.com https://oauth2.googleapis.com https://googleads.googleapis.com https://api.pinterest.com https://api.github.com",
-    "media-src 'self' blob: https:",
-    "worker-src 'self' blob:",
-    "upgrade-insecure-requests",
-  ];
-
-  return directives.join('; ');
-}
-
-function applySecurityHeaders(response: NextResponse, contentSecurityPolicy: string | undefined) {
-  // Set security headers that should always be present
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set(
-    'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()'
-  );
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-DNS-Prefetch-Control', 'on');
-  // Hide powered by header
-  response.headers.set('X-Powered-By', '');
-   
-  // Only set CSP if provided (for HTML requests)
-  if (contentSecurityPolicy) {
-    response.headers.set('Content-Security-Policy', contentSecurityPolicy);
-  }
-   
-  return response;
-}
 
 function createTimeoutFetch(timeoutMs = PROXY_AUTH_TIMEOUT_MS): typeof fetch {
   return async (input, init = {}) => {

@@ -34,11 +34,9 @@ The `Task` type does not have an `agent_department` field (not in DB schema). Re
 ### 5. `src/types/database.ts` — Added `usage_events` table definition
 The `usage_events` table existed in SQL migrations but was missing from the TypeScript database types. Added Row/Insert/Update/Relationships matching the migration schema (`20260705000001_create_usage_events.sql`).
 
-### 6. `src/lib/stripe-server.ts` — Updated Stripe API version
-The installed `stripe` package (v22) expects `apiVersion: '2026-06-24.dahlia'`, not the outdated `'2026-04-22.dahlia'`.
+### 6. `src/lib/stripe-server.ts` — Removed (internal platform, no Stripe)
 
 ### 7. Installed missing npm packages
-- `stripe` (was in package.json but not installed)
 - `@supabase/ssr` (required by `src/lib/auth/session-cookie-writer.ts` and `src/lib/auth/session-cookies.ts`)
 
 ---
@@ -89,5 +87,4 @@ All fixes are type-level corrections and missing exports. No business logic, UI,
 | `src/lib/data/tasks.ts` | Added `agentDepartment`, `userId`, `departmentScope` to types |
 | `src/lib/tasks/task-service.ts` | Removed non-existent `task.agent_department` reference |
 | `src/types/database.ts` | Added `usage_events` table type definition |
-| `src/lib/stripe-server.ts` | Updated Stripe API version string |
-| `package.json` | (dependency install — stripe, @supabase/ssr) |
+| `src/lib/stripe-server.ts` | Removed — internal platform has no Stripe |

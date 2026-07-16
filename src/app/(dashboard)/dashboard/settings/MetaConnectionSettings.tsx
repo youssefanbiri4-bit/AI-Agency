@@ -8,7 +8,7 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Label, Select } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { useActionToast } from '@/components/ui/useActionToast';
+import { useActionToast } from '@/hooks/useActionToast';
 import {
   getMetaConnectionSettingsAction,
   selectMetaAdAccountAction,

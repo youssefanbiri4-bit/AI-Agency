@@ -17,6 +17,24 @@ interface LogContext {
   [key: string]: unknown; // Allow arbitrary context properties
 }
 
+/**
+ * Lazy import of Sentry to keep logger tree-shakeable.
+ * Sentry integration is best-effort — never blocks logging.
+ */
+let sentryModule: typeof import('@sentry/nextjs') | null = null;
+let sentryLoadAttempted = false;
+
+async function getSentry() {
+  if (sentryLoadAttempted) return sentryModule;
+  sentryLoadAttempted = true;
+  try {
+    sentryModule = await import('@sentry/nextjs');
+  } catch {
+    // Sentry not available — logger works without it
+  }
+  return sentryModule;
+}
+
 function redactSensitiveValue(key: string, value: unknown): unknown {
   const lowerKey = key.toLowerCase();
 
@@ -66,7 +84,7 @@ function generateRequestId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
 
-// Default logger implementation (writes to console)
+// Default logger implementation (writes to console + Sentry)
 // In production, this could be overridden to send logs to a centralized system (e.g., Datadog, CloudWatch)
 function consoleLogger(context: LogContext): void {
   const timestamp = new Date(context.timestamp).toISOString();
@@ -100,15 +118,36 @@ function consoleLogger(context: LogContext): void {
       break;
     case LogLevel.Info:
       console.info(logOutput);
+      // Forward info events to Sentry as breadcrumbs
+      getSentry().then((s) => {
+        if (s?.addBreadcrumb) {
+          s.addBreadcrumb({ category: 'log', message: context.message, level: 'info', data: logOutput, timestamp: Date.now() / 1000 });
+        }
+      });
       break;
     case LogLevel.Warn:
       console.warn(logOutput);
+      getSentry().then((s) => {
+        if (s?.captureMessage) {
+          s.captureMessage(context.message, { level: 'warning', tags: { requestId: context.requestId, traceId: context.traceId }, extra: logOutput });
+        }
+      });
       break;
     case LogLevel.Error:
       console.error(logOutput);
+      getSentry().then((s) => {
+        if (s?.captureMessage) {
+          s.captureMessage(context.message, { level: 'error', tags: { requestId: context.requestId, traceId: context.traceId }, extra: logOutput });
+        }
+      });
       break;
     case LogLevel.Fatal:
-      console.error(logOutput); // Fatal often logged as error, then process might exit
+      console.error(logOutput);
+      getSentry().then((s) => {
+        if (s?.captureMessage) {
+          s.captureMessage(context.message, { level: 'fatal', tags: { requestId: context.requestId, traceId: context.traceId }, extra: logOutput });
+        }
+      });
       break;
     default:
       console.log(logOutput);
@@ -191,6 +230,17 @@ export function reportAppError(
       errorMessage,
       errorStack,
       ...(metadata && { metadata }),
+    });
+
+    // Send to Sentry for error tracking
+    const err = error instanceof Error ? error : new Error(errorMessage);
+    getSentry().then((s) => {
+      if (s?.captureException) {
+        s.captureException(err, {
+          tags: { requestId: metadata?.requestId as string, traceId: metadata?.traceId as string },
+          extra: metadata,
+        });
+      }
     });
   } catch (logError) {
     // Prevent logging failures from crashing the app

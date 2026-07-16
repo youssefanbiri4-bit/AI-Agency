@@ -96,7 +96,7 @@ A comprehensive audit of the AgentFlow AI production infrastructure has been com
 | Meta / Facebook / Instagram Ads | OAuth + env vars |
 | Google Ads | OAuth + developer token + env vars |
 | Pinterest | OAuth + env vars |
-| Stripe | Dependency present (optional) |
+| Stripe | Not used (internal platform — no commercial billing) |
 | Sentry | Configured (client + server) |
 
 ### Monitoring Stack
@@ -339,7 +339,7 @@ A comprehensive audit of the AgentFlow AI production infrastructure has been com
 | `bullmq` | ^5.77.4 | ✅ Recent |
 | `ioredis` | ^5.11.0 | ✅ Recent |
 | `zod` | ^4.4.3 | ✅ Latest |
-| `stripe` | ^22.1.1 | 🔍 May be unused — investigate |
+| `stripe` | ~~^22.1.1~~ Removed (internal platform) | 🔍 Removed — internal platform has no billing |
 | `server-only` | ^0.0.1 | ✅ For server-only enforcement |
 | `node-cache` | ^5.1.2 | 🔍 Appears unused in codebase |
 
@@ -361,7 +361,7 @@ npm audit --omit=dev → found 0 vulnerabilities ✅
 | Issue | Severity | Status |
 |---|---|---|
 | Zero vulnerabilities | ✅ | Pass |
-| `stripe` dependency may be unused | Low | Open (investigate) |
+| `stripe` dependency removed — internal platform has no commercial billing | Low | Closed (removed) |
 | `node-cache` dependency may be unused | Low | Open (investigate) |
 | `postcss` overridden to 8.5.14 — verify necessity | Low | Open |
 
@@ -481,7 +481,7 @@ Only real, actionable issues are listed below. All are low-severity and appropri
 | 4 | No circuit breaker pattern for downstream services | Low | Production Readiness |
 | 5 | No Core Web Vitals monitoring configured | Low | Performance |
 | 6 | No OpenTelemetry tracing integration | Low | Observability |
-| 7 | `stripe` and `node-cache` dependencies may be unused | Low | Package Health |
+| 7 | `stripe` dependency removed — internal platform has no commercial billing | Low | Closed (removed) |
 
 ---
 

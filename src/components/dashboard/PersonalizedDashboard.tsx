@@ -16,7 +16,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useRBAC } from '@/components/layout/DashboardContext';
-import { DEPARTMENT_LABELS, getRoleLabel, type RBACRole, type Department } from '@/types/auth';
+import { DEPARTMENT_LABELS, getRoleLabel, type RBACRole } from '@/types/auth';
 import { buttonStyles } from '@/components/ui/Button';
 import { formatTimeAgo } from '@/lib/utils';
 import type {
@@ -106,21 +106,21 @@ export function PersonalizedDashboard({
   const quickActions = getQuickActions();
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-2xl border border-black/7 bg-white/90 p-6 shadow-[0_24px_70px_rgba(93,107,107,0.08)] sm:p-8">
+    <div className="space-y-10">
+      <section className="rounded-2xl border border-border bg-surface-elevated p-6 shadow-[0_24px_70px_rgba(93,107,107,0.08)]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="mb-2 flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#F7CBCA]/20 bg-[#F1F7F7] px-3 py-1 text-xs font-bold tracking-[0.5px] text-[#5D6B6B]">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-surface px-3 py-1 text-xs font-bold tracking-[0.5px] text-foreground-muted">
                 {roleLabel} {activeDept ? '·' : ''} {deptInfo ? deptInfo.en : 'Workspace'}
               </span>
               {activeDept ? (
-                <span className="text-xs text-black/50">Department: {deptInfo?.ar}</span>
+                <span className="text-xs text-foreground-muted">Department: {deptInfo?.ar}</span>
               ) : null}
-            </div>              <h1 className="text-3xl font-black tracking-[-0.4px] text-[#5D6B6B] sm:text-4xl text-wrap-balance">
+            </div>              <h1 className="text-3xl font-black tracking-[-0.4px] text-foreground sm:text-4xl text-wrap-balance">
               Good to see you, {welcomeName}.
             </h1>
-            <p className="mt-2 max-w-2xl text-base text-black/60 text-wrap-pretty">{getWelcomeMessage()}</p>
+            <p className="mt-2 max-w-2xl text-base text-foreground-muted text-wrap-pretty">{getWelcomeMessage()}</p>
           </div>
 
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -136,36 +136,36 @@ export function PersonalizedDashboard({
 
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="lg:col-span-5">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-black text-[#5D6B6B]">My Tasks</h2>
-              <p className="text-sm text-black/55">Tasks you created in this workspace.</p>
+              <h2 className="text-lg font-black text-foreground">My Tasks</h2>
+              <p className="text-sm text-foreground-muted">Tasks you created in this workspace.</p>
             </div>
-            <Link href="/dashboard/tasks" className="text-sm font-bold text-[#F7CBCA] hover:underline">
+            <Link href="/dashboard/tasks" className="text-sm font-bold text-primary hover:underline">
               See all →
             </Link>
           </div>
 
-          <div className="rounded-2xl border border-black/7 bg-white/90 p-4 shadow-sm">
+          <div className="rounded-2xl border border-border bg-surface-elevated p-4 shadow-sm">
             {myTasks.length > 0 ? (
               <ul className="space-y-2">
                 {myTasks.slice(0, 4).map((task) => (
                   <li key={task.id}>
                     <Link
                       href={task.href}
-                      className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm hover:bg-[#F1F7F7]"
+                      className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-surface"
                     >
                       <span className="truncate font-medium">{task.title}</span>
-                      <span className="rounded bg-black/5 px-2 py-0.5 text-xs text-black/60">{task.status}</span>
+                      <span className="rounded bg-surface px-2 py-1 text-xs text-foreground-muted">{task.status}</span>
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
               <div className="flex flex-col items-center justify-center py-6 text-center">
-                <ClipboardList className="h-8 w-8 text-black/30" />
-                <p className="mt-3 text-sm font-medium text-black/70">No tasks created by you yet.</p>
-                <Link href="/dashboard/create-task" className="mt-3 text-sm text-[#F7CBCA] underline">
+                <ClipboardList className="h-8 w-8 text-foreground-muted/40" />
+                <p className="mt-3 text-sm font-medium text-foreground-muted">No tasks created by you yet.</p>
+                <Link href="/dashboard/create-task" className="mt-2 text-sm text-primary underline">
                   Create your first task
                 </Link>
               </div>
@@ -175,39 +175,39 @@ export function PersonalizedDashboard({
 
         <div className="lg:col-span-4">
           <div className="mb-3">
-            <h2 className="text-lg font-black text-[#5D6B6B]">Department Stats</h2>
-            <p className="text-sm text-black/55">
+            <h2 className="text-lg font-black text-foreground">Department Stats</h2>
+            <p className="text-sm text-foreground-muted">
               {activeDept ? DEPARTMENT_LABELS[activeDept].en : 'Workspace'} overview
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <div className="rounded-xl border border-black/7 bg-white/90 p-4">
-              <div className="flex items-center gap-3">
-                <ClipboardList className="h-5 w-5 shrink-0 text-[#F7CBCA]" />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="rounded-xl border border-border bg-surface-elevated p-4">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 shrink-0 text-primary" />
                 <div className="min-w-0">
-                  <div className="text-2xl font-black text-[#5D6B6B]">{deptStats.yourTasks}</div>
-                  <div className="truncate text-xs uppercase tracking-widest text-black/50">Your Tasks</div>
+                  <div className="text-2xl font-black text-foreground">{deptStats.yourTasks}</div>
+                  <div className="truncate text-xs uppercase tracking-widest text-foreground-muted">Your Tasks</div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-black/7 bg-white/90 p-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
+            <div className="rounded-xl border border-border bg-surface-elevated p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
                 <div className="min-w-0">
-                  <div className="text-2xl font-black text-[#5D6B6B]">{deptStats.readyInDept}</div>
-                  <div className="truncate text-xs uppercase tracking-widest text-black/50">Ready Content</div>
+                  <div className="text-2xl font-black text-foreground">{deptStats.readyInDept}</div>
+                  <div className="truncate text-xs uppercase tracking-widest text-foreground-muted">Ready Content</div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-black/7 bg-white/90 p-4">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 shrink-0 text-[#F7CBCA]" />
+            <div className="rounded-xl border border-border bg-surface-elevated p-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
                 <div className="min-w-0">
-                  <div className="text-2xl font-black text-[#5D6B6B]">{deptStats.needsReview}</div>
-                  <div className="truncate text-xs uppercase tracking-widest text-black/50">Needs Review</div>
+                  <div className="text-2xl font-black text-foreground">{deptStats.needsReview}</div>
+                  <div className="truncate text-xs uppercase tracking-widest text-foreground-muted">Needs Review</div>
                 </div>
               </div>
             </div>
@@ -216,8 +216,8 @@ export function PersonalizedDashboard({
 
         <div className="lg:col-span-3">
           <div className="mb-3">
-            <h2 className="text-lg font-black text-[#5D6B6B]">Quick Actions</h2>
-            <p className="text-sm text-black/55">Tailored for {roleLabel}s</p>
+            <h2 className="text-lg font-black text-foreground">Quick Actions</h2>
+            <p className="text-sm text-foreground-muted">Tailored for {roleLabel}s</p>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -241,11 +241,11 @@ export function PersonalizedDashboard({
         </div>
       </div>
 
-      <section className="rounded-2xl border border-black/7 bg-white/90 p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-3">
+      <section className="rounded-2xl border border-border bg-surface-elevated p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-2">
           <div>
-            <h2 className="text-lg font-black text-[#5D6B6B]">Recent Activity</h2>
-            <p className="text-sm text-black/55">Latest tasks and content items tied to your work.</p>
+            <h2 className="text-lg font-black text-foreground">Recent Activity</h2>
+            <p className="text-sm text-foreground-muted">Latest tasks and content items tied to your work.</p>
           </div>
         </div>
 
@@ -255,23 +255,23 @@ export function PersonalizedDashboard({
               <li key={item.id}>
                 <Link
                   href={item.href}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-black/5 px-3 py-2.5 hover:bg-[#F1F7F7]"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-divider px-3 py-2 hover:bg-surface"
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     {item.kind === 'task' ? (
-                      <ClipboardList className="h-4 w-4 shrink-0 text-[#F7CBCA]" />
+                      <ClipboardList className="h-4 w-4 shrink-0 text-primary" />
                     ) : (
-                      <FileText className="h-4 w-4 shrink-0 text-[#F7CBCA]" />
+                      <FileText className="h-4 w-4 shrink-0 text-primary" />
                     )}
-                    <span className="truncate text-sm font-medium text-[#5D6B6B]">{item.title}</span>
+                    <span className="truncate text-sm font-medium text-foreground">{item.title}</span>
                   </div>
-                  <span className="shrink-0 text-xs text-black/45">{formatTimeAgo(item.at)}</span>
+                  <span className="shrink-0 text-xs text-foreground-muted">{formatTimeAgo(item.at)}</span>
                 </Link>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="rounded-lg border border-dashed border-black/10 px-4 py-6 text-center text-sm text-black/55">
+          <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-foreground-muted">
             No recent activity yet.
           </p>
         )}

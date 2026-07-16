@@ -1,68 +1,26 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import {
-  CalendarClock,
-  CalendarDays,
-  Copy,
-  FileCheck2,
-  FileText,
-  Filter,
-  Image as ImageIcon,
-  Megaphone,
-  Pin,
-  Play,
-  Plus,
-  SearchCheck,
-  Send,
-  Sparkles,
-  Unlink2,
-  Wand2,
-} from 'lucide-react';
+import { FileText, Plus, Sparkles } from 'lucide-react';
 import { Button, buttonStyles } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { Card, CardHeader } from '@/components/ui/Card';
-import { Input, Label, Select, Textarea } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
-import { StatusBadge } from '@/components/ui/StatusBadge';
 import { toast } from '@/components/ui/toast';
-import { useActionToast } from '@/components/ui/useActionToast';
-import { formatDateTime } from '@/lib/utils';
 import type { AgentTemplate } from '@/lib/agent-library/templates';
-import {
-  campaignTemplateCategories,
-  campaignTemplates,
-  type CampaignTemplate,
-  type CampaignTemplateCategory,
-  type CampaignTemplateFieldSet,
-} from '@/lib/content-studio/campaign-templates';
 import type { ProviderReadinessResult } from '@/lib/content-studio/provider-types';
 import type { BrandKit } from '@/types/brand-kit';
 import type {
-  ContentStudioPlatform,
   ContentStudioStatus,
   ContentStudioType,
   CreativeAssetRecord,
 } from '@/types/database';
 import {
-  createContentStudioItemAction,
-  createContentStudioTaskAction,
-  executeContentStudioProviderActionAction,
-  generateContentStudioFieldAction,
-  linkCreativeAssetToDraftAction,
-  removeCreativeAssetFromDraftAction,
-  updateContentStudioItemAction,
   type ContentStudioActionState,
 } from './actions';
 import {
-  contentStudioStatusOptions,
-  contentStudioTabOptions,
   contentStudioTaskOptions,
-  contentStudioTypeOptions,
   type ContentStudioItemView,
-  formatContentStudioPlatformLabel,
   type ContentStudioTab,
 } from './shared';
 import { CampaignPlanner } from './CampaignPlanner';
@@ -77,13 +35,7 @@ import { CreativeAssetsSection } from './components/CreativeAssetsSection';
 import { ReadinessPanel } from './components/ReadinessPanel';
 import { ExecutionActionsPanel } from './components/ExecutionActionsPanel';
 import { ContentLibraryBanner } from './components/ContentLibraryBanner';
-import { trackTemplateUsageAction } from '@/app/(dashboard)/dashboard/agent-library/usage-actions';
 import { useLanguage } from '@/i18n/context';
-import {
-  translateContentStudioStatus,
-  translateContentStudioType,
-  translateTemplateCategory,
-} from '@/i18n/dashboard-labels';
 import {
   useContentStudioFormActions,
   useContentStudioContentType,
@@ -95,9 +47,6 @@ import {
   readCampaignList,
   readMetaAdsNumber,
   readMetaAdsList,
-  readCreativeAssetVideo,
-  isCreativeVideoAsset,
-  isPublicImageUrl,
   buildQueryHref,
 } from '@/hooks/content-studio';
 
@@ -194,7 +143,7 @@ export function ContentStudioClient({
   } = useContentStudioFormActions({ selectedItem, agentTemplate, schedulerReady, schedulerMessage });
 
   const {
-    draftType, setDraftType, selectedType, selectedPlatform, selectedPlatformKey,
+    setDraftType, selectedType, selectedPlatform, selectedPlatformKey,
     selectedStudio, visibleFieldSet, availableTypeOptions,
   } = useContentStudioContentType({ selectedItem, initialDraftType, templatePrefill, activeTab });
 

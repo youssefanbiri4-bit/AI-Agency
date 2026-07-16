@@ -1,0 +1,125 @@
+{
+  "dashboard": {
+    "name": "AgentFlow AI - Production Overview",
+    "description": "Real-time monitoring for errors, performance, and user impact",
+    "widgets": [
+      {
+        "id": "error-count",
+        "title": "Errors (Last 24h)",
+        "type": "discover",
+        "displayType": "number",
+        "query": {
+          "fields": ["count()"],
+          "query": "",
+          "orderby": "count()",
+          "groupby": ["message"]
+        },
+        "interval": "1h"
+      },
+      {
+        "id": "error-by-transaction",
+        "title": "Errors by Transaction",
+        "type": "discover",
+        "displayType": "bar",
+        "query": {
+          "fields": ["count()"],
+          "query": "",
+          "orderby": "-count()",
+          "groupby": ["transaction"]
+        },
+        "interval": "1h"
+      },
+      {
+        "id": "error-by-level",
+        "title": "Errors by Severity",
+        "type": "discover",
+        "displayType": "pie",
+        "query": {
+          "fields": ["count()"],
+          "query": "",
+          "groupby": ["tags[level]"]
+        }
+      },
+      {
+        "id": "p50-latency",
+        "title": "P50 Transaction Duration",
+        "type": "discover",
+        "displayType": "line",
+        "query": {
+          "fields": ["p50(transaction.duration)"],
+          "query": "",
+          "groupby": ["transaction"]
+        },
+        "interval": "5m"
+      },
+      {
+        "id": "p95-latency",
+        "title": "P95 Transaction Duration",
+        "type": "discover",
+        "displayType": "line",
+        "query": {
+          "fields": ["p95(transaction.duration)"],
+          "query": "",
+          "groupby": ["transaction"]
+        },
+        "interval": "5m"
+      },
+      {
+        "id": "p99-latency",
+        "title": "P99 Transaction Duration",
+        "type": "discover",
+        "displayType": "line",
+        "query": {
+          "fields": ["p99(transaction.duration)"],
+          "query": "",
+          "groupby": ["transaction"]
+        },
+        "interval": "5m"
+      },
+      {
+        "id": "apdex",
+        "title": "Apdex Score",
+        "type": "discover",
+        "displayType": "number",
+        "query": {
+          "fields": ["apdex(transaction.duration, 3000)"],
+          "query": ""
+        }
+      },
+      {
+        "id": "affected-users",
+        "title": "Affected Users",
+        "type": "discover",
+        "displayType": "number",
+        "query": {
+          "fields": ["count_unique(user)"],
+          "query": ""
+        }
+      },
+      {
+        "id": "user-impact-by-transaction",
+        "title": "User Impact by Transaction",
+        "type": "discover",
+        "displayType": "bar",
+        "query": {
+          "fields": ["count_unique(user)"],
+          "query": "",
+          "orderby": "-count_unique(user)",
+          "groupby": ["transaction"]
+        }
+      },
+      {
+        "id": "new-vs-resolved",
+        "title": "New vs Resolved Issues",
+        "type": "discover",
+        "displayType": "line",
+        "query": {
+          "fields": ["count()"],
+          "query": "",
+          "groupby": ["issue.type"]
+        },
+        "interval": "1h"
+      }
+    ]
+  }
+}

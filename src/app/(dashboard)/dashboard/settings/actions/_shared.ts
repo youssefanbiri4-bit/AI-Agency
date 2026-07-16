@@ -81,6 +81,8 @@ export interface BrandingSettingsState {
   exists: boolean;
 }
 
+export type { WorkspaceBrandingSettingsState } from '@/lib/data/workspace-branding';
+
 export interface ThemeSettingsState {
   error: string | null;
   message?: string | null;

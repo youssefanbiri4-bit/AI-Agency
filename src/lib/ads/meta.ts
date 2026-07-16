@@ -1,3 +1,8 @@
+import {
+  withCircuitBreaker,
+  CIRCUIT_BREAKER_PROVIDERS,
+} from '@/lib/circuit-breaker';
+
 const DEFAULT_META_GRAPH_API_VERSION = 'v25.0';
 const META_READ_ONLY_SCOPE = 'ads_read';
 const META_PAID_ADS_WRITE_SCOPE = 'ads_management';
@@ -423,13 +428,17 @@ function mapMetaCampaignInsights(
 }
 
 async function fetchMetaToken(url: URL): Promise<MetaAccessToken> {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
-    cache: 'no-store',
-  });
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.META_API,
+    () =>
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as MetaTokenResponse | null;
 
   if (!response.ok || payload?.error || !payload?.access_token) {
@@ -512,13 +521,17 @@ export async function getMetaTokenDebugInfo(token: string): Promise<MetaTokenDeb
   url.searchParams.set('input_token', token);
   url.searchParams.set('access_token', `${env.appId}|${env.appSecret}`);
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
-    cache: 'no-store',
-  });
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.META_API,
+    () =>
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as MetaDebugTokenResponse | null;
 
   if (!response.ok || payload?.error || !payload?.data) {
@@ -564,14 +577,18 @@ export async function fetchMetaAdAccounts(accessToken: string): Promise<MetaAdAc
       url.searchParams.set('after', after);
     }
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: 'no-store',
-    });
+    const response = await withCircuitBreaker(
+      CIRCUIT_BREAKER_PROVIDERS.META_API,
+      () =>
+        fetch(url, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: 'no-store',
+        })
+    );
     const payload = (await response.json().catch(() => null)) as
       | MetaAdAccountsResponse
       | null;
@@ -628,14 +645,18 @@ export async function fetchMetaCampaigns(
       url.searchParams.set('after', after);
     }
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: 'no-store',
-    });
+    const response = await withCircuitBreaker(
+      CIRCUIT_BREAKER_PROVIDERS.META_API,
+      () =>
+        fetch(url, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: 'no-store',
+        })
+    );
     const payload = (await response.json().catch(() => null)) as
       | MetaCampaignsResponse
       | null;
@@ -680,14 +701,18 @@ export async function fetchMetaCampaignInsights(
   url.searchParams.set('level', 'campaign');
   url.searchParams.set('fields', META_CAMPAIGN_INSIGHTS_FIELDS);
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    cache: 'no-store',
-  });
+  const response = await withCircuitBreaker(
+    CIRCUIT_BREAKER_PROVIDERS.META_API,
+    () =>
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: 'no-store',
+      })
+  );
   const payload = (await response.json().catch(() => null)) as
     | MetaCampaignInsightsResponse
     | null;

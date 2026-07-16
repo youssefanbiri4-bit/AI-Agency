@@ -17,7 +17,7 @@ AgentFlow AI منصة **غنية بالميزات** مبنية على Next.js 16
 | **التقييم الإجمالي** | **7.8 / 10** (post P0 + server PDF + launch docs) |
 | **حالة البناء** | ✅ **`npm run build` ينجح** |
 | **حالة الاختبارات** | ✅ **64/64** (`npm test`) |
-| **جاهزية الإطلاق** | ✅ **جاهز للإطلاق المُراقَب** — اتبع `docs/FINAL_LAUNCH_CHECKLIST.md`؛ Upstash + Stripe Checkout قبل التوسع العام |
+| **جاهزية الإطلاق** | ✅ **جاهز للإطلاق المُراقَب** — اتبع `docs/FINAL_LAUNCH_CHECKLIST.md`؛ Upstash مطلوب قبل التوسع العام |
 
 **P0 fixes applied (2026-07-04):**
 1. ✅ **Build** — `rbac-client.ts` (client-safe); `Sidebar.tsx` updated
@@ -26,8 +26,8 @@ AgentFlow AI منصة **غنية بالميزات** مبنية على Next.js 16
 
 **Fixes applied (2026-07-04 — C6/C7b/C8):**
 4. ✅ **Content RLS** — `creative_assets`, `content_studio_items`, `reels`, `content_studio_publish_attempts` use `has_min_role(editor)` + `user_can_access_rbac_department()`
-5. ✅ **Billing lock** — `subscriptions` + `billing_customers` SELECT owner/admin only; writes via service role + `/api/billing/webhook`
-6. ✅ **Usage limits** — seeded on workspace create; owner UPDATE policy; `incrementUsage` via `billing-service` admin client
+5. ✅ **Billing lock** — `subscriptions` + `billing_customers` SELECT owner/admin only; service role writes
+6. ✅ **Usage limits** — seeded on workspace create; owner UPDATE policy; `incrementUsage` via admin client
 
 ---
 
@@ -43,8 +43,8 @@ AgentFlow AI منصة **غنية بالميزات** مبنية على Next.js 16
 | **Usage Quotas + Cost Tracking** | **5/10** | `incrementUsage` يعمل عبر service role؛ seed + owner UPDATE على `usage_limits`؛ `checkQuota` لا يزال غير متسق على بعض المسارات. |
 | **Client Reporting** | **7.5/10** | Server PDF (`generateServerPDF`)؛ بيانات حقيقية؛ brand kit؛ لا نسخ محفوظة بعد. |
 | **Reels Studio + Creative Assets** | **6.5/10** | Creative Assets (~7/10)؛ Reels Studio موحّد على `reels` table — list/form/publish يعمل؛ جدولة cron لا تزال مفتوحة. |
-| **Database Schema + RLS** | **8/10** | Schema قوي؛ RLS tasks + content assets/reels/studio بـ `has_min_role` + dept mappers؛ billing tables مقفولة. |
-| **Security** | **6.5/10** | middleware RBAC على dashboard؛ billing RLS مُصلح؛ execute path gaps متبقية. |
+| **Database Schema + RLS** | **8/10** | Schema قوي؛ RLS tasks + assets/reels/studio بـ `has_min_role` + dept mappers؛ billing tables مقفولة. |
+| **Security** | **6.5/10** | middleware RBAC على dashboard؛ billing RLS مُصلح؛ execute path gaps متبقية (ملاحظة: منصة داخلية — لا Stripe). |
 | **Performance** | **5/10** | Indexes جيدة على المسارات الرئيسية؛ usage page N+1 (17+ COUNT)؛ dashboard/reports يجلبان بيانات ضخمة لكل الأدوار. |
 | **UX/UI** | **6/10** | لغة بصرية متماسكة (berry/coral، glassmorphism)؛ لكن تناقضات layout، فلاتر معطّلة، بيانات مضللة، Reels أقل جودة. |
 | **Documentation** | **7.5/10** | `FINAL_LAUNCH_CHECKLIST.md` مصدر حقيقة للإطلاق؛ deploy checklist محدّث؛ بعض drift في FINAL_LAUNCH_PLAN (يحتاج تحديث دوري). |
@@ -82,10 +82,10 @@ OVERALL             ███████▊░░  7.8
 | ~~C3~~ | ~~**تعارض نموذج الأقسام**~~ — **FIXED** via `DEPARTMENT_MAP` + `canAccessCatalogDepartment` | `rbac-client.ts`, `task-service.ts`, `TasksClient.tsx` | ✅ |
 | ~~C4~~ | ~~**TaskService browser client**~~ — **FIXED** — `createSupabaseServerClient()` | `task-service.ts` | ✅ |
 | ~~C5~~ | ~~**Execute API بدون gate**~~ — **FIXED** — gate + service + n8n readiness | `api/tasks/execute/route.ts` | ✅ |
-| ~~C6~~ | ~~**`subscriptions` قابلة للكتابة من العميل**~~ — **FIXED** — SELECT owner/admin only; writes via service role + webhook | migration SQL, `billing-service.ts` | ✅ |
+| ~~C6~~ | ~~**`subscriptions` قابلة للكتابة من العميل**~~ — **FIXED** — SELECT owner/admin only; writes via service role | migration SQL | ✅ |
 | ~~C7 (tasks)~~ | ~~**RLS coarse on tasks**~~ — **FIXED** — `has_min_role(editor)` + `user_can_access_task_department` | migration SQL | ✅ tasks only |
 | ~~C7b~~ | ~~**RLS still coarse on assets/content**~~ — **FIXED** — dept mappers + `has_min_role(editor)` | migration SQL | ✅ |
-| ~~C8~~ | ~~**`usage_limits` بدون UPDATE policy + `incrementUsage` no-op**~~ — **FIXED** — seed trigger + owner UPDATE + admin increment | `quotas.ts`, `billing-service.ts` | ✅ |
+| ~~C8~~ | ~~**`usage_limits` بدون UPDATE policy + `incrementUsage` no-op**~~ — **FIXED** — seed trigger + owner UPDATE + admin increment | `quotas.ts`, `usage-limits.ts` | ✅ |
 
 ### 🟠 High
 
@@ -247,7 +247,7 @@ content, creative, social, ...          content_growth, research_strategy, ...
 ```
 usage_limits (DB) ──→ checkQuota() ──→ بعض Server Actions
         ↑                                      │
-        │ incrementUsage() → billing-service   │
+        │ incrementUsage() → admin client      │
         │   (service role metadata counters)   │
         └──────────────────────────────────────┘
               checkQuota يعيد COUNT من الجداول
@@ -428,7 +428,7 @@ gantt
 ```
 
 **الإطلاق المُراقَب:** اتبع `docs/FINAL_LAUNCH_CHECKLIST.md` (Phases 1–3).  
-**الإطلاق العام:** يتطلب Upstash rate limits + تغطية quota كاملة + Stripe Checkout.
+**الإطلاق العام:** يتطلب Upstash rate limits + تغطية quota كاملة.
 
 ---
 
@@ -439,7 +439,7 @@ AgentFlow AI لديه **أساس معماري وقاعدة بيانات قويي
 **مصدر حقيقة للإطلاق:** `docs/FINAL_LAUNCH_CHECKLIST.md` (لـ Morad).  
 **Quick deploy:** `docs/PRODUCTION_DEPLOY_CHECKLIST.md`.
 
-**الدرجة الإجمالية: 7.8/10** — ~8.5/10 بعد Upstash + quota coverage كامل + Stripe portal.
+**الدرجة الإجمالية: 7.8/10** — ~8.5/10 بعد Upstash + quota coverage كامل.
 
 ---
 

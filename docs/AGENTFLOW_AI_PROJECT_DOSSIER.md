@@ -194,7 +194,7 @@ Plans already modeled in schema and quota code:
 | `pro` | Small teams |
 | `agency` | High volume / multi-client (near-unlimited quotas in code defaults) |
 
-Billing tables (`billing_customers`, `subscriptions`) and route stubs (`/api/billing/*`) exist; full Stripe checkout/portal/webhook lifecycle still needs product completion.
+Billing tables (`billing_customers`, `subscriptions`) exist as schema reference only; the platform is internal, with no Stripe integration.
 
 #### 3.4 AI agent orchestration
 
@@ -287,7 +287,7 @@ Every dashed arrow that crosses an approval boundary must remain explicit and re
 | Meta | Ads read + organic Reels publish foundation |
 | Google Ads | OAuth, encrypted tokens, read-only campaigns/metrics |
 | Pinterest | Ads provider foundation |
-| Stripe | Billing schema + route stubs; live mode gated |
+| Stripe | Not used — internal platform, no commercial billing |
 
 ### Internationalization
 
@@ -418,8 +418,8 @@ auth.users
 | Table | Purpose |
 |-------|---------|
 | `security_audit_logs` | Security/ops audit trail (service-role writes) |
-| `billing_customers` | Stripe customer mapping |
-| `subscriptions` | Stripe subscription mirror (`free|starter|pro|agency`) |
+| `billing_customers` | Billing customer reference (schema only, no data) |
+| `subscriptions` | Subscription plan tracking (`free|starter|pro|agency`) |
 | `usage_limits` | Plan quotas per workspace |
 | `usage_events` | Metered consumption events for aggregation |
 
@@ -691,14 +691,9 @@ Server actions under `src/actions/auth/*` complement these for form-driven flows
 | `/api/cron/content-studio-scheduler` | GET/POST | Vercel cron entry (protected by `CRON_SECRET`) |
 | `/api/health` | GET | Liveness/readiness probe |
 
-### 7.7 Billing (scaffold)
+### 7.7 Billing (removed)
 
-| Route | Purpose | Status |
-|-------|---------|--------|
-| `/api/billing/checkout` | Create Stripe Checkout session | Route directory present; implementation incomplete |
-| `/api/billing/portal` | Customer billing portal | Scaffold |
-| `/api/billing/subscription` | Read current subscription | Scaffold |
-| `/api/billing/webhook` | Stripe webhooks → `subscriptions` | Scaffold |
+Billing API routes (`/api/billing/checkout`, `/api/billing/portal`, `/api/billing/webhook`) have been **removed** — this is an internal platform with no commercial billing.
 
 ### 7.8 n8n contract (summary)
 
@@ -841,16 +836,15 @@ Register → Workspace
 | Custom permission overrides via `permissions` jsonb | Reserved, not fully productized |
 | Client portal role (external client viewer) | Planned |
 
-### 9.4 Billing & Stripe
+### 9.4 Billing & Usage
 
 | Item | Status |
 |------|--------|
-| DB tables for customers/subscriptions | Done |
-| Plan enum + usage limits | Done |
-| Stripe Checkout / Portal / Webhook routes | Scaffold |
-| Pricing page + upgrade UX | Missing / incomplete |
-| Live mode gate (`STRIPE_ALLOW_LIVE_MODE`) | Env-ready |
-| Dunning, invoices UI, tax | Future |
+| DB tables for customers/subscriptions | Schema only (no Stripe) |
+| Plan enum + usage limits | Done (internal usage/quotas) |
+| Stripe Checkout / Portal / Webhook routes | Removed — not applicable |
+| Internal usage quotas | Done (`usage-limits.ts`, `quotas.ts`) |
+| Cost tracking | Done (log-only — internal awareness) |
 
 ### 9.5 Subscription tiers & usage limits
 
@@ -1042,7 +1036,6 @@ Must record, at minimum:
 - execution attempts and callback outcomes
 - publish attempts and failures
 - security-sensitive events (login anomalies, permission changes, gate failures)
-- billing-affecting events (when Stripe goes live)
 
 **Implemented stores:** `task_events`, `security_audit_logs`, `content_studio_publish_attempts`, `n8n_callback_events`.
 
@@ -1106,15 +1099,15 @@ Legend: **Done** · **Partial** · **Missing**
 | Candidate evaluation product | Partial |
 | End-to-end multi-agent campaigns | Partial |
 
-### 12.2 SaaS commercial
+### 12.2 Internal operations
 
 | Item | State |
 |------|-------|
 | Plan limits + usage events | Done |
-| Billing tables | Done |
-| Stripe checkout/portal/webhooks | Partial (scaffold) |
-| Pricing page + self-serve upgrade | Missing |
-| Invoices / tax / dunning | Missing |
+| Billing tables (schema only) | Present |
+| Stripe checkout/portal/webhooks | Removed — not applicable |
+| Internal usage quotas | Done |
+| Cost tracking | Done (log-only) |
 | Public docs / status page | Partial / Missing |
 
 ### 12.3 Security
@@ -1153,14 +1146,13 @@ Legend: **Done** · **Partial** · **Missing**
 
 ### 12.6 Launch gate (operator)
 
-Before inviting paying customers:
+Before production deployment:
 
 - [ ] Production migrations applied (clean schema + saved reports + usage events + realtime)
 - [ ] All production env vars set (see `.env.example` + `docs/FINAL_LAUNCH_CHECKLIST.md`)
 - [ ] `npm run build` and `npm test` green on release commit
 - [ ] `/dashboard/production` gate Green for paid automation features
 - [ ] n8n webhook + callback secret verified with a real task
-- [ ] Stripe test mode full path verified before `STRIPE_ALLOW_LIVE_MODE=true`
 - [ ] MFA enforced for owner/admin accounts
 - [ ] Backup / restore drill documented
 - [ ] Support contact + incident channel defined
@@ -1174,10 +1166,7 @@ Before inviting paying customers:
 1. **Freeze and document the diagnostic domain model**  
    Add migrations for `business_profiles`, `bottlenecks`, `opportunities`, `strategy_reports`, `agentflow_candidates` (or document explicit mapping onto existing tables). Prefer FK extensions on `tasks` over a second task system.
 
-2. **Complete Stripe path in test mode**  
-   Implement checkout, portal, webhook → `subscriptions` + `usage_limits.plan` sync. Hide live mode behind existing gate.
-
-3. **Unify task creation behind `taskService`**  
+2. **Unify task creation behind `taskService`**  
    Reduce bypass paths; ensure every create checks RBAC + quota + audit event.
 
 4. **Production env + migration parity**  
@@ -1240,7 +1229,7 @@ It is a system that will:
 
 The platform already proves the hardest operational truths of that vision: multi-tenant workspaces, RBAC, n8n contracts, human review loops, report delivery, provider safety rails, and production deployment.
 
-What remains is to complete the intelligence layer that sits *above* execution — the diagnostic and strategic brain — and the commercial layer that makes the system a durable SaaS.
+What remains is to complete the intelligence layer that sits *above* execution — the diagnostic and strategic brain — making the system an even more effective internal operations platform.
 
 When those layers meet the orchestration core that exists today, AgentFlow-AI becomes something rare: a product where **insight, judgment, and action share one governed loop**.
 
@@ -1270,7 +1259,7 @@ That loop is the product.
 | A1 | BI tables (`business_profiles`, etc.) are the intended diagnostic domain model | Named in product brief; not present as tables in schema |
 | A2 | `tasks` should absorb `agentflow_tasks` via FKs rather than a duplicate table | Avoid dual lifecycle systems; `tasks` already production-critical |
 | A3 | Drizzle is **not** part of the stack despite some external notes | No Drizzle dependency in `package.json` or codebase |
-| A4 | Stripe is the billing provider of record | Schema + env gates reference Stripe |
+| A4 | Stripe is not used | Internal platform — no commercial billing |
 | A5 | Long-term multi-business agencies use many `business_profiles` per workspace | Standard agency SaaS pattern; aligns with multi-client ops |
 | A6 | Full autonomous execution remains bounded by human approval for high-risk actions | Consistent with safety guardrails and ads read-only posture |
 

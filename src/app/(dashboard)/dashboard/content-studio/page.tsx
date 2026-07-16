@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import {
   Layers3,
@@ -12,7 +13,7 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
-import { getContentStudioItemById, listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
+import { getContentStudioItemById, listContentStudioItemsForWorkspace } from '@/features/content-studio/data/content-studio';
 import { getBrandKitForWorkspace } from '@/lib/data/brand-kit';
 import { getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { getGoogleAdsConfigReadiness } from '@/lib/ads/google-ads';
@@ -20,12 +21,22 @@ import { getPinterestConfigReadiness } from '@/lib/ads/pinterest';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
 import { getContentStudioProviderReadiness } from '@/lib/content-studio/provider-actions';
 import { getAgentTemplateById } from '@/lib/agent-library/templates';
+import dynamic from 'next/dynamic';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCard } from '@/components/ui/StatCard';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { buttonStyles } from '@/components/ui/Button';
 import { SchedulerControls } from './SchedulerControls';
-import { ContentStudioClient } from './ContentStudioClient';
+
+const ContentStudioClient = dynamic(
+  () => import('./ContentStudioClient').then((mod) => mod.ContentStudioClient),
+  {
+    loading: () => (
+      <LoadingState title="Loading Content Studio" description="Preparing the content creation workspace." />
+    ),
+  }
+);
 import {
   contentStudioTypeOptions,
   contentStudioStatusOptions,
@@ -134,8 +145,8 @@ export default async function ContentStudioPage({ searchParams }: ContentStudioP
   }
 
   const workspaceId = workspaceResult.data.id;
-  const membershipResult = await getCurrentWorkspaceMembership(supabase, workspaceId, user.id);
-  const [itemsResult, creativeAssetsResult, brandKitResult] = await Promise.all([
+  const [membershipResult, itemsResult, creativeAssetsResult, brandKitResult] = await Promise.all([
+    getCurrentWorkspaceMembership(supabase, workspaceId, user.id),
     listContentStudioItemsForWorkspace(workspaceId, supabase, { limit: 80 }),
     listCreativeAssetsForWorkspace(workspaceId, undefined, supabase, { limit: 80 }),
     getBrandKitForWorkspace(supabase, workspaceId),
@@ -261,7 +272,7 @@ export default async function ContentStudioPage({ searchParams }: ContentStudioP
     membershipResult.data?.role === 'owner' || membershipResult.data?.role === 'admin';
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <PageHeader
         eyebrow="Studio"
         title="Content & Ads Studio"
@@ -293,30 +304,47 @@ export default async function ContentStudioPage({ searchParams }: ContentStudioP
         </Notice>
       ) : null}
 
-      <Notice
-        tone={schedulerReadiness.isConfigured ? 'info' : 'warning'}
-        title={schedulerReadiness.isConfigured ? 'Execution foundation is live' : 'Scheduler setup required'}
-      >
-        {schedulerReadiness.isConfigured
-          ? 'Publish and provider send actions run server-side when the provider is ready. Scheduled items are picked up by the secure cron route after their planned time.'
-          : `${schedulerReadiness.message}. Add CRON_SECRET in the server environment, configure Vercel Cron, and redeploy after env changes.`}
-      </Notice>
+      <details className="group rounded-lg border border-[#F7CBCA]/12 bg-surface/50 p-2 text-sm">
+        <summary className="flex cursor-pointer items-center gap-2 font-bold text-foreground-muted select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F7CBCA]/50 rounded">
+          <span className="text-xs transition-transform group-open:rotate-90">▶</span>
+          Provider Status
+          <span className="text-xs font-normal text-foreground-muted ml-auto">
+            {schedulerReadiness.isConfigured ? '' : 'Scheduler — '}
+            {!schedulerReadiness.isConfigured ? 'setup needed · ' : ''}
+            {googleAdsReadiness.isConfigured ? '' : 'Google Ads — setup needed · '}
+            {!pinterestReadiness.isConfigured ? 'Pinterest — setup needed' : ''}
+          </span>
+        </summary>
+        <div className="mt-2 space-y-2">
+          <div className="rounded-lg border border-divider bg-surface p-2 text-xs leading-5">
+            <span className="font-semibold">
+              {schedulerReadiness.isConfigured ? '✅ Scheduler:' : '⚠️ Scheduler:'}
+            </span>{' '}
+            {schedulerReadiness.isConfigured
+              ? 'Publish and provider send actions run server-side when the provider is ready. Scheduled items are picked up by the secure cron route after their planned time.'
+              : `${schedulerReadiness.message}. Add CRON_SECRET in the server environment, configure Vercel Cron, and redeploy after env changes.`}
+          </div>
+          <div className="rounded-lg border border-divider bg-surface p-2 text-xs leading-5">
+            <span className="font-semibold">⚠️ Google Ads:</span>{' '}
+            {googleAdsReadiness.isConfigured
+              ? 'Campaign draft creation needs an approved developer token and a connected customer account. If either is missing, the action will explain it exactly.'
+              : `Setup still needs: ${googleAdsReadiness.missingEnvironmentVariables.join(', ') || 'GOOGLE_ADS_DEVELOPER_TOKEN'}.`}
+          </div>
+          {!pinterestReadiness.isConfigured ? (
+            <div className="rounded-lg border border-divider bg-surface p-2 text-xs leading-5">
+              <span className="font-semibold">⚠️ Pinterest:</span>{' '}
+              Pins can be drafted here, but provider setup is incomplete. Missing: {pinterestReadiness.missingEnvironmentVariables.join(', ') || 'PINTEREST_APP_SECRET'}.
+            </div>
+          ) : null}
+        </div>
+      </details>
 
-      <SchedulerControls canRunScheduler={canRunScheduler} />
+      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-white p-4 h-12" />}>
+        <SchedulerControls canRunScheduler={canRunScheduler} />
+      </Suspense>
 
-      <Notice tone="warning" title="Google Ads approval requirements still apply">
-        {googleAdsReadiness.isConfigured
-          ? 'Google Ads campaign draft creation needs an approved developer token and a connected customer account. If either is missing, the action will explain it exactly.'
-          : `Google Ads setup still needs: ${googleAdsReadiness.missingEnvironmentVariables.join(', ') || 'GOOGLE_ADS_DEVELOPER_TOKEN'}.`}
-      </Notice>
-
-      {!pinterestReadiness.isConfigured ? (
-        <Notice tone="warning" title="Pinterest setup required">
-          Pinterest pins can be drafted here, but provider setup is incomplete. Missing: {pinterestReadiness.missingEnvironmentVariables.join(', ') || 'PINTEREST_APP_SECRET'}.
-        </Notice>
-      ) : null}
-
-      <ContentStudioClient
+      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-white p-6 h-96" />}>
+        <ContentStudioClient
         items={filteredItems}
         selectedItem={selectedItem}
         creativeAssets={creativeAssets}
@@ -333,7 +361,8 @@ export default async function ContentStudioPage({ searchParams }: ContentStudioP
         brandKitExists={brandKitResult.data.exists}
         agentTemplate={selectedTemplate}
         templateNotFound={Boolean(requestedTemplateId && !selectedTemplate)}
-      />
+        />
+      </Suspense>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { createTask } from '@/lib/data/tasks';
+import { createTask } from '@/features/tasks/data/tasks';
 import { createNotification } from '@/lib/data/notifications';
 import { getAgentTemplateById, type TemplateCategory } from '@/lib/agent-library/templates';
 import type { AgentType, JsonObject } from '@/types';

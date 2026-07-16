@@ -39,7 +39,10 @@ export function WorkspaceSetupForm() {
 
       <form action={formAction} className="mt-6 space-y-5">
         <div>
-          <Label htmlFor="name">Workspace Name</Label>
+          <Label htmlFor="name">
+            Workspace Name
+            <span className="text-[#F7CBCA] ml-1" aria-hidden="true">*</span>
+          </Label>
           <Input
             id="name"
             name="name"
@@ -49,7 +52,14 @@ export function WorkspaceSetupForm() {
             required
             disabled={isPending}
             autoComplete="organization"
+            aria-required="true"
+            aria-invalid={!!formState.error && !fields.name}
           />
+          {formState.error && !fields.name && (
+            <p className="mt-1 text-sm text-[#F7CBCA]" role="alert">
+              Workspace name is required
+            </p>
+          )}
         </div>
 
         <div>
@@ -62,11 +72,27 @@ export function WorkspaceSetupForm() {
             defaultValue={fields.slug}
             disabled={isPending}
             pattern="[a-zA-Z0-9 -]+"
+            aria-required="true"
+            aria-invalid={!!formState.error && !fields.slug}
           />
           <p className="mt-2 text-xs leading-5 text-black/54">
             Leave blank to generate one from the workspace name.
           </p>
+          {formState.error && !fields.slug && (
+            <p className="mt-1 text-sm text-[#F7CBCA]" role="alert">
+              Workspace slug is required
+            </p>
+          )}
         </div>
+
+        {formState.error && (
+          <div 
+            role="alert" 
+            className="rounded-lg border border-[#F7CBCA]/20 bg-[#F1F7F7]/50 p-3 text-sm text-black/70"
+          >
+            {formState.error}
+          </div>
+        )}
 
         <Button type="submit" size="lg" disabled={isPending} className="w-full">
           {isPending ? (

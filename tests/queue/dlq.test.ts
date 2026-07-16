@@ -1,12 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { dlqQueue } from '@/lib/queue/queues';
 import { redis } from '@/lib/queue/redis';
 import { maybeMoveJobToDLQ } from '@/lib/queue/workers/maybe-dlq';
 
+const dlqAddMock = vi.fn();
+
 vi.mock('@/lib/queue/queues', () => ({
-  dlqQueue: {
-    add: vi.fn(),
-  },
+  getDlqQueue: () => ({
+    add: (...args: unknown[]) => dlqAddMock(...args),
+  }),
 }));
 
 vi.mock('@/lib/queue/redis', () => ({
@@ -18,9 +19,12 @@ vi.mock('@/lib/queue/redis', () => ({
 describe('DLQ handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    dlqAddMock.mockReset();
   });
 
   it('pushes job to DLQ when attempts exhausted and idempotent', async () => {
+    dlqAddMock.mockResolvedValue({ id: 'dlq-job-1' });
+
     const job = {
       id: 'job-1',
       attemptsMade: 3,
@@ -39,13 +43,14 @@ describe('DLQ handling', () => {
     await maybeMoveJobToDLQ(job, new Error('boom'));
 
     expect(redis.set).toHaveBeenCalled();
-    expect(dlqQueue.add).toHaveBeenCalledTimes(1);
+    expect(dlqAddMock).toHaveBeenCalledTimes(1);
 
     // second call: redis.set returns null (already exists)
     vi.mocked(redis.set).mockResolvedValueOnce(null);
+    dlqAddMock.mockReset();
 
     await maybeMoveJobToDLQ(job, new Error('boom'));
 
-    expect(dlqQueue.add).toHaveBeenCalledTimes(1); // unchanged
+    expect(dlqAddMock).not.toHaveBeenCalled(); // unchanged
   });
 });

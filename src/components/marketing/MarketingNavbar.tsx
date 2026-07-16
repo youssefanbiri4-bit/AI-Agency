@@ -4,10 +4,9 @@ import { buttonStyles } from '@/components/ui/Button';
 import { BrandMark } from '@/components/brand/BrandMark';
 
 const navItems = [
-  { label: 'Features', href: '#features' },
-  { label: 'Agents', href: '#agents' },
-  { label: 'Workflow', href: '#workflow' },
-  // { label: 'Pricing', href: '#pricing' },
+  { label: 'Features', href: '/features' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'Blog', href: '/blog' },
   { label: 'Dashboard', href: '/dashboard' },
 ];
 

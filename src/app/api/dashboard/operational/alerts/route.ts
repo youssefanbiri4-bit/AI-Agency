@@ -5,10 +5,6 @@ import { reportAppError } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ ok: false, error: message }, { status });
-}
-
 type AlertSeverity = 'critical' | 'high' | 'medium' | 'low';
 
 type AlertRow = {

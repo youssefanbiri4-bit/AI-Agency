@@ -9,7 +9,6 @@
 --   Used by:
 --   - `getMonthlyUsageByType()` in billing-service.ts for accurate monthly counts
 --   - Usage dashboard (/dashboard/usage)
---   - Future metered billing sync to Stripe
 --
 -- Safe to re-run: uses IF NOT EXISTS.
 -- =============================================================================

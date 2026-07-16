@@ -5,7 +5,6 @@ import type { ContentStudioType } from '@/types/database';
 import type { ContentStudioItemView } from '@/app/(dashboard)/dashboard/content-studio/shared';
 import type { BrandKit } from '@/types/brand-kit';
 import {
-  campaignTemplateCategories,
   campaignTemplates,
   type CampaignTemplate,
   type CampaignTemplateCategory,

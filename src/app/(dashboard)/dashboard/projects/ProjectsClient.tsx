@@ -14,7 +14,9 @@ import { Button, buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input, Label, Select } from '@/components/ui/FormControls';
+import { PaginationControls } from '@/components/ui/PaginationControls';
 import { StatCard } from '@/components/ui/StatCard';
+import { usePagination } from '@/hooks/usePagination';
 import { cn, formatDateTime } from '@/lib/utils';
 import {
   formatProjectStatus,
@@ -67,6 +69,18 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
     });
   }, [projects, searchQuery, statusFilter, typeFilter]);
 
+  const {
+    pageItems,
+    currentPage,
+    totalPages,
+    totalItems,
+    startIndex,
+    endIndex,
+    nextPage,
+    prevPage,
+    goToPage,
+  } = usePagination(filteredProjects, 50);
+
   const latestProject = projects[0] ?? null;
   const linkedGitHubProjects = projects.filter((project) => {
     const metadata = normalizeProjectMetadata(project.metadata);
@@ -107,9 +121,11 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
           title="Project Workspace"
           description="Filter, search, and open project records from real workspace data."
           action={
-            <span className="text-sm font-bold text-black/56">
-              Showing {filteredProjects.length} of {projects.length}
-            </span>
+              <span className="text-sm font-bold text-black/56">
+                {filteredProjects.length === projects.length
+                  ? `${projects.length} project${projects.length === 1 ? '' : 's'}`
+                  : `Showing ${filteredProjects.length} of ${projects.length}`}
+              </span>
           }
         />
 
@@ -182,8 +198,9 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
           description="Clear the search or adjust filters to see more project records."
         />
       ) : (
-        <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
-          {filteredProjects.map((project) => {
+        <div>
+          <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
+          {pageItems.map((project) => {
             const health = getProjectHealth(project);
             const metadata = normalizeProjectMetadata(project.metadata);
             const githubLabel =
@@ -258,6 +275,17 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
               </article>
             );
           })}
+          </div>
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            onPrev={prevPage}
+            onNext={nextPage}
+            onGoToPage={goToPage}
+          />
         </div>
       )}
     </div>

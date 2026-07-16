@@ -1,110 +1,62 @@
 #!/bin/bash
 # Accessibility Testing Setup & Automation
 # WCAG 2.1 AA Compliance Testing
+# Updated: Wave 8
 
-## 1️⃣ INSTALL ACCESSIBILITY TESTING TOOLS
+echo "================================================"
+echo "  A11Y Testing Setup"
+echo "================================================"
 
-# Install axe DevTools Chrome Extension
-# https://chrome.google.com/webstore/detail/axe-devtools-web-accessib/lhdoppojpmngadmnkpklempisson
-
-# Install WAVE Extension
-# https://wave.webaim.org/extension/
-
-# Install Lighthouse (included in Chrome DevTools)
-
-# For automated testing:
-npm install --save-dev @axe-core/react pa11y pa11y-ci
-
-## 2️⃣ KEYBOARD NAVIGATION TESTING
-
-# Test Checklist:
-# [ ] Tab through entire application
-# [ ] Shift+Tab to go backwards
-# [ ] Enter to activate buttons
-# [ ] Space for checkboxes/radio buttons
-# [ ] Arrow keys in lists/menus
-# [ ] Escape to close modals
-# [ ] Focus indicator always visible
-
-## 3️⃣ SCREEN READER TESTING
-
-### Windows:
-# Install NVDA (free)
-# https://www.nvaccess.org/
-
-# Keyboard shortcuts:
-# Ctrl+Alt+N       - Start NVDA
-# Insert+H         - Help mode
-# Insert+Down      - Read current item
-# Insert+Up Arrow  - Read title
-# Tab              - Navigate form controls
-
-### macOS:
-# Use built-in VoiceOver
-# Cmd+F5 to enable
-# VoiceOver Key: Control+Option
-# Control+Option+U - Open rotor
-# Control+Option+Right Arrow - Navigate
-
-### Linux:
-# Install Orca
-# https://help.gnome.org/users/orca/stable/
-
-## 4️⃣ COLOR CONTRAST TESTING
-
-# WebAIM Contrast Checker
-# https://webaim.org/resources/contrastchecker/
-
-# Minimum ratios:
-# Large text (18pt+): 3:1
-# Normal text: 4.5:1
-# UI components: 3:1
-
-## 5️⃣ AUTOMATED TESTING COMMANDS
-
-echo "Running Accessibility Audits..."
-
-# Lighthouse audit (built into Chrome)
-# 1. Open DevTools (F12)
-# 2. Click Lighthouse tab
-# 3. Select "Accessibility"
-# 4. Run audit
-
-# axe DevTools (Chrome Extension)
-# 1. Open page
-# 2. Click axe Extension
-# 3. Click "Scan this page"
-# 4. Review results
-
-# WAVE (Chrome Extension)
-# 1. Open page
-# 2. Click WAVE Extension
-# 3. View accessibility summary
-
-## 6️⃣ CREATE TEST AUTOMATION
-
-# Create pa11y configuration
-cat > .pa11yci.json << 'EOF'
-{
-  "runners": ["axe", "pa11y"],
-  "timeout": 20000,
-  "standard": "WCAG2AA",
-  "chromeLaunchConfig": {
-    "args": ["--no-sandbox"]
-  },
-  "urls": [
-    "http://localhost:3000/dashboard",
-    "http://localhost:3000/dashboard/content-studio",
-    "http://localhost:3000/auth/login"
-  ]
-}
-EOF
-
-echo "✅ Accessibility testing tools configured!"
+## 1️⃣ INSTALLED TOOLS (devDependencies)
 echo ""
-echo "Next steps:"
-echo "1. Start dev server: npm run dev"
-echo "2. Install axe DevTools Chrome Extension"
-echo "3. Manual test keyboard navigation (Tab through page)"
-echo "4. Test with screen reader (VoiceOver/NVDA)"
-echo "5. Run automated audit: npx pa11y-ci"
+echo "Already installed:"
+echo "  axe-core v4.12.1       — core rule engine"
+echo "  @axe-core/react         — browser React integration"
+echo ""
+echo "Not installed (requires Chrome/Chromium):"
+echo "  pa11y / pa11y-ci        — full-page automated audits"
+echo ""
+
+## 2️⃣ CHECK CHROME AVAILABILITY
+CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser || echo "")
+if [ -n "$CHROME" ]; then
+  echo "✅ Chrome found: $CHROME"
+  echo "   pa11y-ci can run: npx pa11y-ci"
+else
+  echo "⚠️  Chrome/Chromium not found."
+  echo "   Install one of:"
+  echo "     Ubuntu/Debian: sudo apt install chromium-browser"
+  echo "     macOS: brew install --cask google-chrome"
+  echo "     Then set: export CHROME_PATH=/path/to/chrome"
+  echo ""
+  echo "   Without Chrome, use the axe-core script:"
+  echo "     npm run a11y:rules    # list available rules"
+  echo "     npm run a11y:audit    # see all available commands"
+fi
+
+## 3️⃣ RUNNABLE SCRIPTS
+echo ""
+echo "Available npm scripts:"
+echo "  npm run a11y:rules       — List all axe-core rules (no browser needed)"
+echo "  npm run a11y:audit       — Show help for the audit script"
+echo "  npm run a11y:audit:url <url>  — Audit URL (needs Chrome)"
+echo "  npm run a11y:setup       — This setup checker"
+echo ""
+echo "Dev component (temporary, local use only):"
+echo "  Import <AxeDevTools /> from '@/lib/a11y-dev' in your layout"
+echo "  during development to get axe overlays in browser console."
+echo "  REMOVE BEFORE COMMITTING."
+echo ""
+
+## 4️⃣ MANUAL TESTING RESOURCES
+echo "Manual testing tools:"
+echo "  axe DevTools (Chrome Extension)"
+echo "  WAVE (Chrome Extension)"
+echo "  Lighthouse (Chrome DevTools)"
+echo "  Screen readers: NVDA (Win), VoiceOver (Mac), Orca (Linux)"
+echo ""
+echo "See A11Y_QUICK_START.md for detailed manual testing guide."
+echo "See A11Y_TESTING_CHECKLIST.md for the full test checklist."
+echo "See ACCESSIBILITY.md for implementation patterns."
+echo ""
+echo "================================================"

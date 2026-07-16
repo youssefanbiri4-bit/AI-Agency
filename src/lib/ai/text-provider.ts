@@ -1,6 +1,16 @@
 import 'server-only';
 
+import { startSpan } from '@sentry/nextjs';
 import { reportAppError } from '@/lib/logger';
+import {
+  CONCURRENCY_SLOTS,
+  ConcurrencyLimitError,
+  withConcurrencyLimit,
+} from '@/lib/concurrency-limiter';
+import { withCircuitBreaker, CIRCUIT_BREAKER_PROVIDERS } from '@/lib/circuit-breaker';
+import { getAICache } from '@/lib/ai/ai-cache';
+import { increment, timing } from '@/lib/monitoring/metrics';
+import { getAIPerformanceMonitor } from '@/lib/monitoring/ai-performance';
 
 const OPENAI_CHAT_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_DEFAULT_MODEL = 'gpt-4.1-mini';
@@ -233,6 +243,41 @@ function readChatCompletionOutput(payload: ChatCompletionPayload | null) {
 }
 
 export async function generateTextWithOpenAI(input: GenerateTextProviderInput): Promise<ProviderCallResult> {
+  const startTime = Date.now();
+  const cache = getAICache();
+  const model = normalizeOpenAIModel();
+  const monitor = getAIPerformanceMonitor();
+  const operationId = `text_${Date.now()}`;
+
+  // Check cache first
+  const cached = cache.get<string>(input.kind, input.systemPrompt ?? '', input.userPrompt, model);
+  if (cached) {
+    increment('ai.text.cache_hit', { kind: input.kind, model });
+    monitor.startOperation(operationId, {
+      operation: 'text_completion',
+      model,
+      provider: 'openai',
+      cached: true,
+    });
+    monitor.endOperation(operationId, true);
+    return {
+      ok: true,
+      text: cached,
+      model,
+      responseStatusCode: null,
+      finishReason: 'cache_hit',
+    };
+  }
+
+  increment('ai.text.cache_miss', { kind: input.kind, model });
+
+  monitor.startOperation(operationId, {
+    operation: 'text_completion',
+    model,
+    provider: 'openai',
+    cached: false,
+  });
+
   const readiness = checkOpenAITextProviderReadiness();
   const apiKey = readOpenAIKey();
 
@@ -254,20 +299,41 @@ export async function generateTextWithOpenAI(input: GenerateTextProviderInput): 
       { role: 'user', content: input.userPrompt },
     ];
 
-    const response = await fetch(OPENAI_CHAT_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+    const response = await startSpan(
+      {
+        op: 'ai.text.completion',
+        name: `OpenAI ${readiness.model}`,
+        attributes: {
+          'ai.provider': 'openai',
+          'ai.model': readiness.model,
+          'ai.kind': input.kind,
+        },
       },
-      signal: AbortSignal.timeout(30_000),
-      body: JSON.stringify({
-        model: readiness.model,
-        messages,
-        max_tokens: input.maxTokens ?? 900,
-        ...(typeof input.temperature === 'number' ? { temperature: input.temperature } : {}),
-      }),
-    });
+      async (span) => {
+        const result = await withCircuitBreaker(
+          CIRCUIT_BREAKER_PROVIDERS.OPENAI_TEXT,
+          () =>
+            fetch(OPENAI_CHAT_ENDPOINT, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+              },
+              signal: AbortSignal.timeout(30_000),
+              body: JSON.stringify({
+                model: readiness.model,
+                messages,
+                max_tokens: input.maxTokens ?? 900,
+                ...(typeof input.temperature === 'number' ? { temperature: input.temperature } : {}),
+              }),
+            }),
+          { timeoutMs: 35_000 }
+        );
+        span.setAttribute('http.status_code', result.status);
+        span.setAttribute('ai.success', result.ok);
+        return result;
+      }
+    );
 
     const payload = (await response.json().catch(() => null)) as ChatCompletionPayload | null;
     const output = readChatCompletionOutput(payload);
@@ -315,6 +381,12 @@ export async function generateTextWithOpenAI(input: GenerateTextProviderInput): 
       };
     }
 
+    // Cache successful responses
+    cache.set(input.kind, input.systemPrompt ?? '', input.userPrompt, readiness.model, output.text);
+    timing('ai.text.generation', Date.now() - startTime, { kind: input.kind, model: readiness.model, cached: false });
+    increment('ai.text.success', { kind: input.kind, model: readiness.model });
+    monitor.endOperation(operationId, true);
+
     return {
       ok: true,
       text: output.text,
@@ -333,6 +405,10 @@ export async function generateTextWithOpenAI(input: GenerateTextProviderInput): 
       category: isTimeout ? 'timeout' : 'provider_error',
     });
 
+    increment('ai.text.error', { kind: input.kind, model: readiness.model, category: isTimeout ? 'timeout' : 'provider_error' });
+    monitor.recordError(operationId, isTimeout ? 'timeout' : 'provider_error');
+    monitor.endOperation(operationId, false);
+
     return {
       ok: false,
       error: isTimeout
@@ -347,24 +423,44 @@ export async function generateTextWithOpenAI(input: GenerateTextProviderInput): 
 }
 
 export async function generateMarketingText(input: GenerateTextProviderInput): Promise<GenerateMarketingTextResult> {
-  const result = await generateTextWithOpenAI(input);
+  try {
+    // Queue (don't fail-fast): a waiting user request should wait briefly for a
+    // free slot rather than be rejected. Timeout bounds the wait.
+    const result = await withConcurrencyLimit(
+      CONCURRENCY_SLOTS.AI_GENERATION,
+      () => generateTextWithOpenAI(input),
+      { failOnQueue: false, timeoutMs: 20_000 }
+    );
 
-  if (!result.ok) {
+    if (!result.ok) {
+      return {
+        status: result.setupRequired ? 'setup_required' : 'failed',
+        error: result.error,
+        providerUsed: 'openai',
+        fallbackAttempted: false,
+        model: result.model,
+      };
+    }
+
     return {
-      status: result.setupRequired ? 'setup_required' : 'failed',
-      error: result.error,
+      status: 'generated',
+      text: result.text,
       providerUsed: 'openai',
-      fallbackAttempted: false,
+      fallbackUsed: false,
       model: result.model,
+      message: 'Generated successfully with OpenAI.',
     };
+  } catch (e) {
+    if (e instanceof ConcurrencyLimitError) {
+      return {
+        status: 'failed',
+        error:
+          'AI text generation is busy. Please try again shortly. التوليد النصي مشغول، جرّب بعد قليل.',
+        providerUsed: 'openai',
+        fallbackAttempted: false,
+        model: normalizeOpenAIModel(),
+      };
+    }
+    throw e;
   }
-
-  return {
-    status: 'generated',
-    text: result.text,
-    providerUsed: 'openai',
-    fallbackUsed: false,
-    model: result.model,
-    message: 'Generated successfully with OpenAI.',
-  };
 }

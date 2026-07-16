@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowLeft, FolderKanban, Sparkles } from 'lucide-react';
 import {
@@ -7,9 +8,18 @@ import {
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { listProjectsForWorkspace } from '@/lib/data/projects';
 import { buttonStyles } from '@/components/ui/Button';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { SoftwarePlannerClient } from './SoftwarePlannerClient';
+
+const SoftwarePlannerClient = dynamic(
+  () => import('./SoftwarePlannerClient').then((mod) => mod.SoftwarePlannerClient),
+  {
+    loading: () => (
+      <LoadingState title="Loading planner" description="Preparing the project planning interface." />
+    ),
+  }
+);
 
 export default async function SoftwarePlannerPage({
   searchParams,
@@ -21,7 +31,7 @@ export default async function SoftwarePlannerPage({
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
   const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
   const projectsResult = workspaceResult.data
-    ? await listProjectsForWorkspace(workspaceResult.data.id, supabase)
+    ? await listProjectsForWorkspace(workspaceResult.data.id, supabase, { limit: 200 })
     : { data: [], error: workspaceResult.error ?? 'Workspace not found.', isConfigured: true };
   const selectedProjectId = query.project && projectsResult.data.some((project) => project.id === query.project)
     ? query.project

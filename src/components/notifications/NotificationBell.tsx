@@ -121,18 +121,18 @@ export function NotificationBell({
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -end-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#F7CBCA] px-1 text-[10px] font-black text-white shadow-sm">
+          <span className="absolute -end-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-black text-primary-foreground shadow-sm">
             {countLabel}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute end-0 top-12 z-50 w-[min(calc(100vw-1.5rem),24rem)] rounded-lg border border-[#F7CBCA]/10 bg-white/92 p-3 shadow-[0_24px_60px_rgba(93,107,107,0.12)] backdrop-blur-[16px] [-webkit-backdrop-filter:blur(16px)]">
-          <div className="flex items-start justify-between gap-3 border-b border-black/8 pb-3">
+        <div className="absolute end-0 top-12 z-50 w-[min(calc(100vw-1.5rem),24rem)] rounded-lg border border-border bg-surface-elevated p-3 shadow-[0_24px_60px_rgba(93,107,107,0.12)] backdrop-blur-[16px] [-webkit-backdrop-filter:blur(16px)]">
+          <div className="flex items-start justify-between gap-3 border-b border-divider pb-3">
             <div className="min-w-0">
-              <p className="text-sm font-black text-black">Notifications</p>
-              <p className="mt-0.5 text-xs text-black/52">
+              <p className="text-sm font-black text-foreground">Notifications</p>
+              <p className="mt-0.5 text-xs text-foreground-muted">
                 Latest workspace updates for you.
               </p>
             </div>
@@ -149,9 +149,9 @@ export function NotificationBell({
           <div className="max-h-[24rem] overflow-y-auto py-2">
             {notifications.length === 0 ? (
               <div className="py-8 text-center">
-                <Inbox className="mx-auto h-8 w-8 text-black/28" />
-                <p className="mt-3 text-sm font-bold text-black">No unread notifications</p>
-                <p className="mt-1 text-xs leading-5 text-black/52">
+                <Inbox className="mx-auto h-8 w-8 text-foreground-muted/30" />
+                <p className="mt-3 text-sm font-bold text-foreground">No unread notifications</p>
+                <p className="mt-1 text-xs leading-5 text-foreground-muted">
                   Open the center to review older updates.
                 </p>
               </div>
@@ -175,8 +175,8 @@ export function NotificationBell({
                       className={cn(
                         'rounded-lg border p-3 transition-colors',
                         isUnread
-                          ? 'border-[#F7CBCA]/18 bg-[#D5E5E5]/48'
-                          : 'border-[#F7CBCA]/10 bg-white'
+                          ? 'border-primary/18 bg-surface'
+                          : 'border-border bg-surface-elevated'
                       )}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -190,20 +190,20 @@ export function NotificationBell({
                               className={cn(
                                 'h-4 w-4 shrink-0',
                                 severity === 'error' || severity === 'critical'
-                                  ? 'text-[#F7CBCA]'
+                                  ? 'text-danger'
                                   : severity === 'warning'
-                                    ? 'text-[#8A4300]'
-                                    : 'text-[#F7CBCA]'
+                                    ? 'text-warning'
+                                    : 'text-primary'
                               )}
                             />
-                            <p className="line-clamp-2 text-sm font-bold text-black">
+                            <p className="line-clamp-2 text-sm font-bold text-foreground">
                               {notification.title}
                             </p>
                           </div>
-                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-black/58">
+                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-foreground-muted">
                             {notification.message}
                           </p>
-                          <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-black/36">
+                          <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-foreground-muted/60">
                             <span>{category.replace('_', ' ')}</span>
                             <span>{severity}</span>
                             <span>{formatTimeAgo(notification.created_at)}</span>
@@ -212,7 +212,7 @@ export function NotificationBell({
                         {isUnread && (
                           <button
                             type="button"
-                            className="rounded-md border border-black/10 bg-white px-2 py-1 text-[11px] font-bold text-black/58 hover:border-[#F7CBCA]/35 hover:text-[#F7CBCA]"
+                            className="rounded-md border border-border bg-surface-elevated px-2 py-1 text-[11px] font-bold text-foreground-muted hover:border-primary/35 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                             onClick={() => void handleMarkAsRead(notification.id)}
                           >
                             Read
@@ -226,7 +226,7 @@ export function NotificationBell({
             )}
           </div>
 
-          <div className="flex flex-col gap-2 border-t border-black/8 pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 border-t border-divider pt-3 sm:flex-row sm:items-center sm:justify-between">
             <Link
               href="/dashboard/notifications"
               onClick={() => setIsOpen(false)}

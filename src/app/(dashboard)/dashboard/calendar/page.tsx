@@ -5,7 +5,7 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
+import { listContentStudioItemsForWorkspace } from '@/features/content-studio/data/content-studio';
 import { listReleasesForWorkspace } from '@/lib/data/releases';
 import { listReelsForWorkspace } from '@/lib/data/reels';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -46,8 +46,8 @@ export default async function CalendarPage() {
   }
 
   const [itemsResult, releasesResult, reelsResult] = await Promise.all([
-    listContentStudioItemsForWorkspace(workspaceResult.data.id, supabase),
-    listReleasesForWorkspace(workspaceResult.data.id, supabase),
+    listContentStudioItemsForWorkspace(workspaceResult.data.id, supabase, { limit: 500 }),
+    listReleasesForWorkspace(workspaceResult.data.id, supabase, { limit: 500 }),
     listReelsForWorkspace(workspaceResult.data.id, user.id, supabase),
   ]);
 

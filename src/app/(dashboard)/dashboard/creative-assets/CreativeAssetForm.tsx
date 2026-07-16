@@ -26,7 +26,7 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Input, Label, Select, Textarea } from '@/components/ui/FormControls';
 import { Notice } from '@/components/ui/Notice';
 import { toast } from '@/components/ui/toast';
-import { useActionToast } from '@/components/ui/useActionToast';
+import { useActionToast } from '@/hooks/useActionToast';
 import { supabase } from '@/lib/supabase-client';
 import type { CreativeAssetRecord } from '@/types/database';
 import type { BrandKit } from '@/types/brand-kit';

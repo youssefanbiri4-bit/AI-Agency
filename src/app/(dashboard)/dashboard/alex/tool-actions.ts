@@ -6,7 +6,7 @@ import {
   getActiveWorkspaceIdFromCookie,
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
-import { createTask } from '@/lib/data/tasks';
+import { createTask } from '@/features/tasks/data/tasks';
 import type { JsonObject } from '@/types';
 import type { TaskPriority } from '@/types/database';
 

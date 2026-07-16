@@ -6,6 +6,7 @@ import { Play, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/Notice';
 import { toast } from '@/components/ui/toast';
+import { queueMutation } from '@/lib/pwa/offline-queue';
 import type { JsonObject } from '@/types';
 
 const POLL_INTERVAL_MS = 3000;
@@ -86,17 +87,30 @@ export function RunTaskButton({
     const loadingToastId = toast.loading('Sending task to automation...');
 
     try {
-      const response = await fetch('/api/tasks/execute', {
+      const outcome = await queueMutation({
+        url: '/api/tasks/execute',
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task_id: taskId,
           workspaceId,
           taskPayload,
         }),
+        label: 'Run task',
       });
+
+      // Offline: the request was queued for Background Sync.
+      if (outcome.kind === 'queued') {
+        setIsProcessing(false);
+        toast.update(loadingToastId, {
+          tone: 'info',
+          title: 'Task queued for sync.',
+          description: 'You appear to be offline. It will run automatically when you reconnect.',
+        });
+        return;
+      }
+
+      const response = outcome.response;
       const payload = (await response.json()) as ExecuteTaskResponse;
 
       if (!response.ok || !payload.success) {

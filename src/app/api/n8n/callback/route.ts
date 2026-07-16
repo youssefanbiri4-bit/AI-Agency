@@ -5,7 +5,7 @@ import {
   createTaskEvent,
   mapTaskRecordToTask,
   updateTaskExecutionState,
-} from '@/lib/data/tasks';
+} from '@/features/tasks/data/tasks';
 import { logger, reportAppError } from '@/lib/logger';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { createNotification } from '@/lib/data/notifications';
@@ -18,6 +18,7 @@ import type { JsonObject, JsonValue, TaskStatus } from '@/types';
 import { genericServerSetupMessage, setupBlockerMessage } from '@/lib/safe-messages';
 import { increment } from '@/lib/monitoring/metrics';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkSlidingWindowRateLimit, buildIpRateLimitKey, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
 import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
 import { getRequestId, nowISO } from '@/lib/api-response';
 import {
@@ -109,6 +110,30 @@ export async function POST(request: NextRequest) {
       }, {
         status: 429,
         headers: { 'X-Request-ID': requestId },
+      });
+    }
+
+    // Sliding window rate limit: additional protection for n8n callbacks
+    const slidingResult = await checkSlidingWindowRateLimit({
+      key: buildIpRateLimitKey(clientIp, 'n8n:callback'),
+      limit: 50,
+      windowMs: 60_000,
+    });
+    if (!slidingResult.allowed) {
+      return NextResponse.json({
+        success: false,
+        error: 'Too many callback requests. Please wait before retrying.',
+        requestId,
+        timestamp: nowISO(),
+        retryAfterMs: slidingResult.resetInMs,
+      }, {
+        status: 429,
+        headers: {
+          'X-Request-ID': requestId,
+          'Retry-After': String(Math.ceil(slidingResult.resetInMs / 1000)),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(Math.floor(slidingResult.windowEnd / 1000)),
+        },
       });
     }
 

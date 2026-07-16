@@ -2,6 +2,9 @@
  * Single source of truth for Content-Security-Policy across
  * next.config.ts headers and edge middleware.
  *
+ * Legacy compatibility wrapper — prefer importing from
+ * `@/lib/security/security-headers` for new code.
+ *
  * Next.js + React rely on inline style attributes (style-src-attr) and
  * framework script bootstrapping (unsafe-inline). Nonce + strict-dynamic
  * without full nonce coverage caused console violations and ignored directives.
@@ -12,7 +15,7 @@
  *     in next.config.ts.
  *   - style-src / style-src-attr: 'unsafe-inline' — required by Next.js for
  *     style={{}} attributes and CSS-in-JS.
- *   - report-uri and report-to directives removed until endpoint is implemented.
+ *   - report-uri /api/csp-violation is included for production monitoring.
  */
 
 const CONNECT_SRC = [
@@ -54,7 +57,8 @@ export function buildContentSecurityPolicy(nonce?: string): string {
     "font-src 'self' data:",
     `connect-src ${CONNECT_SRC}`,
     "media-src 'self' blob: https:",
-    "worker-src 'self' blob:"
+    "worker-src 'self' blob:",
+    "report-uri /api/csp-violation"
   ];
 
   return directives.join('; ');

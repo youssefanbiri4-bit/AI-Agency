@@ -13,9 +13,9 @@ import {
   getCurrentUserWorkspace,
   getCurrentWorkspaceMembership,
 } from '@/lib/data/workspaces';
-import { listContentStudioItemsForWorkspace } from '@/lib/data/content-studio';
+import { listContentStudioItemsForWorkspace } from '@/features/content-studio/data/content-studio';
 import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
-import { listTasks } from '@/lib/data/tasks';
+import { listTasks } from '@/features/tasks/data/tasks';
 import { listProjectsForWorkspace } from '@/lib/data/projects';
 import { listReleasesForWorkspace } from '@/lib/data/releases';
 import { getMetaConnectionStatus, getGoogleAdsConnectionStatus } from '@/lib/data/ad-connections';
@@ -28,7 +28,7 @@ import {
   getAITextProviderConfig,
 } from '@/lib/ai/text-provider';
 import { getGitHubReadiness } from '@/lib/github';
-import type { ContentStudioItemWithAssets } from '@/lib/data/content-studio';
+import type { ContentStudioItemWithAssets } from '@/features/content-studio/data/content-studio';
 import type {
   ContentStudioPublishAttemptRecord,
   ContentStudioStatus,

@@ -20,6 +20,7 @@ export {
 import { executeTask as n8nExecuteTask } from '@/lib/n8n';
 import type { ApiResponse, JsonObject } from '@/types';
 import { reportAppError } from '@/lib/logger';
+import { withQueryTiming } from '@/lib/db/query-timing';
 
 /**
  * Execute a task through n8n (standalone worker entrypoint).
@@ -42,7 +43,18 @@ export async function executeTask(
       correlation_id: correlationId ?? null,
     };
 
-    return await n8nExecuteTask(executionPayload, taskExecutionId, workspaceId, taskId);
+    return await withQueryTiming(
+      'task.execution',
+      () => n8nExecuteTask(executionPayload, taskExecutionId, workspaceId, taskId),
+      {
+        op: 'task',
+        attributes: {
+          taskId: taskId ?? 'unknown',
+          workspaceId,
+          correlationId: correlationId ?? 'unknown',
+        },
+      }
+    );
   } catch (error) {
     reportAppError('Worker task execution failed', error, {
       taskExecutionId,

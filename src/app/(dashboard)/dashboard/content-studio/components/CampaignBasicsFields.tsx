@@ -5,7 +5,6 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Input, Label, Select, Textarea } from '@/components/ui/FormControls';
 import {
   contentStudioStatusOptions,
-  contentStudioTypeOptions,
   type ContentStudioItemView,
 } from '../shared';
 import { isMetaAdContentType } from '../ContentStudioClient';

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import {
   ArrowLeft,
   BookOpen,
@@ -42,7 +43,7 @@ import {
   listGitHubPullRequests,
   type GitHubRepoSnapshot,
 } from '@/lib/github';
-import { listTasks } from '@/lib/data/tasks';
+import { listTasks } from '@/features/tasks/data/tasks';
 import { listSafePatchPlansForWorkspace } from '@/lib/data/safe-patch-plans';
 import { listGitHubIssueTaskLinksForProject } from '@/lib/data/github-issue-task-links';
 import { listPullRequestReviewsForProject } from '@/lib/data/pull-request-reviews';
@@ -54,8 +55,12 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { cn, formatDateTime } from '@/lib/utils';
-import { ProjectForm } from '../ProjectForm';
 import { ProjectPriorityBadge, ProjectStatusBadge, ProjectTypeBadge } from '../ProjectBadge';
+
+const ProjectForm = dynamic(
+  () => import('../ProjectForm').then((mod) => mod.ProjectForm),
+  { loading: () => <div className="animate-pulse rounded-2xl border border-black/7 bg-white p-6 h-64" /> }
+);
 
 const CodebaseAnalyzer = dynamic(
   () => import('../CodebaseAnalyzer').then((mod) => mod.CodebaseAnalyzer),
@@ -126,7 +131,7 @@ export default async function ProjectDetailPage({
     githubPullRequestsResult,
     pullRequestReviewsResult,
   ] = await Promise.all([
-    listTasks({ workspaceId: workspaceResult.data.id }, supabase),
+    listTasks({ workspaceId: workspaceResult.data.id, limit: 500 }, supabase),
     githubOwner && githubRepo
       ? getGitHubRepositorySnapshot({
           owner: githubOwner,
@@ -281,25 +286,29 @@ export default async function ProjectDetailPage({
         tokenPresent={githubReadiness.tokenPresent}
       />
 
-      <GitHubIssuesPanel
-        projectId={project.id}
-        owner={githubOwner}
-        repo={githubRepo}
-        savedUrl={project.github_url ?? metadata.github.repo_url}
-        issuesResult={githubIssuesResult}
-        links={githubIssueLinksResult.data}
-        linksError={githubIssueLinksResult.error}
-      />
+      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-white p-6 h-48" />}>
+        <GitHubIssuesPanel
+          projectId={project.id}
+          owner={githubOwner}
+          repo={githubRepo}
+          savedUrl={project.github_url ?? metadata.github.repo_url}
+          issuesResult={githubIssuesResult}
+          links={githubIssueLinksResult.data}
+          linksError={githubIssueLinksResult.error}
+        />
+      </Suspense>
 
-      <PullRequestAssistantPanel
-        projectId={project.id}
-        owner={githubOwner}
-        repo={githubRepo}
-        savedUrl={project.github_url ?? metadata.github.repo_url}
-        pullRequestsResult={githubPullRequestsResult}
-        reviews={pullRequestReviewsResult.data}
-        reviewsError={pullRequestReviewsResult.error}
-      />
+      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-white p-6 h-48" />}>
+        <PullRequestAssistantPanel
+          projectId={project.id}
+          owner={githubOwner}
+          repo={githubRepo}
+          savedUrl={project.github_url ?? metadata.github.repo_url}
+          pullRequestsResult={githubPullRequestsResult}
+          reviews={pullRequestReviewsResult.data}
+          reviewsError={pullRequestReviewsResult.error}
+        />
+      </Suspense>
 
       <CodebaseAnalyzer
         projectId={project.id}

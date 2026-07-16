@@ -97,7 +97,7 @@ Full DB steps: [Final Launch Checklist → Phase 1.3](FINAL_LAUNCH_CHECKLIST.md#
 
 ### Optional integrations
 
-Meta (`META_*`), Google Ads (`GOOGLE_ADS_*`), Pinterest (`PINTEREST_*`), Stripe (`STRIPE_*`), PDF Chromium (`PUPPETEER_EXECUTABLE_PATH`).
+Meta (`META_*`), Google Ads (`GOOGLE_ADS_*`), Pinterest (`PINTEREST_*`), PDF Chromium (`PUPPETEER_EXECUTABLE_PATH`).
 
 Full table: [Final Launch Checklist → Phase 1.5](FINAL_LAUNCH_CHECKLIST.md#15-vercel--environment-variables-production)
 

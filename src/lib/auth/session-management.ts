@@ -4,8 +4,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { logger } from '@/lib/logger';
 import {
-  evaluateSessionActivity,
-  evaluateSessionIpMismatch,
   SESSION_ACTIVITY_COOKIE,
   SESSION_CLIENT_IP_COOKIE,
 } from '@/lib/auth/session-shared';

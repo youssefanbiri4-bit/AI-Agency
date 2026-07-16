@@ -1,137 +1,134 @@
 # BILLING STATUS — AgentFlow-AI
 
-**Decision Date:** 2026-07-11  
-**Decision:** Billing is scaffolded but intentionally **disabled** for internal/Beta use. Keep all existing DB schema, types, and utilities. Do not implement Stripe checkout.
+**Last Updated:** 2026-07-12 (Wave 5 Complete — Internal Platform Closed)
+**Decision:** **Billing is Disabled — Internal Platform Only**
+**Platform Purpose:** Internal HQ for the owner + team. Not a commercial SaaS product.
 
 ---
 
 ## Decision
 
-**Option B: Keep as Scaffold and document what is missing for full Stripe.**
+**AgentFlow-AI is an internal operating platform — not a commercial SaaS product.**
+
+There is no Stripe integration, no plan-based monetization, and no intention to charge for access. The platform exists to serve the owner and team as a command centre for AI agent operations, task management, reporting, and workflow orchestration.
 
 ### Rationale
 
-1. **Usage tracking is real and functional.** `usage-limits.ts` (335 lines) and `quotas.ts` (384 lines) provide production-grade plan-limit enforcement, counter management, and multi-source quota verification. These are not stubs — they are actively used by the content studio and scheduler.
+1. **Internal tool, not a product.** The platform is the team's operational backbone — not something being sold to external users.
 
-2. **Database schema is production-ready.** Three tables (`billing_customers`, `subscriptions`, `usage_limits`) have correct column types, foreign keys, cascade deletes, RLS policies, and indexes. A fourth table (`usage_events`) is migrated for audit logging.
+2. **Usage tracking is for internal operational limits only.** `usage-limits.ts` and `quotas.ts` exist to prevent resource exhaustion and ensure fair use among team members. They are not billing-enforcement mechanisms. They protect the platform from runaway costs (OpenAI API, n8n execution, storage).
 
-3. **Stripe client utility is scaffold only.** `src/lib/stripe-server.ts` provides lazy-init Stripe client and config-readiness checks, but is never imported anywhere. It is correct and complete for its scope.
+3. **Stripe has been fully removed (Wave 5).** All Stripe routes, client code, npm package, and env vars were deleted. The `billing_customers` and `subscriptions` tables remain in the schema but are not wired to any payment flow. The `subscriptions` table rows all default to `free` plan.
 
-4. **Platform is pre-revenue.** No external paying customers yet. Billing activation is a future task.
-
-5. **Deleting tables would waste work.** The schema and types are well-designed. Preserving them saves 2-3 days of future schema design.
+4. **No commercial roadmap.** The project has no revenue targets, no customer acquisition funnel, and no Stripe integration on the horizon.
 
 ---
 
-## What Exists
+## What Exists (Active Internal System)
 
-### Database Tables (4 tables, fully migrated)
+### Database Tables (4 tables, kept as-is)
 
-| Table | Purpose | RLS | Status |
-|-------|---------|-----|--------|
-| `billing_customers` | Maps workspace → Stripe customer | Owners/admins SELECT; owners CRUD | Schema ready, no data |
-| `subscriptions` | Tracks plan, status, period dates | Owners/admins SELECT; owners CRUD | Schema ready, all rows default `free` |
-| `usage_limits` | Per-workspace quota caps per plan | Members SELECT; owners UPDATE/DELETE | Schema ready, populated by seed defaults |
-| `usage_events` | Audit log of quota-consuming actions | Members SELECT; service role INSERT | Schema ready, used by usage-limits.ts |
+| Table | Purpose | Status |
+|-------|---------|--------|
+| `billing_customers` | Maps workspace → (formerly) Stripe customer | Schema only, no data |
+| `subscriptions` | Tracks plan, status, period dates | All rows default `free` |
+| `usage_limits` | Per-workspace quota caps | Populated by seed defaults |
+| `usage_events` | Audit log of quota-consuming actions | Used by usage-limits.ts |
 
-### Server-Side Usage Logic (REAL, functional)
+### Server-Side Usage Logic (Active — internal operational limits)
 
 | File | Purpose | Lines | Status |
 |------|---------|-------|--------|
-| `src/lib/usage/usage-limits.ts` | Plan defaults, counter sync, event recording | 335 | Production-ready |
-| `src/lib/usage/quotas.ts` | Multi-source quota checking, usage retrieval | 384 | Production-ready |
-| `src/lib/usage/cost-tracking.ts` | OpenAI/n8n cost estimation | 161 | Functional; recording is log-only (TODO) |
+| `src/lib/usage/usage-limits.ts` | Plan defaults, counter sync, event recording | 362 | Active — internal resource governance |
+| `src/lib/usage/quotas.ts` | Multi-source quota checking, usage retrieval | 298 | Active — internal resource governance |
+| `src/lib/usage/cost-tracking.ts` | OpenAI/n8n cost estimation | 161 | Log-only — cost awareness, not billing |
+| `src/lib/usage/quota-alerts.ts` | 80%/95% threshold alerts | ~80 | Active — notification system |
+| `src/app/(dashboard)/dashboard/settings/actions/limits.ts` | Admin limit CRUD | ~150 | Active — owner/admin only |
 
-### Stripe Client Utility (SCAFFOLD, orphaned)
+### UI Pages (Active — internal usage visibility)
+
+| Route | Purpose | Status |
+|-------|---------|--------|
+| `/dashboard/usage` | Full usage dashboard with quota cards and cost tracking | **Active** — accessible from sidebar |
+| `/dashboard/settings/billing` | Internal Usage & Limits summary | **Active** — shows plan, quotas, limits |
+| `/dashboard/settings` (Usage & Limits section) | Settings page summary card | **Active** — links to full usage page |
+
+### Sidebar Navigation
+
+The sidebar includes "Usage & Limits" linking to `/dashboard/usage`.
+
+### Admin Limit Adjustment
+
+Owner or admin can modify per-workspace quota caps via server actions:
+- `getEditableLimitsAction` — returns current limits with override status
+- `updateWorkspaceLimitsAction` — sets per-type caps (validated: max 10,000 most / 1,000 reels)
+- `resetWorkspaceLimitsAction` — clears overrides, reverts to plan defaults
+
+Override chain: override > DB column > PLAN_LIMITS default > hardcoded fallback.
+
+---
+
+## What Was Removed (Wave 5)
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `src/lib/stripe-server.ts` | Lazy-init Stripe client, config checks | Functional, never imported |
-
-### TypeScript Types (COMPLETE)
-
-- `BillingPlan` = `'free' | 'starter' | 'pro' | 'agency'` — `src/types/database.ts:4`
-- `BillingCustomerRecord`, `SubscriptionRecord`, `UsageLimitRecord` — `src/types/database.ts:1895-1897`
-- Full Row/Insert/Update types for all 3 billing tables
-
-### Frontend
-
-| File | Purpose | Status |
-|------|---------|--------|
-| `src/app/(dashboard)/dashboard/settings/billing/page.tsx` | Billing settings | **Stub** — redirects to `/dashboard/settings` |
-| `src/components/ui/StatusBadge.tsx` | `billing_required` status variant | UI only, no billing logic |
+| `src/lib/stripe-server.ts` | Lazy-init Stripe client | **Deleted** |
+| `src/lib/billing/plans.ts` | Plan definitions, price ID lookup | **Deleted** |
+| `src/lib/data/billing.ts` | CRUD for billing tables | **Deleted** |
+| `src/app/api/billing/checkout/route.ts` | Create Stripe Checkout session | **Deleted** |
+| `src/app/api/billing/webhook/route.ts` | Stripe event handler | **Deleted** |
+| `src/app/api/billing/portal/route.ts` | Stripe Customer Portal session | **Deleted** |
+| `stripe` npm package | Stripe SDK | **Removed from package.json** |
 
 ### Environment Variables
 
-From `.env.example`:
-```
-# --- Stripe (scaffold only) ---
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_ALLOW_LIVE_MODE=false
-```
-
-**Missing from `.env.example`** (referenced in `stripe-server.ts`):
-- `STRIPE_PRICE_STARTER_MONTHLY`
-- `STRIPE_PRICE_PRO_MONTHLY`
-- `STRIPE_PRICE_AGENCY_MONTHLY`
-- `APP_BASE_URL`
+Stripe env vars have been removed from `.env.example`. Only `APP_BASE_URL` was kept.
 
 ---
 
-## What Does NOT Exist (Required for Full Stripe)
+## How to Think About "Billing" Going Forward
 
-### API Routes (none exist)
+The platform does not need a Stripe or commercial billing system. Instead, focus on **internal operational governance**:
 
-| Route | Purpose |
-|-------|---------|
-| `/api/billing/checkout` | Create Stripe Checkout session |
-| `/api/billing/webhook` | Handle Stripe events (invoice.paid, subscription.updated, etc.) |
-| `/api/billing/portal` | Stripe Customer Portal redirect |
-
-### Server Actions
-
-- No billing-related server actions in `src/actions/`
-
-### Data Access Layer
-
-- No CRUD functions for `billing_customers`, `subscriptions`, or `usage_limits` in `src/lib/data/`
-
-### Billing UI
-
-- No plan selection, invoice list, or subscription management UI
-- No upgrade/downgrade flow
-- No usage dashboard showing quota consumption vs limits
-
-### Integration Wiring
-
-- No code writes to `usage_events` for billing-gated actions (only usage-limits.ts does this)
-- No enforcement of `usage_limits` at the billing layer (enforcement happens at the quota layer)
-- No plan-based feature gating tied to `subscriptions.plan`
-- No webhook handler to sync Stripe subscription events → database
+| Concept | Internal Platform Equivalent |
+|---------|------------------------------|
+| Paid plans | N/A — every user is a team member |
+| Stripe checkout | N/A |
+| Subscription management | N/A |
+| Usage-based billing | N/A |
+| Quota enforcement | Internal resource limits (AI gens, creative assets, tasks, etc.) |
+| Cost tracking | Cost awareness for the owner (log-only, no enforcement) |
+| Plan upgrades | N/A |
+| Admin limit adjustment | Owner/admin can modify per-workspace caps |
 
 ---
 
-## What Future Engineers Need to Build
+## Team Usage & Limits
 
-When billing is activated, implement in this order:
+The team can view and monitor usage through:
 
-1. **Data access layer** — CRUD functions for billing tables in `src/lib/data/`
-2. **Checkout flow** — `/api/billing/checkout` route + plan selection UI
-3. **Webhook handler** — `/api/billing/webhook` to sync Stripe events → `subscriptions` table
-4. **Customer portal** — `/api/billing/portal` for self-service subscription management
-5. **Billing UI** — Dashboard page showing current plan, invoices, usage
-6. **Plan gating** — Feature flags based on `subscriptions.plan` (not just `usage_limits`)
-7. **Usage tracking integration** — Wire `usage_events` writes into all quota-consuming actions
+1. **Sidebar "Usage & Limits"** — Quick access to the full usage dashboard
+2. **Settings "Usage & Limits" section** — Summary card with link to full dashboard
+3. **Full Usage Dashboard** (`/dashboard/usage`) — Detailed quota cards with progress bars
 
-**Note:** Steps 6-7 are partially done in the quota layer (`usage-limits.ts`, `quotas.ts`). The gap is connecting them to Stripe subscription state.
+### Current Internal Free Tier Limits
+
+| Resource | Limit | Reset |
+|----------|-------|-------|
+| AI Generations | 20/month | Monthly |
+| Creative Assets | 50 cumulative | Never |
+| Content Items | 30 cumulative | Never |
+| Tasks | 40 cumulative | Never |
+| Reel Publishes | 10/month | Monthly |
 
 ---
 
 ## Recommendation
 
-**Do not delete any existing scaffold.** The schema, types, and usage logic are production-quality. When billing is activated, the existing foundation saves ~2-3 days of schema design and ~1-2 days of quota logic.
+**Do not build Stripe billing.** The platform is an internal operating tool for the owner and team. Commercial billing would add complexity (PCI compliance, tax handling, refunds, customer support) with zero benefit.
 
-**Priority:** Medium. Billing is not required for internal/Beta use. Activate when the platform has external users ready to pay.
+If the platform ever transitions to a commercial product (not currently planned), the schema and types provide a starting point — but a full rebuild would be more appropriate at that time.
 
-**Ambiguity level:** None. The system is clearly in "scaffold + functional usage tracking" mode. No future engineer should be confused about what works and what doesn't.
+**Priority:** N/A (not a priority — not on the roadmap)
+
+**Ambiguity level:** None. The platform is internal. Billing is not happening.

@@ -2,9 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createTask } from '@/lib/data/tasks';
+import { createTask } from '@/features/tasks/data/tasks';
 import { createNotification } from '@/lib/data/notifications';
 import { getRBACContext, hasPermission } from '@/lib/auth/rbac';
+import { incrementUsage } from '@/lib/usage/quotas';
 import type { AgentType } from '@/types';
 import type { TaskPriority } from '@/types/database';
 
@@ -99,6 +100,8 @@ export async function createTaskAction(
       error: taskResult.error ?? 'Task could not be created.',
     };
   }
+
+  await incrementUsage(workspace.id, 'tasks', 1, user.id).catch(() => {});
 
   try {
     await createNotification(

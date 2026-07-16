@@ -2,6 +2,14 @@ import Link from 'next/link';
 import { BRAND_NAME } from '@/lib/brand';
 import { cn } from '@/lib/utils';
 
+interface WhiteLabelOverride {
+  companyName?: string | null;
+  tagline?: string | null;
+  logoUrl?: string | null;
+  logoAltText?: string | null;
+  hideAgentFlowBranding?: boolean;
+}
+
 interface BrandMarkProps {
   href?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -10,6 +18,7 @@ interface BrandMarkProps {
   inverted?: boolean;
   customLogoUrl?: string | null;
   customLogoAlt?: string | null;
+  whiteLabel?: WhiteLabelOverride | null;
   className?: string;
   onClick?: () => void;
 }
@@ -91,9 +100,14 @@ function BrandContent({
   inverted = false,
   customLogoUrl,
   customLogoAlt,
+  whiteLabel,
 }: Omit<BrandMarkProps, 'href' | 'className'>) {
   const selectedSize = sizeStyles[size];
-  const hasCustomLogo = Boolean(customLogoUrl);
+  const logoUrl = whiteLabel?.logoUrl ?? customLogoUrl;
+  const hasCustomLogo = Boolean(logoUrl);
+  const displayName = whiteLabel?.companyName || BRAND_NAME;
+  const displayTagline = whiteLabel?.tagline || tagline;
+  const altText = whiteLabel?.logoAltText || customLogoAlt || `${displayName} logo`;
 
   return (
     <>
@@ -107,13 +121,11 @@ function BrandContent({
             : 'border-black/10 bg-white'
         )}
       >
-        {customLogoUrl ? (
-          // Custom workspace logos may be arbitrary Supabase/external URLs; keep
-          // the plain img to avoid requiring broad next/image remote patterns.
+        {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={customLogoUrl}
-            alt={customLogoAlt || `${BRAND_NAME} logo`}
+            src={logoUrl}
+            alt={altText}
             className="h-full w-full object-contain"
           />
         ) : (
@@ -128,7 +140,7 @@ function BrandContent({
             inverted ? 'text-white' : 'text-black'
           )}
         >
-          {BRAND_NAME}
+          {displayName}
         </span>
         {showTagline && (
           <span
@@ -138,7 +150,7 @@ function BrandContent({
               inverted ? 'text-white/68' : 'text-black/52'
             )}
           >
-            {tagline}
+            {displayTagline}
           </span>
         )}
       </span>

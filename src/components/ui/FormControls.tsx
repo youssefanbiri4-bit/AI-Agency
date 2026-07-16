@@ -8,7 +8,7 @@ import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 const controlBase =
-  'w-full min-w-0 rounded-lg border border-black/10 bg-white/92 px-3.5 py-2.5 text-sm font-medium leading-5 text-black shadow-sm transition-all placeholder:text-black/42 focus:border-[#F7CBCA] focus:outline-none focus:ring-4 focus:ring-[#F7CBCA]/20 disabled:cursor-not-allowed disabled:bg-[#D5E5E5]/35 disabled:text-black/45';
+  'w-full min-w-0 rounded-lg border border-border bg-surface-elevated px-3.5 py-2.5 text-sm font-medium leading-5 text-foreground shadow-sm transition-all placeholder:text-foreground-muted focus:border-ring focus:outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-not-allowed disabled:bg-surface disabled:text-foreground-muted';
 
 export function inputStyles(className?: string) {
   return cn(controlBase, className);
@@ -48,7 +48,7 @@ export const Textarea = forwardRef<
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn('mb-2 block text-sm font-black text-black/76', className)}
+      className={cn('mb-2 block text-sm font-bold text-foreground', className)}
       {...props}
     />
   );

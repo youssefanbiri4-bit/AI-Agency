@@ -22,10 +22,10 @@ vi.mock('@/lib/queue/redis', () => ({
 }));
 
 vi.mock('@/lib/queue/queues', () => ({
-  dlqQueue: {
+  getDlqQueue: () => ({
     add: (...args: unknown[]) => dlqAddMock(...args),
-  },
-  taskQueue: {},
+  }),
+  getTaskQueue: () => ({}),
 }));
 
 describe('maybeMoveJobToDLQ', () => {

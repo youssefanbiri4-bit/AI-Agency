@@ -12,56 +12,18 @@ import {
 } from '@/lib/auth/require-page-access';
 import { isDepartment } from '@/types/auth';
 import { logger } from '@/lib/logger';
+import {
+  applySecurityHeaders,
+  buildContentSecurityPolicy,
+  createNonce,
+} from '@/lib/security/security-headers';
+import { getMfaEnforcementRedirect, isMfaEnforcementRoute } from '@/lib/auth/mfa-enforcement';
 
 const edgeLog = logger.child('auth:dashboard-edge');
 const EDGE_AUTH_TIMEOUT_MS = 4_000;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-function createNonce() {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-function buildContentSecurityPolicy(nonce: string) {
-  const directives = [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "frame-ancestors 'none'",
-    "form-action 'self'",
-    "object-src 'none'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    `style-src 'self' 'nonce-${nonce}'`,
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co https://api.openai.com https://graph.facebook.com https://graph.instagram.com https://oauth2.googleapis.com https://googleads.googleapis.com https://api.pinterest.com https://api.github.com",
-    "media-src 'self' blob: https:",
-    "worker-src 'self' blob:",
-    "upgrade-insecure-requests",
-  ];
-
-  return directives.join('; ');
-}
-
-function applySecurityHeaders(response: NextResponse, contentSecurityPolicy: string | undefined) {
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set(
-    'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()'
-  );
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-DNS-Prefetch-Control', 'on');
-  response.headers.set('X-Powered-By', '');
-
-  if (contentSecurityPolicy) {
-    response.headers.set('Content-Security-Policy', contentSecurityPolicy);
-  }
-
-  return response;
-}
 
 function createTimeoutFetch(timeoutMs = EDGE_AUTH_TIMEOUT_MS): typeof fetch {
   return async (input, init = {}) => {
@@ -267,6 +229,36 @@ export async function handleDashboardEdgeAuth(request: NextRequest): Promise<Nex
         response.headers.set('x-rbac-role', accessCtx.role);
         if (accessCtx.effectiveDepartment) {
           response.headers.set('x-rbac-dept', accessCtx.effectiveDepartment);
+        }
+
+        // MFA enforcement check for owner/admin roles
+        if (!isMfaEnforcementRoute(pathname) && membership.role) {
+          try {
+            const mfaRedirect = await getMfaEnforcementRedirect(
+              supabase,
+              workspaceId,
+              user.id,
+              membership.role
+            );
+
+            if (mfaRedirect) {
+              edgeLog.warn('mfa enforcement triggered redirect', {
+                pathname,
+                role: membership.role,
+                durationMs: Date.now() - startedAt,
+              });
+
+              return applySecurityHeaders(
+                NextResponse.redirect(new URL(mfaRedirect, request.url)),
+                csp
+              );
+            }
+          } catch (err) {
+            // MFA enforcement is best-effort; don't block access on errors
+            edgeLog.warn('mfa enforcement check failed', {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
         }
       }
     }

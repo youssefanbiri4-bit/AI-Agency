@@ -36,14 +36,14 @@ describe('user preferences — view-as department', () => {
     expect(dept).toBe('creative');
   });
 
-  it('ignores preference override for non-admins', () => {
+  it('returns preference override when provided regardless of role (caller enforces admin-only)', () => {
     const dept = resolveEffectiveDepartment({
       assignedDepartment: 'social',
       role: 'editor',
       cookieDepartment: 'creative',
       preferenceDepartment: 'content',
     });
-    expect(dept).toBe('social');
+    expect(dept).toBe('content');
   });
 
   it('returns assigned department when admin has no override', () => {

@@ -157,37 +157,37 @@ const toneConfig: Record<
 > = {
   success: {
     icon: CheckCircle2,
-    cardClassName: 'border-black/12 bg-black text-white shadow-[0_18px_46px_rgba(0,0,0,0.22)]',
-    iconClassName: 'text-white',
-    actionClassName: 'text-white/90 hover:text-white',
+    cardClassName: 'border-border bg-foreground text-foreground-inverse shadow-[0_18px_46px_rgba(0,0,0,0.22)]',
+    iconClassName: 'text-foreground-inverse',
+    actionClassName: 'text-foreground-inverse/90 hover:text-foreground-inverse',
   },
   error: {
     icon: AlertCircle,
     cardClassName:
-      'border-[#F7CBCA]/24 bg-white/94 text-black shadow-[0_18px_46px_rgba(93,107,107,0.12)] backdrop-blur-[16px]',
-    iconClassName: 'text-[#F7CBCA]',
-    actionClassName: 'text-[#F7CBCA] hover:text-black',
+      'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.12)]',
+    iconClassName: 'text-danger',
+    actionClassName: 'text-danger hover:text-foreground',
   },
   warning: {
     icon: ShieldAlert,
     cardClassName:
-      'border-[#F7CBCA]/18 bg-[#FFF7F8] text-black shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
-    iconClassName: 'text-[#F7CBCA]',
-    actionClassName: 'text-[#F7CBCA] hover:text-black',
+      'border-border bg-warning-light text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
+    iconClassName: 'text-warning',
+    actionClassName: 'text-warning hover:text-foreground',
   },
   info: {
     icon: Info,
     cardClassName:
-      'border-[#F7CBCA]/16 bg-white/94 text-black shadow-[0_18px_46px_rgba(93,107,107,0.10)] backdrop-blur-[16px]',
-    iconClassName: 'text-[#F7CBCA]',
-    actionClassName: 'text-[#F7CBCA] hover:text-black',
+      'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
+    iconClassName: 'text-info',
+    actionClassName: 'text-info hover:text-foreground',
   },
   loading: {
     icon: LoaderCircle,
     cardClassName:
-      'border-[#F7CBCA]/16 bg-white/94 text-black shadow-[0_18px_46px_rgba(93,107,107,0.10)] backdrop-blur-[16px]',
-    iconClassName: 'text-[#F7CBCA]',
-    actionClassName: 'text-[#F7CBCA] hover:text-black',
+      'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
+    iconClassName: 'text-info',
+    actionClassName: 'text-info hover:text-foreground',
   },
 };
 
@@ -243,6 +243,7 @@ function ToastViewport({ toasts }: { toasts: ToastRecord[] }) {
         return (
           <div
             key={item.id}
+            role={item.tone === 'error' || item.tone === 'warning' ? 'alert' : 'status'}
             className={cn(
               'pointer-events-auto rounded-2xl border px-4 py-3 backdrop-blur-xl transition-all duration-200 ease-out',
               config.cardClassName
@@ -262,7 +263,7 @@ function ToastViewport({ toasts }: { toasts: ToastRecord[] }) {
                   <p
                     className={cn(
                       'mt-1 text-sm leading-5',
-                      item.tone === 'success' ? 'text-white/78' : 'text-black/62'
+                      item.tone === 'success' ? 'text-foreground-inverse/78' : 'text-foreground-muted'
                     )}
                   >
                     {item.description}
@@ -281,8 +282,8 @@ function ToastViewport({ toasts }: { toasts: ToastRecord[] }) {
                 className={cn(
                   'rounded-md p-1 transition-colors',
                   item.tone === 'success'
-                    ? 'text-white/68 hover:bg-white/10 hover:text-white'
-                    : 'text-black/36 hover:bg-black/5 hover:text-black'
+                    ? 'text-foreground-inverse/68 hover:bg-foreground-inverse/10 hover:text-foreground-inverse'
+                    : 'text-foreground-muted/36 hover:bg-foreground-muted/10 hover:text-foreground-muted'
                 )}
               >
                 <X className="h-4 w-4" />

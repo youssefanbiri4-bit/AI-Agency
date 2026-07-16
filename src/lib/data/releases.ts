@@ -132,11 +132,12 @@ export function buildReleaseReport(release: ReleaseRecord, projectName?: string 
 export async function listReleasesForWorkspace(
   workspaceId: string,
   client: ReleaseClient = supabase as ReleaseClient,
-  options: { limit?: number } = {}
+  options: { limit?: number; offset?: number } = {}
 ): Promise<DataResult<ReleaseRecord[]>> {
   releaseDataLog.info('before list releases', {
     workspaceId,
     limit: options.limit ?? null,
+    offset: options.offset ?? null,
   });
   if (!isSupabaseConfigured) {
     releaseDataLog.warn('Supabase is not configured');
@@ -149,6 +150,9 @@ export async function listReleasesForWorkspace(
     .order('updated_at', { ascending: false });
   if (options.limit && options.limit > 0) {
     query = query.limit(options.limit);
+  }
+  if (options.offset && options.offset > 0 && options.limit && options.limit > 0) {
+    query = query.range(options.offset, options.offset + options.limit - 1);
   }
   const { data, error } = await query;
   releaseDataLog.info('after list releases', {

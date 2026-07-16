@@ -23,9 +23,6 @@ import {
   getSettingsWorkspaceContext,
   buildAITextProviderReadinessState,
   buildProvider,
-  checklistProgress,
-  disconnectedMetaSettings,
-  disconnectedPinterestSettings,
   envCheck,
   formatEnvList,
   isEnvPresent,
@@ -35,9 +32,7 @@ import {
   safeErrorMessage,
   schedulerRouteFileExists,
   dashboardSchedulerButtonFileExists,
-  titleCaseStatus,
   CONTENT_STUDIO_SCHEDULER_ROUTE_PATH,
-  type ProviderReadinessItem,
   type ProviderReadinessState,
   type ProviderSetupCheckItem,
   type ProviderSetupStatus,
@@ -303,7 +298,7 @@ export async function getProviderSetupWizardAction(): Promise<ProviderSetupWizar
       .not('error_message', 'is', null)
       .order('updated_at', { ascending: false })
       .limit(30),
-    listProjectsForWorkspace(workspaceId, supabase),
+    listProjectsForWorkspace(workspaceId, supabase, { limit: 200 }),
   ]);
 
   const recentAttempts = recentAttemptsResult.data ?? [];

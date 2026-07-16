@@ -7,12 +7,13 @@ import {
   type ContentStudioPublishAttemptActionType,
   type ContentStudioPublishAttemptProvider,
   type ContentStudioPublishAttemptStatus,
-} from '@/lib/data/content-studio-publish-attempts';
+} from '@/features/content-studio/data/content-studio-publish-attempts';
 import {
   executeContentStudioProviderAction,
   getContentStudioProviderReadiness,
 } from '@/lib/content-studio/provider-actions';
 import { reportAppError, reportAppEvent } from '@/lib/logger';
+import { CONCURRENCY_SLOTS, ConcurrencyLimitError, withConcurrencyLimit } from '@/lib/concurrency-limiter';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import type { JsonObject } from '@/types';
 import type {
@@ -636,6 +637,26 @@ async function handleScheduledItem(
 }
 
 export async function runContentStudioScheduler(input?: { batchSize?: number }) {
+  try {
+    // Fail-fast: the BULK_OPERATION slot has maxConcurrency 1, so a second
+    // overlapping scheduler run is rejected instead of double-processing items.
+    return await withConcurrencyLimit(
+      CONCURRENCY_SLOTS.BULK_OPERATION,
+      () => runSchedulerInternal(input),
+      { failOnQueue: true }
+    );
+  } catch (e) {
+    if (e instanceof ConcurrencyLimitError) {
+      reportAppEvent('content_studio_scheduler_skipped_busy', {
+        reason: 'another scheduler run is already in progress',
+      });
+      return createEmptySummary();
+    }
+    throw e;
+  }
+}
+
+async function runSchedulerInternal(input?: { batchSize?: number }) {
   const summary = createEmptySummary();
   const { client, error } = getSupabaseAdmin();
 

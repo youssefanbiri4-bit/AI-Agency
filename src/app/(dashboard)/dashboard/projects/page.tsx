@@ -16,7 +16,7 @@ export default async function ProjectsPage() {
   const activeWorkspaceId = await getActiveWorkspaceIdFromCookie();
   const workspaceResult = await getCurrentUserWorkspace(supabase, activeWorkspaceId);
   const projectsResult = workspaceResult.data
-    ? await listProjectsForWorkspace(workspaceResult.data.id, supabase)
+    ? await listProjectsForWorkspace(workspaceResult.data.id, supabase, { limit: 200 })
     : { data: [], error: workspaceResult.error ?? 'Workspace not found.', isConfigured: true };
 
   return (

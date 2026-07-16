@@ -44,7 +44,7 @@ export async function uploadReelVideo(
   filename: string
 ) {
   const path = `${workspaceId}/${userId}/${Date.now()}-${filename}`;
-  const { data, error } = await client.storage
+  const { error } = await client.storage
     .from(REELS_BUCKET)
     .upload(path, file, {
       cacheControl: '31536000',
@@ -65,7 +65,7 @@ export async function uploadReelCover(
   filename: string
 ) {
   const path = `${workspaceId}/${userId}/${Date.now()}-${filename}`;
-  const { data, error } = await client.storage
+  const { error } = await client.storage
     .from(REELS_BUCKET)
     .upload(path, file, {
       cacheControl: '31536000',

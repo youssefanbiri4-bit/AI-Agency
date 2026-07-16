@@ -1,10 +1,10 @@
 'use server';
 
-import { gatherClientReportData } from '@/lib/reports/report-data';
-import { generateClientReport } from '@/lib/reports/report-generator';
-import { buildReportFilename, generateServerPDF } from '@/lib/reports/generate-server-pdf';
+import { gatherClientReportData } from '@/features/reports/service/report-data';
+import { generateClientReport } from '@/features/reports/service/report-generator';
+import { buildReportFilename, generateServerPDF } from '@/features/reports/service/generate-server-pdf';
 import { requireWorkspaceAccessWithRBAC } from '@/lib/auth/rbac';
-import type { ClientReportTemplate } from '@/lib/reports/report-types';
+import type { ClientReportTemplate } from '@/features/reports/service/report-types';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import {
   uploadSavedReportPdf,
@@ -12,7 +12,7 @@ import {
   createReportShareLink,
   revokeReportShareLink,
   createReportSignedUrl,
-} from '@/lib/reports/report-storage';
+} from '@/features/reports/service/report-storage';
 
 export interface DownloadClientReportResult {
   ok: boolean;

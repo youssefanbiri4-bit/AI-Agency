@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import {
   Activity,
@@ -22,11 +24,14 @@ import { FeatureCard } from '@/components/marketing/FeatureCard';
 import { MarketingAgentCard } from '@/components/marketing/MarketingAgentCard';
 import { MarketingDepartmentCard } from '@/components/marketing/MarketingDepartmentCard';
 import { MarketingNavbar } from '@/components/marketing/MarketingNavbar';
+import { HeroExperiment } from '@/components/marketing/HeroExperiment';
 import { AgentFlowScrollShowcase } from '@/components/marketing/AgentFlowScrollShowcase';
 import { SectionHeader } from '@/components/marketing/SectionHeader';
 import { WorkflowSection } from '@/components/marketing/WorkflowSection';
 import { agentCatalog } from '@/data/agents';
 import { DEPARTMENTS } from '@/lib/agents';
+import { generatePageMetadata } from '@/lib/seo/metadata';
+import { getExperimentVariant } from '@/lib/marketing/experiments';
 
 const features = [
   {
@@ -84,12 +89,35 @@ const trustItems = [
   },
 ];
 
-// Pricing section reserved for future Stripe integration.
-// const pricingTiers = [...];
+export const metadata: Metadata = generatePageMetadata({
+  title: 'AI Agency Operations Platform',
+  description:
+    'Run AI agency work from one disciplined workspace. Manage autonomous agents, tasks, reviews, and workflows with a professional operations dashboard.',
+  path: '/',
+});
 
-export default function Home() {
+const ORG_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'AgentFlow AI',
+  url: (process.env.NEXT_PUBLIC_APP_URL || 'https://agentflow-ai.vercel.app'),
+  description:
+    'AI Agency Operations Platform for managing autonomous agents, tasks, reviews, and workflows.',
+};
+
+export default async function Home() {
+  const cookieStore = await cookies();
+  const existing = cookieStore.get('af_ab_landing-hero')?.value;
+  const seed = existing || crypto.randomUUID();
+  const { variant } = getExperimentVariant('landing-hero', existing, seed);
+  const anonymousId = cookieStore.get('af_anon_id')?.value || crypto.randomUUID();
+
   return (
     <div className="dashboard-background premium-page min-h-screen w-full text-black">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSON_LD) }}
+      />
       <MarketingNavbar />
 
       <main className="w-full">
@@ -100,12 +128,9 @@ export default function Home() {
                 <Sparkles className="h-3.5 w-3.5" />
                 AgentFlow AI operations platform
               </Badge>
-              <h1 className="max-w-full break-words text-3xl font-black leading-tight tracking-normal text-black sm:text-5xl lg:text-6xl">
-                Run AI agency work from one disciplined workspace
-              </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-black/62 sm:text-lg sm:leading-8">
-                AgentFlow AI brings your configured agents, task briefs, review flow, and reporting foundation into a product surface that stays honest about live data and integration readiness.
-              </p>
+              <div className="max-w-full">
+                <HeroExperiment experimentId="landing-hero" variant={variant} anonymousId={anonymousId} />
+              </div>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/auth/signup" className={buttonStyles({ size: 'lg', className: 'h-12 w-full px-6 sm:w-auto' })}>
@@ -269,8 +294,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Pricing section reserved for future Stripe integration */}
-        {/* <section id="pricing" className="py-24 sm:py-28"> ... */}
+        {/* Pricing is internal platform only — no commercial tiers */}
 
         <section className="px-5 pb-24 sm:px-6 sm:pb-28 lg:px-8">
           <div className="mx-auto max-w-7xl overflow-hidden rounded-lg border border-[#F7CBCA]/12 bg-[#5D6B6B]/72 p-8 text-white shadow-[0_30px_80px_rgba(93,107,107,0.18)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] sm:p-10 lg:p-12">

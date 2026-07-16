@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { CheckCheck, LifeBuoy, RefreshCw } from 'lucide-react';
 import {
@@ -10,10 +11,19 @@ import {
 } from '@/lib/data/notifications';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { buttonStyles } from '@/components/ui/Button';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { Notice } from '@/components/ui/Notice';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { markAllNotificationsReadAction } from './actions';
-import { NotificationsCenterClient } from './NotificationsCenterClient';
+
+const NotificationsCenterClient = dynamic(
+  () => import('./NotificationsCenterClient').then((mod) => mod.NotificationsCenterClient),
+  {
+    loading: () => (
+      <LoadingState title="Loading notifications" description="Checking for the latest updates." />
+    ),
+  }
+);
 
 export default async function NotificationsPage() {
   const supabase = await createSupabaseServerClient();

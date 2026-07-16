@@ -1,13 +1,13 @@
 import { cn } from '@/lib/utils';
 
 function SkeletonBlock({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-xl bg-black/[0.06]', className)} />;
+  return <div className={cn('animate-pulse rounded-xl bg-foreground/6', className)} />;
 }
 
 export function DashboardSkeleton({ variant = 'personalized' }: { variant?: 'personalized' | 'command_center' }) {
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl border border-black/7 bg-white/90 p-6 sm:p-8">
+      <section className="rounded-2xl border border-border bg-surface-elevated p-6 sm:p-8">
         <SkeletonBlock className="mb-3 h-6 w-40" />
         <SkeletonBlock className="h-10 w-2/3 max-w-lg" />
         <SkeletonBlock className="mt-3 h-4 w-full max-w-2xl" />

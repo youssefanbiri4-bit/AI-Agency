@@ -12,7 +12,7 @@ import {
   getCurrentWorkspaceMembership,
 } from '@/lib/data/workspaces';
 import { getDashboardData, type DashboardData } from '@/lib/data/dashboard';
-import { listContentStudioItemsForWorkspace, type ContentStudioItemWithAssets } from '@/lib/data/content-studio';
+import { listContentStudioItemsForWorkspace, type ContentStudioItemWithAssets } from '@/features/content-studio/data/content-studio';
 import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
 import { departmentScope } from '@/lib/data/department-scope';
 import type { Department } from '@/types/auth';
@@ -20,7 +20,7 @@ import { listProjectsForWorkspace } from '@/lib/data/projects';
 import { listReleasesForWorkspace } from '@/lib/data/releases';
 import { getMetaConnectionStatus, getGoogleAdsConnectionStatus } from '@/lib/data/ad-connections';
 import { emptyDataResult, errorDataResult, type DataResult } from '@/lib/data/types';
-import { taskService } from '@/lib/tasks/task-service';
+import { taskService } from '@/features/tasks/service/task-service';
 import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
 import type { StrictWorkspaceRole } from '@/lib/permissions-matrix';
 import { getAgentStats, getTaskStats } from '@/lib/stats';
@@ -322,7 +322,7 @@ export async function fetchPersonalizedDashboardData(
   const yourTasksCount = settled[3].status === 'fulfilled' ? settled[3].value : 0;
   const readyCount = settled[4].status === 'fulfilled' ? settled[4].value : 0;
 
-  for (const [label, result] of [
+  for (const [, result] of [
     ['my tasks', myTasksResult],
     ['dept scoped tasks', scopedTasksResult],
     ['recent content', contentResult],

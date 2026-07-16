@@ -3,10 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { hasPermission } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
-import { createContentStudioItem } from '@/lib/data/content-studio';
+import { createContentStudioItem } from '@/features/content-studio/data/content-studio';
 import { getBrandKitForWorkspace } from '@/lib/data/brand-kit';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { setupBlockerMessage } from '@/lib/safe-messages';
+import { incrementUsage } from '@/lib/usage/quotas';
 import { generateMarketingText } from '@/lib/ai/text-provider';
 import { campaignTemplates } from '@/lib/content-studio/campaign-templates';
 import type {
@@ -554,6 +555,8 @@ export async function generateCampaignPlanAction(
       };
     }
 
+    await incrementUsage(workspace.id, 'ai_generations', 1, user.id).catch(() => {});
+
     return {
       error: null,
       message: 'Campaign plan generated.',
@@ -669,6 +672,8 @@ export async function createCampaignPlanDraftsAction(
 
       itemIds.push(result.data.id);
     }
+
+    await incrementUsage(workspace.id, 'content_items', drafts.length, user.id).catch(() => {});
 
     revalidatePath('/dashboard/content-studio');
     revalidatePath('/dashboard/calendar');

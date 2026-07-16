@@ -8,6 +8,8 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkWorkspaceUserRateLimit, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
+import { incrementUsage } from '@/lib/usage/quotas';
 import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
 import { hasPermission } from '@/lib/auth/rbac';
 import {
@@ -177,6 +179,7 @@ async function getWorkspaceContext(redirectTo = '/dashboard/ai-studio', rateLimi
   }
 
   if (rateLimitGeneration) {
+    // Fixed-window rate limit (existing)
     const limiter = await checkRateLimit({
       key: `ai-studio:${workspaceResult.data.id}:${user.id}`,
       limit: 10,
@@ -185,6 +188,18 @@ async function getWorkspaceContext(redirectTo = '/dashboard/ai-studio', rateLimi
 
     if (!limiter.allowed) {
       throw new Error('وصلتي للحد المؤقت لتوليد AI Studio. عاود المحاولة بعد شوية.');
+    }
+
+    // Sliding window rate limit for AI Studio generations
+    const slidingLimiter = await checkWorkspaceUserRateLimit(
+      workspaceResult.data.id,
+      user.id,
+      RATE_LIMIT_ACTIONS.AI_GENERATE_IMAGE,
+      { limit: 5, windowMs: 60_000 } // 5 AI Studio generations per minute
+    );
+
+    if (!slidingLimiter.allowed) {
+      throw new Error(`AI Studio generation rate limit reached. Please wait ${Math.ceil(slidingLimiter.resetInMs / 1000)} seconds before retrying.`);
     }
   }
 
@@ -305,6 +320,8 @@ export async function generateAIStudioImageAction(
 
   revalidateAIStudio();
 
+  await incrementUsage(workspace.id, 'ai_generations', 1, user.id).catch(() => {});
+
   if (savedResult.error || !savedResult.data) {
     return { error: savedResult.error ?? 'Generated image could not be saved.' };
   }
@@ -407,6 +424,8 @@ export async function generateAIStudioVideoAction(
   );
 
   revalidateAIStudio();
+
+  await incrementUsage(workspace.id, 'ai_generations', 1, user.id).catch(() => {});
 
   if (savedResult.error || !savedResult.data) {
     return { error: savedResult.error ?? 'Video job could not be saved.' };

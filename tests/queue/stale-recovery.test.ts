@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Task, TaskStatus } from '@/types';
 
-vi.mock('@/lib/data/tasks', () => ({
+vi.mock('@/features/tasks/data/tasks', () => ({
   listTasks: vi.fn(),
   markStaleProcessingTaskFailed: vi.fn(),
 }));
 
 import { runStaleProcessingRecoveryOnce } from '@/lib/queue/stale-recovery';
-import { listTasks, markStaleProcessingTaskFailed } from '@/lib/data/tasks';
+import { listTasks, markStaleProcessingTaskFailed } from '@/features/tasks/data/tasks';
 
 const mockedList = vi.mocked(listTasks);
 const mockedMark = vi.mocked(markStaleProcessingTaskFailed);

@@ -1,6 +1,6 @@
 'use client';
 
-import * as Sentry from '@sentry/nextjs';
+import { setUser, ErrorBoundary } from '@sentry/nextjs';
 import { useEffect } from 'react';
 
 /**
@@ -18,7 +18,7 @@ export function SentrySetup() {
         const response = await fetch('/api/auth/me');
         if (response.ok) {
           const user = await response.json();
-          Sentry.setUser({
+          setUser({
             id: user.id,
             email: user.email,
             username: user.email?.split('@')[0],
@@ -46,9 +46,9 @@ export function SentryErrorBoundary({
   children: React.ReactNode;
 }) {
   return (
-    <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
+    <ErrorBoundary fallback={<ErrorFallback />}>
       {children}
-    </Sentry.ErrorBoundary>
+    </ErrorBoundary>
   );
 }
 

@@ -2,9 +2,11 @@
 
 import { hasPermission } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
-import { getContentStudioItemById } from '@/lib/data/content-studio';
+import { getContentStudioItemById } from '@/features/content-studio/data/content-studio';
 import { getBrandKitForWorkspace } from '@/lib/data/brand-kit';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkWorkspaceUserRateLimit, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
+import { incrementUsage } from '@/lib/usage/quotas';
 import { generateContentStudioText, type ContentGenerationKind } from '@/lib/ai/openai-content';
 import {
   inferPlatformFromContentType,
@@ -105,12 +107,25 @@ function generationMessageFromKind(kind: ContentGenerationKind) {
   }
 }
 
-function checkGenerationLimit(workspaceId: string, userId: string) {
-  return checkRateLimit({
+async function checkGenerationLimit(workspaceId: string, userId: string) {
+  // Fixed-window rate limit (existing)
+  const fixedResult = await checkRateLimit({
     key: `content-generation:${workspaceId}:${userId}`,
     limit: 20,
     windowMs: 10 * 60 * 1000,
   });
+
+  if (!fixedResult.allowed) {
+    return fixedResult;
+  }
+
+  // Sliding window rate limit (more accurate)
+  return checkWorkspaceUserRateLimit(
+    workspaceId,
+    userId,
+    RATE_LIMIT_ACTIONS.CONTENT_GENERATE,
+    { limit: 15, windowMs: 60_000 } // 15 generations per minute
+  );
 }
 
 export async function generateContentStudioFieldAction(
@@ -266,6 +281,8 @@ export async function generateContentStudioFieldAction(
         requestId: `${Date.now()}`,
       };
     }
+
+    await incrementUsage(workspace.id, 'ai_generations', 1, user.id).catch(() => {});
 
     return {
       error: null,

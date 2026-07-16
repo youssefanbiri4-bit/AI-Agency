@@ -8,7 +8,7 @@ import {
   createTaskEvent,
   getTaskById,
   markStaleProcessingTaskFailed,
-} from '@/lib/data/tasks';
+} from '@/features/tasks/data/tasks';
 import { createNotification } from '@/lib/data/notifications';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { reportAppError } from '@/lib/logger';

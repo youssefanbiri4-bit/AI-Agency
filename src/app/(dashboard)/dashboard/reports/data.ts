@@ -67,7 +67,8 @@ export async function listWorkspaceTaskReviews(workspaceId: string) {
     .from('task_reviews')
     .select('*')
     .eq('workspace_id', workspaceId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(500);
 
   return {
     data: (data ?? []).map(mapTaskReviewRecord),

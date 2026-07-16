@@ -65,7 +65,7 @@ const videoSizes = [
 ];
 const videoDurations = ['4', '8', '12'];
 const actionClass =
-  'inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/8 px-3 py-2 text-sm font-black text-white/76 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-white';
+  'inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/8 px-3 py-2 text-sm font-black text-white/76 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50';
 
 function copyText(text: string, success: string, error: string) {
   navigator.clipboard.writeText(text).then(
@@ -220,7 +220,7 @@ export function AIStudioClient({ initialHistory, readiness }: AIStudioClientProp
                   value={title}
                   onChange={(event) => setTitle(event.target.value.slice(0, 120))}
                   placeholder={mode === 'image' ? 'Luxury skincare ad visual' : 'Product reveal video'}
-                  className="h-11 w-full rounded-2xl border border-white/10 bg-black/25 px-3 text-sm font-semibold text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10"
+                  className="h-11 w-full rounded-2xl border border-white/10 bg-black/25 px-3 text-sm font-semibold text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
                 />
               </label>
 
@@ -234,7 +234,7 @@ export function AIStudioClient({ initialHistory, readiness }: AIStudioClientProp
                   rows={8}
                   dir={/[\u0590-\u08FF]/.test(prompt) ? 'rtl' : 'ltr'}
                   placeholder={t('dashboardI18n.aiStudio.promptPlaceholder', 'Describe the scene, product, audience, mood, lighting, composition, and campaign goal...')}
-                  className="w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-semibold leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10"
+                     className="w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-semibold leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
                 />
                 <span className="mt-1 block text-xs font-bold text-white/35">{promptLength}/4000</span>
               </label>
@@ -249,7 +249,7 @@ export function AIStudioClient({ initialHistory, readiness }: AIStudioClientProp
                     onChange={(event) => setNegativePrompt(event.target.value.slice(0, 1200))}
                     rows={3}
                     placeholder={t('dashboardI18n.aiStudio.negativePlaceholder', 'Optional: clutter, broken text, watermarks, low quality...')}
-                    className="w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-semibold leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10"
+                    className="w-full resize-none rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-semibold leading-6 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
                   />
                 </label>
               ) : null}
@@ -280,7 +280,7 @@ export function AIStudioClient({ initialHistory, readiness }: AIStudioClientProp
                 type="button"
                 onClick={submit}
                 disabled={!canGenerate}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 text-sm font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.22)] transition hover:bg-cyan-200 disabled:pointer-events-none disabled:bg-white/12 disabled:text-white/35 disabled:shadow-none"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-4 text-sm font-black text-slate-950 shadow-[0_18px_45px_rgba(34,211,238,0.22)] transition hover:bg-cyan-200 disabled:pointer-events-none disabled:bg-white/12 disabled:text-white/35 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
               >
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                 {mode === 'image'
@@ -440,7 +440,7 @@ function ModeButton({ active, onClick, icon, children }: { active: boolean; onCl
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition',
+        'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50',
         active ? 'bg-white text-slate-950 shadow-sm' : 'text-white/58 hover:bg-white/8 hover:text-white'
       )}
     >
@@ -457,7 +457,7 @@ function SelectControl({ label, value, onChange, options }: { label: string; val
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-11 w-full rounded-2xl border border-white/10 bg-black/25 px-3 text-sm font-bold text-white outline-none focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10"
+        className="h-11 w-full rounded-2xl border border-white/10 bg-black/25 px-3 text-sm font-bold text-white outline-none focus:border-cyan-300/50 focus:ring-4 focus:ring-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value} className="bg-slate-950 text-white">

@@ -7,6 +7,7 @@ import {
   BookOpen,
   Bot,
   CalendarDays,
+  CreditCard,
   ClipboardCheck,
   ClipboardList,
   Database,
@@ -77,6 +78,8 @@ const menuItems = [
   { icon: ImageIcon, labelKey: 'nav.creativeAssets', href: '/dashboard/creative-assets' },
   { icon: ClipboardCheck, labelKey: 'nav.reviews', href: '/dashboard/review' },
   { icon: BarChart3, labelKey: 'nav.reports', href: '/dashboard/reports' },
+  { icon: Gauge, labelKey: 'nav.insights', href: '/dashboard/insights' },
+  { icon: CreditCard, labelKey: 'nav.billing', href: '/dashboard/billing' },
   { icon: Bell, labelKey: 'nav.notifications', href: '/dashboard/notifications' },
   { icon: Settings, labelKey: 'nav.settings', href: '/dashboard/settings' },
 ];

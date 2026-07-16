@@ -49,7 +49,7 @@
 - [x] Unit tests: `tests/require-page-access.test.ts`
 - [x] Edge handler extracted to `dashboard-edge-auth.ts` (CSP + Supabase session + membership)
 - [ ] Migrate to `proxy.ts` export when dropping `middleware.ts` filename (Next.js 16 deprecation warning only)
-- [ ] Extend `requirePageAccess` with per-route minimum role map (settings/billing/production)
+- [ ] Extend `requirePageAccess` with per-route minimum role map (settings/production)
 - [ ] Align Sidebar fail-open (`!role → true`) with middleware fail-closed behavior
 
 ## P0 Blockers (2026-07-04 fix)
@@ -132,14 +132,14 @@
 
 ## Usage Quotas + Cost Tracking
 - [x] `src/lib/usage/quotas.ts` + `cost-tracking.ts` implemented (DB backed via limits + counts + metadata)
-- [x] `src/lib/billing/billing-service.ts` — plan limits sync, `incrementUsageCounter` via service role, webhook upsert
+- [x] `src/lib/usage/usage-limits.ts` + `quotas.ts` — plan limits sync, `incrementUsageCounter` via service role
 - [x] `incrementUsage` enforced via admin client (bypasses owner-only UPDATE RLS for metadata counters)
 - [x] Quota checks + increment in tasks creation/execution, creative image gen, publish flows
 - [x] `/dashboard/usage` page with progress bars, warnings for near limits
-- [x] `GET /api/billing/subscription` (owner/admin read) + `POST /api/billing/webhook` (service-role writes)
+- [x] `GET /api/usage/quota` (owner/admin read) — internal quota checks
 - [ ] Add dedicated usage_events table for precise monthly tracking (current uses counts + metadata)
 - [ ] Integrate cost estimates into every OpenAI call (lib/ai/*) and record via cost-tracking
-- [ ] Full Stripe signature verification + Checkout/Portal integration
+- [ ] Full production gate coverage (Stripe is not applicable — internal platform)
 
 ## Reels Studio + Creative Assets Integration + RBAC (current)
 - [x] **Unified Reels Studio** — `reels` table is source of truth; no redirects to Content Studio

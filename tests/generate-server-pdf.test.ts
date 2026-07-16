@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { generateClientReport } from '@/lib/reports/report-generator';
-import { generateServerPDF } from '@/lib/reports/generate-server-pdf';
+import { generateClientReport } from '@/features/reports/service/report-generator';
+import { generateServerPDF } from '@/features/reports/service/generate-server-pdf';
 
 describe('generateServerPDF', () => {
   it('produces a valid PDF buffer (pdf-lib fallback when Chromium unavailable)', async () => {

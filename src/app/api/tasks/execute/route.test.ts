@@ -25,6 +25,22 @@ vi.mock('@/lib/rate-limit', () => ({
   }),
 }));
 
+vi.mock('@/lib/queue/queues', () => ({
+  getTaskQueue: vi.fn(() => ({
+    add: vi.fn().mockResolvedValue({ id: 'job-123' }),
+  })),
+}));
+
+vi.mock('@/lib/payload-limit', () => ({
+  checkPayloadSize: vi.fn().mockImplementation(async (req: Request) => ({
+    ok: true,
+    request: req,
+  })),
+  PAYLOAD_LIMITS: {
+    taskExecute: 1024 * 1024,
+  },
+}));
+
 import { executeTask } from '@/lib/n8n';
 import { getWorkspace } from '@/lib/data/workspaces-server';
 import { checkRateLimit } from '@/lib/rate-limit';

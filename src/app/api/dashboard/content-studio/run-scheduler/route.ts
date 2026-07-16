@@ -7,6 +7,7 @@ import {
 } from '@/lib/supabase-server';
 import { getCurrentUserWorkspace, getCurrentWorkspaceMembership } from '@/lib/data/workspaces';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { checkWorkspaceUserRateLimit, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
 import { normalizeWorkspaceRole } from '@/lib/auth/rbac';
 import { hasPermission } from '@/lib/auth/rbac';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
@@ -76,6 +77,18 @@ async function handleRunScheduler(request?: Request) {
     return jsonError('Manual scheduler run rate limit reached. Try again shortly.', 429);
   }
 
+  // Sliding window rate limit for bulk scheduler operations
+  const slidingLimiter = await checkWorkspaceUserRateLimit(
+    workspaceResult.data.id,
+    user.id,
+    RATE_LIMIT_ACTIONS.BULK_OPERATION,
+    { limit: 2, windowMs: 60 * 1000 } // 2 manual scheduler runs per minute
+  );
+
+  if (!slidingLimiter.allowed) {
+    return jsonError(`Manual scheduler run rate limit reached. Please wait ${Math.ceil(slidingLimiter.resetInMs / 1000)} seconds before retrying.`, 429);
+  }
+
   try {
     const summary = await runContentStudioScheduler();
 
@@ -128,6 +141,6 @@ export async function POST(request: Request) {
   return handleRunScheduler(request);
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   return jsonError('Scheduler controls are only available from the dashboard.', 403);
 }

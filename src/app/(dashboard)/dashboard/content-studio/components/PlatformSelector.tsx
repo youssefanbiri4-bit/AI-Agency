@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Pin } from 'lucide-react';
-import { Button, buttonStyles } from '@/components/ui/Button';
+import { buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { contentStudioTabOptions, type ContentStudioTab } from '../shared';
 import { platformStudioConfig, type PlatformStudioKey } from '../ContentStudioClient';

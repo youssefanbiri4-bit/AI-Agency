@@ -13,6 +13,7 @@ import {
 import { validateSignupEmail } from '@/actions/auth/validate-signup';
 import { getRequestOrigin } from '@/lib/auth/auth-request-origin';
 import { logger } from '@/lib/logger';
+import { sendWelcomeEmail } from '@/lib/marketing/email-service';
 
 const authSignupLog = logger.child('auth:signup');
 
@@ -103,6 +104,20 @@ export async function signUpWithPasswordAction(
 
   await clearAuthFailures('signup', clientIp, email);
   authSignupLog.info('signup succeeded', { clientIp, email, hasSession: Boolean(data.session) });
+
+  // Send welcome email (non-blocking — don't fail signup if email fails)
+  if (email) {
+    const dashboardUrl = `${origin}/dashboard`;
+    sendWelcomeEmail(email, {
+      fullName,
+      dashboardUrl,
+    }).catch((err) => {
+      authSignupLog.warn('Failed to send welcome email (non-blocking)', {
+        error: err instanceof Error ? err.message : String(err),
+        email,
+      });
+    });
+  }
 
   return {
     success: true,

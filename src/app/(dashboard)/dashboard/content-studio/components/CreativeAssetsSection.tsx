@@ -6,7 +6,7 @@ import { Button, buttonStyles } from '@/components/ui/Button';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Notice } from '@/components/ui/Notice';
 import { formatDateTime } from '@/lib/utils';
-import type { CreativeAssetRecord, ContentStudioPlatform, ContentStudioType } from '@/types/database';
+import type { CreativeAssetRecord, ContentStudioType } from '@/types/database';
 import type { ProviderReadinessResult } from '@/lib/content-studio/provider-types';
 import { formatContentStudioPlatformLabel } from '../shared';
 import { useLanguage } from '@/i18n/context';

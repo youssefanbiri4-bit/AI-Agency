@@ -8,7 +8,7 @@ import {
   createTaskEvent,
   getTaskById,
   updateTaskReviewStatus,
-} from '@/lib/data/tasks';
+} from '@/features/tasks/data/tasks';
 import { getRBACContext, hasPermission } from '@/lib/auth/rbac';
 
 export interface ReviewTaskState {
