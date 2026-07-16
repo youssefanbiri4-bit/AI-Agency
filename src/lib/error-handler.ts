@@ -90,8 +90,10 @@ export function createErrorResponse(
 
   return new Response(
     JSON.stringify({
+      success: false,
       error: message,
-      requestId: context?.requestId,
+      message,
+      requestId: context?.requestId ?? null,
       timestamp: new Date().toISOString(),
     }),
     {

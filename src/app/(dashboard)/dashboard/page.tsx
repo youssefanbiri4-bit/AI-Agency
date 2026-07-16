@@ -34,6 +34,7 @@ import { formatTimeAgo } from '@/lib/utils';
 import { Notice } from '@/components/ui/Notice';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
+import { SectionErrorBoundary } from '@/components/dashboard/SectionErrorBoundary';
 import { getServerTranslator } from '@/i18n/server';
 import { type DataResult } from '@/lib/data/types';
 import type { ContentStudioItemWithAssets } from '@/features/content-studio/data/content-studio';
@@ -389,22 +390,27 @@ async function DashboardContent() {
 
         <HeroSection canRunScheduler={canRunScheduler} t={t} />
 
-        <OnboardingChecklist
-          hasTasks={tasks.length > 0}
-          hasProjects={projects.length > 0}
-          hasContent={contentItems.length > 0}
-          hasProviders={activeProviders > 0}
-        />
+        <SectionErrorBoundary sectionName="Onboarding checklist">
+          <OnboardingChecklist
+            hasTasks={tasks.length > 0}
+            hasProjects={projects.length > 0}
+            hasContent={contentItems.length > 0}
+            hasProviders={activeProviders > 0}
+          />
+        </SectionErrorBoundary>
 
-        <HealthScoreCard
-          providerStatus={{ active: activeProviders, total: providerRows.length }}
-          schedulerHealthy={schedulerReadiness.isConfigured}
-          reviewQueue={taskStats.needsReview}
-          readyContent={contentStatusCounts.ready ?? 0}
-          t={t}
-        />
+        <SectionErrorBoundary sectionName="Health scorecard">
+          <HealthScoreCard
+            providerStatus={{ active: activeProviders, total: providerRows.length }}
+            schedulerHealthy={schedulerReadiness.isConfigured}
+            reviewQueue={taskStats.needsReview}
+            readyContent={contentStatusCounts.ready ?? 0}
+            t={t}
+          />
+        </SectionErrorBoundary>
 
         {/* My Work — personalized zone: my tasks, my drafts, items awaiting my review */}
+        <SectionErrorBoundary sectionName="My work">
         <CommandCard title={t('page.dashboard.myWork', 'My Work')} description={t('page.dashboard.myWorkDescription', 'Personalized tasks, drafts, and items waiting on your review.')}>
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="min-w-0">
@@ -456,123 +462,141 @@ async function DashboardContent() {
             </div>
           </div>
         </CommandCard>
+        </SectionErrorBoundary>
 
-        <UsageWidget usageWidgetData={usageData} />
+        <SectionErrorBoundary sectionName="Usage and limits">
+          <UsageWidget usageWidgetData={usageData} />
+        </SectionErrorBoundary>
 
-        <OpsCard
-          unreadCount={unreadCount}
-          recentNotifications={notificationsPreview}
-          isAdmin={isAdmin}
-        />
+        <SectionErrorBoundary sectionName="Internal ops">
+          <OpsCard
+            unreadCount={unreadCount}
+            recentNotifications={notificationsPreview}
+            isAdmin={isAdmin}
+          />
+        </SectionErrorBoundary>
 
-        <CommandCard
-          title="System Health Snapshot"
-          description="Detailed diagnostics run from the dedicated health page so dashboard rendering stays responsive."
-          action={<Link href="/dashboard/system-health" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open System Health</Link>}
-        >
-          <Notice tone="info" title="Detailed checks are manual">
-            Open System Health or Production Readiness for the strict operational scan.
-          </Notice>
-        </CommandCard>
-
-        <CommandCard
-          title="Work Shortcuts"
-          description="Core manager workspaces grouped for quick navigation."
-        >
-          <WorkShortcutsGrid />
-        </CommandCard>
-
-        <ExpandablePanel
-          title={t('page.dashboard.projectsSnapshot', 'Projects Snapshot')}
-          description="Internal project organization from real workspace project records."
-          defaultOpen={false}
-          storageKey="cc-panel-projects"
-          action={<Link href="/dashboard/projects" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Projects</Link>}
-        >
-          <ProjectSnapshotCard projectSnapshot={projectSnapshot} />
-        </ExpandablePanel>
-
-        <ExpandablePanel
-          title={t('page.dashboard.releasesSnapshot', 'Releases Snapshot')}
-          description="Release tracking from real workspace release records."
-          defaultOpen={false}
-          storageKey="cc-panel-releases"
-          action={<Link href="/dashboard/releases" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Releases</Link>}
-        >
-          <ReleaseSnapshotCard releaseSnapshot={releaseSnapshot} />
-        </ExpandablePanel>
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <SectionErrorBoundary sectionName="System health snapshot">
           <CommandCard
-            title="Today's Actions"
-            description="Prioritized from real ready content, due schedules, blockers, reviews, and asset linking gaps."
-            action={<ClipboardList className="h-5 w-5 text-[#F7CBCA]" />}
+            title="System Health Snapshot"
+            description="Detailed diagnostics run from the dedicated health page so dashboard rendering stays responsive."
+            action={<Link href="/dashboard/system-health" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open System Health</Link>}
           >
-            {todayActions.length === 0 ? (
-              <EmptyState
-                icon={CheckCircle2}
-                title="You're all caught up"
-                description="Create a new campaign or review provider setup when you are ready for the next move."
-                action={
-                  <Link href="/dashboard/content-studio" className={buttonStyles({ variant: 'secondary' })}>
-                    Open Content Studio
-                  </Link>
-                }
-              />
-            ) : (
-              <div className="space-y-2">
-                {todayActions.map((action) => (
-                  <TodayActionCard key={action.id} action={action} />
-                ))}
-              </div>
-            )}
+            <Notice tone="info" title="Detailed checks are manual">
+              Open System Health or Production Readiness for the strict operational scan.
+            </Notice>
           </CommandCard>
+        </SectionErrorBoundary>
 
+        <SectionErrorBoundary sectionName="Work shortcuts">
           <CommandCard
-            title="Provider Setup Snapshot"
-            description="No secret values are shown. Use Settings to fix provider setup gaps."
-            action={<ShieldCheck className="h-5 w-5 text-[#F7CBCA]" />}
+            title="Work Shortcuts"
+            description="Core manager workspaces grouped for quick navigation."
           >
-            <ProviderRowsSection providerRows={providerRows} />
+            <WorkShortcutsGrid />
           </CommandCard>
-        </div>
+        </SectionErrorBoundary>
 
-        <ExpandablePanel
-          title={t('page.dashboard.contentCampaignSnapshot', 'Content & Campaign Snapshot')}
-          description="Operational state from Content Studio records. Manual-only is tracked from provider status and LinkedIn planners."
-          defaultOpen={false}
-          storageKey="cc-panel-content"
-          action={
-            <div className="flex flex-wrap gap-2">
-              <Link href="/dashboard/content-studio" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Content Studio</Link>
-              <Link href="/dashboard/calendar" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Calendar</Link>
-              <Link href="/dashboard/campaigns" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Campaigns</Link>
-              <Link href="/dashboard/reports" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Reports</Link>
-            </div>
-          }
-        >
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
-            <div className="space-y-4">
-              <ProgressRow label="Draft" value={contentStatusCounts.draft ?? 0} total={contentItems.length} />
-              <ProgressRow label="Ready" value={contentStatusCounts.ready ?? 0} total={contentItems.length} />
-              <ProgressRow label="Scheduled" value={contentStatusCounts.scheduled ?? 0} total={contentItems.length} />
-              <ProgressRow label="Published" value={contentStatusCounts.published ?? 0} total={contentItems.length} />
-              <ProgressRow label="Failed" value={contentStatusCounts.failed ?? 0} total={contentItems.length} />
-              <ProgressRow label="Setup Required" value={contentStatusCounts.setup_required ?? 0} total={contentItems.length} />
-              <ProgressRow label="Approval Pending" value={contentStatusCounts.approval_pending ?? 0} total={contentItems.length} />
-              <ProgressRow label="Manual Only" value={manualOnlyCount} total={contentItems.length} />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <SmallMetric label="Creative Assets" value={creativeAssets.length} />
-              <SmallMetric label="Unlinked Assets" value={unlinkedAssets.length} />
-              <SmallMetric label="Image Assets" value={creativeAssets.filter((asset) => !isVideoAsset(asset)).length} />
-              <SmallMetric label="Video Assets" value={creativeAssets.filter(isVideoAsset).length} />
-            </div>
+        <SectionErrorBoundary sectionName="Projects snapshot">
+          <ExpandablePanel
+            title={t('page.dashboard.projectsSnapshot', 'Projects Snapshot')}
+            description="Internal project organization from real workspace project records."
+            defaultOpen={false}
+            storageKey="cc-panel-projects"
+            action={<Link href="/dashboard/projects" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Projects</Link>}
+          >
+            <ProjectSnapshotCard projectSnapshot={projectSnapshot} />
+          </ExpandablePanel>
+        </SectionErrorBoundary>
+
+        <SectionErrorBoundary sectionName="Releases snapshot">
+          <ExpandablePanel
+            title={t('page.dashboard.releasesSnapshot', 'Releases Snapshot')}
+            description="Release tracking from real workspace release records."
+            defaultOpen={false}
+            storageKey="cc-panel-releases"
+            action={<Link href="/dashboard/releases" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Releases</Link>}
+          >
+            <ReleaseSnapshotCard releaseSnapshot={releaseSnapshot} />
+          </ExpandablePanel>
+        </SectionErrorBoundary>
+
+        <SectionErrorBoundary sectionName="Today's actions and providers">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            <CommandCard
+              title="Today's Actions"
+              description="Prioritized from real ready content, due schedules, blockers, reviews, and asset linking gaps."
+              action={<ClipboardList className="h-5 w-5 text-[#F7CBCA]" />}
+            >
+              {todayActions.length === 0 ? (
+                <EmptyState
+                  icon={CheckCircle2}
+                  title="You're all caught up"
+                  description="Create a new campaign or review provider setup when you are ready for the next move."
+                  action={
+                    <Link href="/dashboard/content-studio" className={buttonStyles({ variant: 'secondary' })}>
+                      Open Content Studio
+                    </Link>
+                  }
+                />
+              ) : (
+                <div className="space-y-2">
+                  {todayActions.map((action) => (
+                    <TodayActionCard key={action.id} action={action} />
+                  ))}
+                </div>
+              )}
+            </CommandCard>
+
+            <CommandCard
+              title="Provider Setup Snapshot"
+              description="No secret values are shown. Use Settings to fix provider setup gaps."
+              action={<ShieldCheck className="h-5 w-5 text-[#F7CBCA]" />}
+            >
+              <ProviderRowsSection providerRows={providerRows} />
+            </CommandCard>
           </div>
-        </ExpandablePanel>
+        </SectionErrorBoundary>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-          <CommandCard title="Recent Activity / Attempts" description="Latest tasks, content items, publish attempts, and scheduler-related attempts when available.">
+        <SectionErrorBoundary sectionName="Content and campaign snapshot">
+          <ExpandablePanel
+            title={t('page.dashboard.contentCampaignSnapshot', 'Content & Campaign Snapshot')}
+            description="Operational state from Content Studio records. Manual-only is tracked from provider status and LinkedIn planners."
+            defaultOpen={false}
+            storageKey="cc-panel-content"
+            action={
+              <div className="flex flex-wrap gap-2">
+                <Link href="/dashboard/content-studio" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Content Studio</Link>
+                <Link href="/dashboard/calendar" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Calendar</Link>
+                <Link href="/dashboard/campaigns" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Campaigns</Link>
+                <Link href="/dashboard/reports" className={buttonStyles({ variant: 'outline', size: 'sm' })}>Open Reports</Link>
+              </div>
+            }
+          >
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
+              <div className="space-y-4">
+                <ProgressRow label="Draft" value={contentStatusCounts.draft ?? 0} total={contentItems.length} />
+                <ProgressRow label="Ready" value={contentStatusCounts.ready ?? 0} total={contentItems.length} />
+                <ProgressRow label="Scheduled" value={contentStatusCounts.scheduled ?? 0} total={contentItems.length} />
+                <ProgressRow label="Published" value={contentStatusCounts.published ?? 0} total={contentItems.length} />
+                <ProgressRow label="Failed" value={contentStatusCounts.failed ?? 0} total={contentItems.length} />
+                <ProgressRow label="Setup Required" value={contentStatusCounts.setup_required ?? 0} total={contentItems.length} />
+                <ProgressRow label="Approval Pending" value={contentStatusCounts.approval_pending ?? 0} total={contentItems.length} />
+                <ProgressRow label="Manual Only" value={manualOnlyCount} total={contentItems.length} />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <SmallMetric label="Creative Assets" value={creativeAssets.length} />
+                <SmallMetric label="Unlinked Assets" value={unlinkedAssets.length} />
+                <SmallMetric label="Image Assets" value={creativeAssets.filter((asset) => !isVideoAsset(asset)).length} />
+                <SmallMetric label="Video Assets" value={creativeAssets.filter(isVideoAsset).length} />
+              </div>
+            </div>
+          </ExpandablePanel>
+        </SectionErrorBoundary>
+
+        <SectionErrorBoundary sectionName="Recent activity">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+            <CommandCard title="Recent Activity / Attempts" description="Latest tasks, content items, publish attempts, and scheduler-related attempts when available.">
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="space-y-2">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-black/42">Latest Tasks</p>
@@ -622,6 +646,7 @@ async function DashboardContent() {
             <ManagerShortcutsGrid />
           </CommandCard>
         </div>
+        </SectionErrorBoundary>
       </div>
     </div>
   );

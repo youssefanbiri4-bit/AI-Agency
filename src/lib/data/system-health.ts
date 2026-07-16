@@ -34,8 +34,10 @@ import type {
   ContentStudioStatus,
   CreativeAssetRecord,
   Database,
+  ProjectRecord,
+  ReleaseRecord,
 } from '@/types/database';
-import type { TaskStatus } from '@/types';
+import type { Task, TaskStatus } from '@/types';
 
 export type HealthStatus =
   | 'ready'
@@ -420,12 +422,12 @@ export async function getSystemHealthSummary({
     if (error) dataNotices.push(error);
   }
 
-  const contentItems = contentItemsResult.data;
-  const creativeAssets = creativeAssetsResult.data;
-  const publishAttempts = attemptsResult.data;
-  const tasks = tasksResult.data;
-  const projects = projectsResult.data;
-  const releases = releasesResult.data;
+  const contentItems: ContentStudioItemWithAssets[] = contentItemsResult.data;
+  const creativeAssets: CreativeAssetRecord[] = creativeAssetsResult.data;
+  const publishAttempts: ContentStudioPublishAttemptRecord[] = attemptsResult.data;
+  const tasks: Task[] = tasksResult.data;
+  const projects: ProjectRecord[] = projectsResult.data;
+  const releases: ReleaseRecord[] = releasesResult.data;
 
   addCheck(checks, 'Authentication & Workspace', 'User authenticated', userId ? 'ready' : 'error', userId ? 'Authenticated user is available.' : 'No authenticated user found.', 'Sign in again.');
   addCheck(checks, 'Authentication & Workspace', 'Active workspace exists', workspaceId ? 'ready' : 'setup_required', workspaceId ? 'Active workspace is selected.' : 'No active workspace found.', 'Create or select a workspace.');

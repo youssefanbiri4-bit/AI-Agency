@@ -53,5 +53,30 @@ export async function logout() {
   }
 }
 
+/**
+ * Client-only check: exposes NEXT_PUBLIC_SUPABASE env status in browser.
+ * Returns { ok: true } if both URL and anon key are configured.
+ * Returns { ok: false, message } with a descriptive warning if not.
+ */
+export function getBrowserSupabaseEnvStatus(): { ok: boolean; message?: string } {
+  if (!supabaseUrl) {
+    return {
+      ok: false,
+      message:
+        'NEXT_PUBLIC_SUPABASE_URL is not set. Auth, database, and real-time features will not work until this is configured in your deployment environment.',
+    };
+  }
+
+  if (!supabaseAnonKey) {
+    return {
+      ok: false,
+      message:
+        'NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Auth, database, and real-time features will not work until this is configured in your deployment environment.',
+    };
+  }
+
+  return { ok: true };
+}
+
 // Type for Supabase
 export type { Session, User as SupabaseUser } from '@supabase/supabase-js';

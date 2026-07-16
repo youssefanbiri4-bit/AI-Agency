@@ -17,7 +17,7 @@ import type {
 import type { JsonObject } from '@/types';
 import type { Department } from '@/types/auth';
 import { logger } from '@/lib/logger';
-import { emptyDataResult, errorDataResult, type DataResult } from '@/lib/data/types';
+import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
 type ContentStudioClient = SupabaseClient<Database>;
 const contentStudioLog = logger.child('data:content-studio');
@@ -498,114 +498,6 @@ export async function removeContentStudioItemAsset(
 
   const refreshedItem = await getContentStudioItemById(workspaceId, itemId, supabase);
   return refreshedItem;
-}
-
-export async function deleteContentStudioItem(
-  itemId: string,
-  workspaceId: string,
-  client?: ContentStudioClient
-): Promise<DataResult<{ deleted: boolean }>> {
-  if (!isSupabaseServerConfigured) {
-    return emptyDataResult({ deleted: false }, false);
-  }
-
-  const supabase = await getClient(client);
-  const { error } = await supabase
-    .from('content_studio_items')
-    .delete()
-    .eq('id', itemId)
-    .eq('workspace_id', workspaceId);
-
-  if (error) {
-    return errorDataResult({ deleted: false }, error.message);
-  }
-
-  return emptyDataResult({ deleted: true }, true);
-}
-
-export async function bulkDeleteContentStudioItems(
-  itemIds: string[],
-  workspaceId: string,
-  client?: ContentStudioClient
-): Promise<DataResult<{ deleted: number }>> {
-  if (!isSupabaseServerConfigured) {
-    return emptyDataResult({ deleted: 0 }, false);
-  }
-
-  if (itemIds.length === 0) {
-    return emptyDataResult({ deleted: 0 }, true);
-  }
-
-  const supabase = await getClient(client);
-  const { data, error } = await supabase
-    .from('content_studio_items')
-    .delete()
-    .in('id', itemIds)
-    .eq('workspace_id', workspaceId)
-    .select('id');
-
-  if (error) {
-    return errorDataResult({ deleted: 0 }, error.message);
-  }
-
-  return emptyDataResult({ deleted: data?.length ?? itemIds.length }, true);
-}
-
-export async function bulkDuplicateContentStudioItems(
-  itemIds: string[],
-  workspaceId: string,
-  userId: string,
-  client?: ContentStudioClient
-): Promise<DataResult<{ duplicated: number }>> {
-  if (!isSupabaseServerConfigured) {
-    return emptyDataResult({ duplicated: 0 }, false);
-  }
-
-  if (itemIds.length === 0) {
-    return emptyDataResult({ duplicated: 0 }, true);
-  }
-
-  const supabase = await getClient(client);
-  const { data: originals, error } = await supabase
-    .from('content_studio_items')
-    .select('id, title, platform, content_type, objective, prompt, script, caption, ad_copy, creative_brief, metadata')
-    .in('id', itemIds)
-    .eq('workspace_id', workspaceId);
-
-  if (error) {
-    return errorDataResult({ duplicated: 0 }, error.message);
-  }
-
-  if (!originals || originals.length === 0) {
-    return emptyDataResult({ duplicated: 0 }, true);
-  }
-
-  const inserts = originals.map((item) => ({
-    workspace_id: workspaceId,
-    created_by: userId,
-    title: `${item.title} (Copy)`,
-    platform: item.platform,
-    content_type: item.content_type,
-    status: 'draft' as ContentStudioStatus,
-    objective: item.objective,
-    prompt: item.prompt,
-    script: item.script,
-    caption: item.caption,
-    ad_copy: item.ad_copy,
-    creative_brief: item.creative_brief,
-    metadata: item.metadata,
-  }));
-
-  const { data, error: insertError } = await supabase
-    .from('content_studio_items')
-    .insert(inserts)
-    .select('id');
-
-  if (insertError) {
-    return errorDataResult({ duplicated: 0 }, insertError.message);
-  }
-
-  return emptyDataResult({ duplicated: data?.length ?? inserts.length }, true);
 }
 
 export function filterAvailableCreativeAssetsForSelection(

@@ -4,10 +4,14 @@
  */
 
 import 'server-only';
+import { assertProductionGate } from '@/lib/production/gate';
 import { requireWorkspaceAccessWithRBAC, getRBACContext, hasPermission } from '@/lib/auth/rbac';
-import { checkWorkspaceUserRateLimit, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
 // Note: workspace context resolved inside the delegated actions for RBAC/dept
-import { publishReelAction as originalPublishReelAction, createReelAction as originalCreate, type ReelActionState } from '@/app/(dashboard)/dashboard/reels/actions';
+import {
+  publishReelAction as originalPublishReelAction,
+  createReelAction as originalCreate,
+  type ReelActionState,
+} from '@/app/(dashboard)/dashboard/reels/actions';
 
 export async function gatedCreateReel(state: unknown, formData: FormData) {
   const rbac = await requireWorkspaceAccessWithRBAC({ minRole: 'operator' });
@@ -31,19 +35,6 @@ export async function gatedPublishReel(reelId: string, state: unknown) {
   if (!rbac.ok) {
     return { error: rbac.error || 'Operator role required to publish.' };
   }
-
-  // Sliding window rate limit for reel publishing
-  if (rbac.context) {
-    const publishLimit = await checkWorkspaceUserRateLimit(
-      rbac.context.workspace.id,
-      rbac.context.user.id,
-      RATE_LIMIT_ACTIONS.CONTENT_PUBLISH
-    );
-    if (!publishLimit.allowed) {
-      return { error: `Publishing rate limit reached. Please wait ${Math.ceil(publishLimit.resetInMs / 1000)} seconds before retrying.` };
-    }
-  }
-
   // Assume context inside
   return originalPublishReelAction(reelId, state as ReelActionState);
 }

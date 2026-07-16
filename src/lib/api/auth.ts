@@ -9,6 +9,7 @@ import {
 import {
   checkRateLimitComposite,
   getClientIpFromHeaders,
+  buildRateLimitExceededHeaders,
   API_KEY_IP_LIMIT,
   API_KEY_IP_WINDOW_MS,
   API_KEY_WORKSPACE_LIMIT,
@@ -127,7 +128,7 @@ export async function authenticateApiKey(request: Request): Promise<AuthOutcome>
         status: 429,
         requestId: getRequestId(request),
         message: 'Rate limit exceeded. Try again later.',
-        headers: limiter.headers,
+        headers: buildRateLimitExceededHeaders(limiter),
         meta: { limit: key.rate_limit, windowMs: 60_000 },
       }),
     };

@@ -797,19 +797,6 @@
   }
 }
 
-.dark @keyframes dashboard-hero-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 var(--color-primary-light);
-    transform: scale(1);
-  }
-
-  50% {
-    box-shadow: 0 0 0 9px rgb(224 96 80 / 0);
-    transform: scale(1.08);
-  }
-}
-
 @keyframes dashboard-hero-check {
   0%,
   100% {

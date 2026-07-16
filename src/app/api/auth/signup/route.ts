@@ -1,7 +1,10 @@
 import { signUpWithPasswordAction } from '@/actions/auth/signup';
 import { buildRateLimitExceededHeaders } from '@/lib/rate-limit';
+import { getRequestId, createApiError, createApiSuccess } from '@/lib/api-response';
 
 export async function POST(request: Request) {
+  const requestId = getRequestId(request);
+
   const body = (await request.json().catch(() => null)) as
     | { email?: string; password?: string; fullName?: string }
     | null;
@@ -16,31 +19,28 @@ export async function POST(request: Request) {
     const retryAfterSeconds = result.retryAfterSeconds ?? 60;
     const resetAt = Date.now() + retryAfterSeconds * 1000;
 
-    return new Response(
-      JSON.stringify({
-        error: result.error ?? 'Rate limit exceeded',
-        retryAfter: retryAfterSeconds,
+    return createApiError(result.error ?? 'Rate limit exceeded', {
+      status: 429,
+      requestId,
+      headers: buildRateLimitExceededHeaders({
+        allowed: false,
+        remaining: 0,
+        resetAt,
       }),
-      {
-        status: 429,
-        headers: buildRateLimitExceededHeaders({
-          allowed: false,
-          remaining: 0,
-          resetAt,
-        }),
-      }
-    );
+      meta: { retryAfter: retryAfterSeconds },
+    });
   }
 
   if (!result.success) {
-    return Response.json(
-      { error: result.error ?? 'Signup failed' },
-      { status: result.status }
-    );
+    return createApiError(result.error ?? 'Signup failed', {
+      status: result.status,
+      requestId,
+    });
   }
 
-  return Response.json({
-    success: true,
-    requiresEmailConfirmation: result.requiresEmailConfirmation ?? false,
+  return createApiSuccess(null, {
+    requestId,
+    message: 'Signup successful',
+    extra: { requiresEmailConfirmation: result.requiresEmailConfirmation ?? false },
   });
 }

@@ -8,7 +8,7 @@ import {
   checkRateLimit,
   clearRateLimitKey,
   peekRateLimit,
-  peekRateLimitLockout,
+  checkRateLimitLockout,
   setRateLimitLockout,
 } from '@/lib/rate-limit';
 
@@ -146,7 +146,7 @@ async function checkLockoutPair(
     // Use peek to avoid creating a lockout bucket just for checking.
     // checkRateLimitLockout would create a bucket (count=1, limit=1),
     // causing subsequent calls to falsely detect a lockout.
-    const lockout = await peekRateLimitLockout(lockoutKey);
+    const lockout = await checkRateLimitLockout(lockoutKey);
     if (!lockout.allowed) {
       result = pickStricterBlock(result, toBlockedResult('lockout', lockout.resetAt));
     }

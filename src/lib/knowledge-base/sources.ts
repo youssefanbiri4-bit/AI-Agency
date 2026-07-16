@@ -281,8 +281,8 @@ export async function collectKnowledgeEntries(input: CollectKnowledgeSourcesInpu
       summary: `${healthSummary.score}% ${healthSummary.label}. ${healthSummary.topBlockers.slice(0, 3).join('; ')}`,
       content: [
         healthSummary.reportText,
-        healthSummary.providers.map((provider) => `${provider.name}: ${provider.status} ${provider.details.join('; ')}`).join('\n'),
-        healthSummary.actions.map((action) => `${action.priority}: ${action.title} ${action.reason}`).join('\n'),
+        healthSummary.providers.map((provider: { name: string; status: string; details: string[] }) => `${provider.name}: ${provider.status} ${provider.details.join('; ')}`).join('\n'),
+        healthSummary.actions.map((action: { priority: string; title: string; reason: string }) => `${action.priority}: ${action.title} ${action.reason}`).join('\n'),
       ],
       tags: ['system-health', healthSummary.label],
       metadata: { score: healthSummary.score, label: healthSummary.label },

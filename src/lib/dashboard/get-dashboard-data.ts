@@ -12,7 +12,7 @@ import {
   getCurrentWorkspaceMembership,
 } from '@/lib/data/workspaces';
 import { getDashboardData, type DashboardData } from '@/lib/data/dashboard';
-import { listContentStudioItemsForWorkspace, type ContentStudioItemWithAssets } from '@/features/content-studio/data/content-studio';
+import { listContentStudioItemsForWorkspace, type ContentStudioItemWithAssets } from '@/lib/data/content-studio';
 import { listCreativeAssetsForWorkspace } from '@/lib/data/creative-assets';
 import { departmentScope } from '@/lib/data/department-scope';
 import type { Department } from '@/types/auth';
@@ -307,22 +307,19 @@ export async function fetchPersonalizedDashboardData(
     ).catch(() => 0),
   ]);
 
-  const myTasksResult =
-    settled[0].status === 'fulfilled'
-      ? settled[0].value
-      : errorDataResult([] as Task[], timeoutMessage('my tasks'));
-  const scopedTasksResult =
-    settled[1].status === 'fulfilled'
-      ? settled[1].value
-      : errorDataResult([] as Task[], timeoutMessage('dept scoped tasks'));
-  const contentResult =
-    settled[2].status === 'fulfilled'
-      ? settled[2].value
-      : errorDataResult([] as ContentStudioItemWithAssets[], timeoutMessage('recent content'));
-  const yourTasksCount = settled[3].status === 'fulfilled' ? settled[3].value : 0;
-  const readyCount = settled[4].status === 'fulfilled' ? settled[4].value : 0;
+  const myTasksResult = settled[0].status === 'fulfilled'
+    ? (settled[0].value as DataResult<Task[]>)
+    : errorDataResult([] as Task[], timeoutMessage('my tasks'));
+  const scopedTasksResult = settled[1].status === 'fulfilled'
+    ? (settled[1].value as DataResult<Task[]>)
+    : errorDataResult([] as Task[], timeoutMessage('dept scoped tasks'));
+  const contentResult = settled[2].status === 'fulfilled'
+    ? (settled[2].value as DataResult<ContentStudioItemWithAssets[]>)
+    : errorDataResult([] as ContentStudioItemWithAssets[], timeoutMessage('recent content'));
+  const yourTasksCount = settled[3].status === 'fulfilled' ? (settled[3].value as number) : 0;
+  const readyCount = settled[4].status === 'fulfilled' ? (settled[4].value as number) : 0;
 
-  for (const [, result] of [
+  for (const [label, result] of [
     ['my tasks', myTasksResult],
     ['dept scoped tasks', scopedTasksResult],
     ['recent content', contentResult],
@@ -399,7 +396,7 @@ export async function fetchCommandCenterBundle(ctx: DashboardPageContext): Promi
 
   const scope = await departmentScope();
   const sections = await Promise.allSettled([
-    withDashboardTimeout(      'dashboard data', getDashboardData(workspaceId, ctx.supabase)),
+    withDashboardTimeout('dashboard data',      getDashboardData(workspaceId, ctx.supabase)),
     withDashboardTimeout(
       'content catalog',
       listContentStudioItemsForWorkspace(workspaceId, ctx.supabase, {

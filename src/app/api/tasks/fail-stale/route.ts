@@ -12,7 +12,7 @@ import {
 import { createNotification } from '@/lib/data/notifications';
 import { getCurrentUserWorkspace } from '@/lib/data/workspaces';
 import { reportAppError } from '@/lib/logger';
-import { getRequestId, nowISO } from '@/lib/api-response';
+import { getRequestId, nowISO, createApiError } from '@/lib/api-response';
 import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
 
 const STALE_PROCESSING_THRESHOLD_MS = 12 * 60 * 1000;
@@ -28,10 +28,7 @@ const failStaleSchema = z.object({
 );
 
 function jsonError(error: string, status: number, requestId: string) {
-  return NextResponse.json({ success: false, error, requestId, timestamp: nowISO() }, {
-    status,
-    headers: { 'X-Request-ID': requestId },
-  });
+  return createApiError(error, { status, requestId });
 }
 
 export async function POST(request: NextRequest) {

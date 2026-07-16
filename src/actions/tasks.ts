@@ -9,18 +9,13 @@ import { requireWorkspaceAccessWithRBAC } from '@/lib/auth/rbac';
 import { taskService } from '@/features/tasks/service/task-service';
 import {
   createTask as dataCreateTask,
-  updateTaskExecutionState,
-  updateTaskReviewStatus,
+  type CreateTaskDraftInput,
   bulkDeleteTasks as dataBulkDeleteTasks,
   bulkDuplicateTasks as dataBulkDuplicateTasks,
   bulkAssignTasks as dataBulkAssignTasks,
-  type CreateTaskDraftInput,
 } from '@/features/tasks/data/tasks';
-import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { logSecurityAuditEvent } from '@/lib/security-audit-log';
-import { enforceQuota, incrementUsage } from '@/lib/usage/quotas';
-import { escapeCsvField } from '@/lib/csv-utils';
-import type { AgentType, TaskStatus } from '@/types';
+import { checkQuota, incrementUsage } from '@/lib/usage/quotas';
+import type { TaskStatus } from '@/types';
 
 export async function gatedCreateTask(input: unknown) {
   // H7: RBAC check — editor role minimum + department access
@@ -34,17 +29,18 @@ export async function gatedCreateTask(input: unknown) {
     throw new Error('Workspace access required');
   }
 
-  const userId = rbacCheck.context?.user?.id;
-
-  // Hard limit enforcement before creation
-  await enforceQuota(workspaceId, 'tasks');
+  // Quota check before creation
+  const quota = await checkQuota(workspaceId, 'tasks');
+  if (!quota.allowed) {
+    throw new Error(quota.message || 'Task quota exceeded. Please upgrade your plan.');
+  }
 
   await assertProductionGate(workspaceId);
 
   const result = await dataCreateTask(input as CreateTaskDraftInput);
 
   if (result.data) {
-    await incrementUsage(workspaceId, 'tasks', 1, userId);
+    await incrementUsage(workspaceId, 'tasks', 1);
   }
 
   return result;
@@ -57,284 +53,151 @@ export async function gatedExecuteTask(taskId: string, workspaceId: string) {
     throw new Error(rbacCheck.error || 'Operator role required to execute tasks');
   }
 
-  const userId = rbacCheck.context?.user?.id;
-
   await assertProductionGate(workspaceId);
 
-  await enforceQuota(workspaceId, 'ai_generations');
+  const quota = await checkQuota(workspaceId, 'ai_generations');
+  if (!quota.allowed) {
+    throw new Error(quota.message || 'AI generation quota exceeded.');
+  }
 
   const result = await taskService.executeTask(taskId, workspaceId);
 
   if (result.data) {
-    await incrementUsage(workspaceId, 'ai_generations', 1, userId);
+    await incrementUsage(workspaceId, 'ai_generations', 1);
   }
 
   return result;
 }
 
-export interface BulkSetTaskStatusResult {
+// ── Bulk Operations ──────────────────────────────────────────────────
+
+interface BulkActionResult {
   ok: boolean;
   updated: number;
   failed: number;
   message?: string;
 }
 
-const EXECUTION_STATUSES: ReadonlySet<string> = new Set(['processing', 'needs_review', 'failed']);
-const REVIEW_STATUSES: ReadonlySet<string> = new Set(['pending', 'completed']);
+interface BulkExportResult {
+  ok: boolean;
+  data?: string;
+  filename?: string;
+  message?: string;
+}
 
-/**
- * Bulk-update the status of many tasks in one call. Reuses the existing
- * task-state transitions (execution state vs review state) so each write
- * still goes through the data layer's rules.
- */
-export async function bulkSetTaskStatus(
-  taskIds: string[],
-  status: TaskStatus,
-): Promise<BulkSetTaskStatusResult> {
-  if (!Array.isArray(taskIds) || taskIds.length === 0) {
-    return { ok: false, updated: 0, failed: 0, message: 'No tasks selected.' };
-  }
-
-  const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'operator' });
-  if (!rbacCheck.ok || !rbacCheck.context) {
-    return { ok: false, updated: 0, failed: 0, message: rbacCheck.error || 'Operator role required.' };
-  }
-
-  const workspaceId = rbacCheck.context.workspace.id;
-
-  let updated = 0;
-  let failed = 0;
-
-  for (const taskId of taskIds) {
-    try {
-      if (EXECUTION_STATUSES.has(status)) {
-        await updateTaskExecutionState({
-          taskId,
-          workspaceId,
-          status: status as 'processing' | 'needs_review' | 'failed',
-          expectedCurrentStatus: undefined,
-        });
-      } else if (REVIEW_STATUSES.has(status)) {
-        await updateTaskReviewStatus({
-          taskId,
-          workspaceId,
-          status: status as 'pending' | 'completed',
-          completedAt: status === 'completed' ? new Date().toISOString() : null,
-        });
-      } else {
-        failed += 1;
-        continue;
-      }
-      updated += 1;
-    } catch {
-      failed += 1;
+export async function bulkSetTaskStatus(taskIds: string[], status: TaskStatus): Promise<BulkActionResult> {
+  try {
+    const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'editor' });
+    if (!rbacCheck.ok) {
+      return { ok: false, updated: 0, failed: taskIds.length, message: rbacCheck.error || 'Editor role required' };
     }
-  }
+    const workspaceId = rbacCheck.context?.workspace.id;
+    if (!workspaceId) return { ok: false, updated: 0, failed: taskIds.length, message: 'Workspace access required' };
 
-  return { ok: failed === 0, updated, failed };
+    const supabase = await (await import('@/lib/supabase-server')).createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({ status })
+      .in('id', taskIds)
+      .eq('workspace_id', workspaceId)
+      .select('id');
+
+    if (error) return { ok: false, updated: 0, failed: taskIds.length, message: error.message };
+    const updated = data?.length ?? 0;
+    return { ok: updated === taskIds.length, updated, failed: taskIds.length - updated };
+  } catch (err) {
+    return { ok: false, updated: 0, failed: taskIds.length, message: err instanceof Error ? err.message : 'Bulk status update failed' };
+  }
 }
 
-export interface BulkActionResult {
-  ok: boolean;
-  updated: number;
-  failed: number;
-  message?: string;
+export async function bulkDeleteTasks(taskIds: string[]): Promise<BulkActionResult> {
+  try {
+    const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'editor' });
+    if (!rbacCheck.ok) {
+      return { ok: false, updated: 0, failed: taskIds.length, message: rbacCheck.error || 'Editor role required' };
+    }
+    const workspaceId = rbacCheck.context?.workspace.id;
+    if (!workspaceId) return { ok: false, updated: 0, failed: taskIds.length, message: 'Workspace access required' };
+
+    const supabase = await (await import('@/lib/supabase-server')).createSupabaseServerClient();
+    const result = await dataBulkDeleteTasks(taskIds, workspaceId, supabase);
+    if (result.error) return { ok: false, updated: 0, failed: taskIds.length, message: result.error };
+    const deleted = result.data?.deleted ?? 0;
+    return { ok: deleted === taskIds.length, updated: deleted, failed: taskIds.length - deleted };
+  } catch (err) {
+    return { ok: false, updated: 0, failed: taskIds.length, message: err instanceof Error ? err.message : 'Bulk delete failed' };
+  }
 }
 
-/**
- * Bulk-delete tasks with RBAC (operator+) and security audit logging.
- */
-export async function bulkDeleteTasks(
-  taskIds: string[],
-): Promise<BulkActionResult> {
-  if (!Array.isArray(taskIds) || taskIds.length === 0) {
-    return { ok: false, updated: 0, failed: 0, message: 'No tasks selected.' };
+export async function bulkDuplicateTasks(taskIds: string[]): Promise<BulkActionResult> {
+  try {
+    const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'editor' });
+    if (!rbacCheck.ok) {
+      return { ok: false, updated: 0, failed: taskIds.length, message: rbacCheck.error || 'Editor role required' };
+    }
+    const workspaceId = rbacCheck.context?.workspace.id;
+    const userId = rbacCheck.context?.user.id;
+    if (!workspaceId || !userId) return { ok: false, updated: 0, failed: taskIds.length, message: 'Workspace access required' };
+
+    const supabase = await (await import('@/lib/supabase-server')).createSupabaseServerClient();
+    const result = await dataBulkDuplicateTasks(taskIds, workspaceId, userId, supabase);
+    if (result.error) return { ok: false, updated: 0, failed: taskIds.length, message: result.error };
+    const duplicated = result.data?.duplicated ?? 0;
+    return { ok: duplicated === taskIds.length, updated: duplicated, failed: taskIds.length - duplicated };
+  } catch (err) {
+    return { ok: false, updated: 0, failed: taskIds.length, message: err instanceof Error ? err.message : 'Bulk duplicate failed' };
   }
-
-  const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'operator' });
-  if (!rbacCheck.ok || !rbacCheck.context) {
-    return { ok: false, updated: 0, failed: 0, message: rbacCheck.error || 'Operator role required.' };
-  }
-
-  const { workspace, user } = rbacCheck.context;
-  const supabase = await createSupabaseServerClient();
-
-  const result = await dataBulkDeleteTasks(
-    taskIds,
-    workspace.id,
-    supabase,
-  );
-
-  if (result.error) {
-    return { ok: false, updated: 0, failed: taskIds.length, message: result.error };
-  }
-
-  await logSecurityAuditEvent({
-    supabase,
-    workspaceId: workspace.id,
-    userId: user.id,
-    eventType: 'bulk_delete',
-    severity: 'info',
-    entityType: 'task',
-    message: `Bulk deleted ${result.data.deleted} task(s).`,
-    metadata: { taskIds, count: result.data.deleted },
-  }).catch(() => {});
-
-  const failed = taskIds.length - result.data.deleted;
-  return { ok: failed === 0, updated: result.data.deleted, failed };
 }
 
-/**
- * Bulk-duplicate tasks with RBAC (editor+) and quota enforcement.
- */
-export async function bulkDuplicateTasks(
-  taskIds: string[],
-): Promise<BulkActionResult> {
-  if (!Array.isArray(taskIds) || taskIds.length === 0) {
-    return { ok: false, updated: 0, failed: 0, message: 'No tasks selected.' };
+export async function bulkAssignTasks(taskIds: string[], agentType: string): Promise<BulkActionResult> {
+  try {
+    const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'editor' });
+    if (!rbacCheck.ok) {
+      return { ok: false, updated: 0, failed: taskIds.length, message: rbacCheck.error || 'Editor role required' };
+    }
+    const workspaceId = rbacCheck.context?.workspace.id;
+    if (!workspaceId) return { ok: false, updated: 0, failed: taskIds.length, message: 'Workspace access required' };
+
+    const supabase = await (await import('@/lib/supabase-server')).createSupabaseServerClient();
+    const result = await dataBulkAssignTasks(taskIds, workspaceId, agentType as import('@/types').AgentType, supabase);
+    if (result.error) return { ok: false, updated: 0, failed: taskIds.length, message: result.error };
+    const updated = result.data?.updated ?? 0;
+    return { ok: updated === taskIds.length, updated, failed: taskIds.length - updated };
+  } catch (err) {
+    return { ok: false, updated: 0, failed: taskIds.length, message: err instanceof Error ? err.message : 'Bulk assign failed' };
   }
-
-  const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'editor' });
-  if (!rbacCheck.ok || !rbacCheck.context) {
-    return { ok: false, updated: 0, failed: 0, message: rbacCheck.error || 'Editor role required.' };
-  }
-
-  const { workspace, user } = rbacCheck.context;
-
-  // Hard limit enforcement before duplication
-  await enforceQuota(workspace.id, 'tasks');
-
-  const supabase = await createSupabaseServerClient();
-
-  const result = await dataBulkDuplicateTasks(
-    taskIds,
-    workspace.id,
-    user.id,
-    supabase,
-  );
-
-  if (result.error) {
-    return { ok: false, updated: 0, failed: taskIds.length, message: result.error };
-  }
-
-  await incrementUsage(workspace.id, 'tasks', result.data.duplicated, user.id).catch(() => {});
-
-  const failed = taskIds.length - result.data.duplicated;
-  return { ok: failed === 0, updated: result.data.duplicated, failed };
 }
 
-/**
- * Bulk-assign tasks to a different agent type with RBAC (operator+).
- */
-export async function bulkAssignTasks(
-  taskIds: string[],
-  agentType: string,
-): Promise<BulkActionResult> {
-  if (!Array.isArray(taskIds) || taskIds.length === 0) {
-    return { ok: false, updated: 0, failed: 0, message: 'No tasks selected.' };
+export async function bulkExportTasks(taskIds: string[], format: 'csv' | 'json'): Promise<BulkExportResult> {
+  try {
+    const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'viewer' });
+    if (!rbacCheck.ok) {
+      return { ok: false, message: rbacCheck.error || 'Viewer role required' };
+    }
+    const workspaceId = rbacCheck.context?.workspace.id;
+    if (!workspaceId) return { ok: false, message: 'Workspace access required' };
+
+    const supabase = await (await import('@/lib/supabase-server')).createSupabaseServerClient();
+    const { data: tasks, error } = await supabase
+      .from('tasks')
+      .select('id, title, description, status, priority, agent_type, created_at, updated_at')
+      .in('id', taskIds)
+      .eq('workspace_id', workspaceId);
+
+    if (error) return { ok: false, message: error.message };
+    if (!tasks || tasks.length === 0) return { ok: false, message: 'No tasks found' };
+
+    const timestamp = new Date().toISOString().slice(0, 10);
+
+    if (format === 'json') {
+      return { ok: true, data: JSON.stringify(tasks, null, 2), filename: `tasks-export-${timestamp}.json` };
+    }
+
+    const headers = ['ID', 'Title', 'Description', 'Status', 'Priority', 'Agent Type', 'Created At', 'Updated At'];
+    const escapeCsv = (v: unknown) => `\"${String(v ?? '').replace(/"/g, '""')}\"`;
+    const csvRows = tasks.map((t) => headers.map((h) => escapeCsv(t[h.toLowerCase().replace(/ /g, '_') as keyof typeof t] ?? '')).join(','));
+    return { ok: true, data: `${headers.join(',')}\n${csvRows.join('\n')}`, filename: `tasks-export-${timestamp}.csv` };
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : 'Bulk export failed' };
   }
-
-  const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'operator' });
-  if (!rbacCheck.ok || !rbacCheck.context) {
-    return { ok: false, updated: 0, failed: 0, message: rbacCheck.error || 'Operator role required.' };
-  }
-
-  const { workspace, user } = rbacCheck.context;
-  const supabase = await createSupabaseServerClient();
-
-  const result = await dataBulkAssignTasks(
-    taskIds,
-    workspace.id,
-    agentType as AgentType,
-    supabase,
-  );
-
-  if (result.error) {
-    return { ok: false, updated: 0, failed: taskIds.length, message: result.error };
-  }
-
-  await logSecurityAuditEvent({
-    supabase,
-    workspaceId: workspace.id,
-    userId: user.id,
-    eventType: 'bulk_assign',
-    severity: 'info',
-    entityType: 'task',
-    message: `Bulk assigned ${result.data.updated} task(s) to ${agentType}.`,
-    metadata: { taskIds, agentType, count: result.data.updated },
-  }).catch(() => {});
-
-  const failed = taskIds.length - result.data.updated;
-  return { ok: failed === 0, updated: result.data.updated, failed };
 }
-
-/**
- * Bulk-export tasks as CSV or JSON.
- * Returns the formatted string which the client can trigger as a download.
- */
-export async function bulkExportTasks(
-  taskIds: string[],
-  format: 'csv' | 'json',
-): Promise<{ ok: boolean; data?: string; filename?: string; message?: string }> {
-  if (!Array.isArray(taskIds) || taskIds.length === 0) {
-    return { ok: false, message: 'No tasks selected.' };
-  }
-
-  const rbacCheck = await requireWorkspaceAccessWithRBAC({ minRole: 'viewer' });
-  if (!rbacCheck.ok || !rbacCheck.context) {
-    return { ok: false, message: rbacCheck.error || 'Viewer role required.' };
-  }
-
-  const { workspace } = rbacCheck.context;
-  const supabase = await createSupabaseServerClient();
-
-  const { data: tasks, error } = await supabase
-    .from('tasks')
-    .select('id, agent_type, title, description, status, priority, created_at, updated_at, completed_at')
-    .in('id', taskIds)
-    .eq('workspace_id', workspace.id);
-
-  if (error) {
-    return { ok: false, message: error.message };
-  }
-
-  if (!tasks || tasks.length === 0) {
-    return { ok: false, message: 'No tasks found.' };
-  }
-
-  const timestamp = new Date().toISOString().slice(0, 10);
-
-  if (format === 'json') {
-    return {
-      ok: true,
-      data: JSON.stringify(tasks, null, 2),
-      filename: `tasks-export-${timestamp}.json`,
-    };
-  }
-
-  // CSV format
-  const headers = ['ID', 'Agent Type', 'Title', 'Description', 'Status', 'Priority', 'Created At', 'Updated At', 'Completed At'];
-  const csvRows = [
-    headers.join(','),
-    ...tasks.map((task) =>
-      [
-        task.id,
-        escapeCsvField(task.agent_type),
-        escapeCsvField(task.title),
-        escapeCsvField(task.description),
-        task.status,
-        task.priority,
-        task.created_at ?? '',
-        task.updated_at ?? '',
-        task.completed_at ?? '',
-      ].join(','),
-    ),
-  ];
-
-  return {
-    ok: true,
-    data: csvRows.join('\n'),
-    filename: `tasks-export-${timestamp}.csv`,
-  };
-}
-

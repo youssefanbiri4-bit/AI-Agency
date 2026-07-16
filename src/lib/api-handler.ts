@@ -1,27 +1,15 @@
 import { z } from 'zod';
 import { logger } from './logger';
 import { createErrorResponse, AppError, ErrorLevel } from './error-handler';
-import { checkRateLimit, checkRateLimitComposite, type RateLimitInput } from './rate-limit';
-import { tokenBucketThrottle } from './rate-limit/throttle';
+import { createApiError } from './api-response';
+import { checkRateLimit } from './rate-limit';
 
 export interface ApiHandlerOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   schema?: z.ZodSchema;
-  /**
-   * Rate limiting configuration.
-   *  - `windowMs` + `maxRequests` + `keyPrefix`: simple per-key fixed-window limit.
-   *  - `composite`: multiple buckets enforced at once (e.g. IP + workspace + key).
-   *  - `throttle`: token-bucket throttle for bursty/expensive endpoints.
-   *  - `concurrencyKey` + `concurrencyMax`: cap in-flight operations per key.
-   */
   rateLimit?: {
-    windowMs?: number;
-    maxRequests?: number;
-    keyPrefix?: string;
-    composite?: RateLimitInput[];
-    throttle?: { key: string; capacity: number; refillPerSecond: number; cost?: number };
-    concurrencyKey?: string;
-    concurrencyMax?: number;
+    windowMs: number;
+    maxRequests: number;
   };
   requireAuth?: boolean;
 }
@@ -51,84 +39,36 @@ export function createApiHandler<T extends Record<string, unknown>>(
 
       // Rate limiting
       if (options?.rateLimit) {
-        const rl = options.rateLimit;
         const clientIp =
-          req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-          req.headers.get('cf-connecting-ip')?.trim() ||
+          req.headers.get('x-forwarded-for') ||
+          req.headers.get('cf-connecting-ip') ||
           'unknown';
-        const path = new URL(req.url).pathname;
 
-        // Composite (multi-dimensional) limits take precedence when provided.
-        if (rl.composite && rl.composite.length > 0) {
-          const composite = await checkRateLimitComposite(rl.composite);
-          if (!composite.allowed) {
-            scopedLog.warn('Composite rate limit exceeded', { endpoint: path, requestId });
-            return new Response(
-              JSON.stringify({ error: 'Rate limit exceeded', retryAfter: Math.ceil((composite.denied?.resetAt ?? Date.now()) / 1000) }),
-              { status: 429, headers: { 'Content-Type': 'application/json', ...composite.headers } }
-            );
-          }
-        } else if (rl.maxRequests && rl.windowMs) {
-          const rateLimitResult = await checkRateLimit({
-            key: `${rl.keyPrefix ?? 'api'}:${path}:${clientIp}`,
-            limit: rl.maxRequests,
-            windowMs: rl.windowMs,
+        const rateLimitResult = await checkRateLimit({
+          key: `api:${new URL(req.url).pathname}:${clientIp}`,
+          limit: options.rateLimit.maxRequests,
+          windowMs: options.rateLimit.windowMs,
+        });
+
+        if (!rateLimitResult.allowed) {
+          scopedLog.warn('Rate limit exceeded', {
+            endpoint: new URL(req.url).pathname,
+            requestId,
           });
-          if (!rateLimitResult.allowed) {
-            scopedLog.warn('Rate limit exceeded', { endpoint: path, requestId });
-            return new Response(
-              JSON.stringify({
-                error: 'Rate limit exceeded',
-                retryAfter: Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000),
-              }),
-              {
-                status: 429,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-RateLimit-Remaining': '0',
-                  'X-RateLimit-Reset': new Date(rateLimitResult.resetAt).toISOString(),
-                  'Retry-After': Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000).toString(),
-                },
-              }
-            );
-          }
-        }
-
-        // Token-bucket throttle for expensive/bursty endpoints.
-        if (rl.throttle) {
-          const t = await tokenBucketThrottle(rl.throttle);
-          if (!t.allowed) {
-            scopedLog.warn('Throttle limit exceeded', { endpoint: path, requestId });
-            return new Response(
-              JSON.stringify({ error: 'Too many requests, please slow down', retryAfter: Math.ceil(t.retryAfterMs / 1000) }),
-              {
-                status: 429,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Retry-After': String(Math.ceil(t.retryAfterMs / 1000)),
-                  'X-RateLimit-Remaining': '0',
-                },
-              }
-            );
-          }
-        }
-
-        // Concurrency cap per key (e.g. per workspace) to protect shared workers.
-        if (rl.concurrencyKey && rl.concurrencyMax) {
-          const { acquireConcurrency } = await import('./rate-limit/throttle');
-          const release = await acquireConcurrency(rl.concurrencyKey, rl.concurrencyMax);
-          if (!release) {
-            scopedLog.warn('Concurrency limit reached', { endpoint: path, requestId });
-            return new Response(
-              JSON.stringify({ error: 'Service busy, try again shortly' }),
-              {
-                status: 429,
-                headers: { 'Content-Type': 'application/json', 'Retry-After': '5' },
-              }
-            );
-          }
-          // Attach release to the request so the handler can free capacity when done.
-          (req as Request & { _releaseConcurrency?: () => Promise<void> })._releaseConcurrency = release;
+          return createApiError('Rate limit exceeded', {
+            status: 429,
+            requestId,
+            meta: {
+              retryAfter: Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000),
+            },
+            headers: {
+              'X-RateLimit-Remaining': '0',
+              'X-RateLimit-Reset': new Date(rateLimitResult.resetAt).toISOString(),
+              'Retry-After': Math.ceil(
+                (rateLimitResult.resetAt - Date.now()) / 1000
+              ).toString(),
+            },
+          });
         }
       }
 
@@ -159,10 +99,6 @@ export function createApiHandler<T extends Record<string, unknown>>(
       // Call the actual handler
       const response = await handler(req, validatedData);
 
-      // Release concurrency slot (best-effort) once the handler resolves.
-      const release = (req as Request & { _releaseConcurrency?: () => Promise<void> })._releaseConcurrency;
-      if (release) await release().catch(() => {});
-
       // Add security headers
       response.headers.set('X-Request-ID', requestId);
       response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -176,9 +112,6 @@ export function createApiHandler<T extends Record<string, unknown>>(
 
       return response;
     } catch (error: unknown) {
-      // Release concurrency slot on error too.
-      const release = (req as Request & { _releaseConcurrency?: () => Promise<void> })._releaseConcurrency;
-      if (release) await release().catch(() => {});
       return createErrorResponse(error, {
         endpoint: new URL(req.url).pathname,
         requestId,

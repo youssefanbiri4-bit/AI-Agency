@@ -3,8 +3,6 @@ if (typeof window !== 'undefined') {
   throw new Error('rate-limit.ts can only be used on the server');
 }
 
-import { getRedisClient } from '@/lib/redis';
-
 interface RateLimitBucket {
   count: number;
   resetAt: number;
@@ -26,20 +24,15 @@ export interface RateLimitStore {
   check(input: RateLimitInput): RateLimitResult | Promise<RateLimitResult>;
 }
 
-export type RateLimitStoreMode = 'memory' | 'upstash' | 'redis';
+export type RateLimitStoreMode = 'memory' | 'upstash';
+
+interface LockoutEntry {
+  until: number;
+}
 
 export class InMemoryRateLimitStore implements RateLimitStore {
   private buckets = new Map<string, RateLimitBucket>();
-
-  /** Expose bucket map for administrative operations (peek, reset). */
-  getBuckets(): Map<string, RateLimitBucket> {
-    return this.buckets;
-  }
-
-  /** Delete a specific rate limit bucket by key. */
-  deleteBucket(key: string): void {
-    this.buckets.delete(key);
-  }
+  private lockouts = new Map<string, LockoutEntry>();
 
   check({ key, limit, windowMs }: RateLimitInput): RateLimitResult {
     const now = Date.now();
@@ -70,6 +63,42 @@ export class InMemoryRateLimitStore implements RateLimitStore {
       remaining: Math.max(0, limit - bucket.count),
       resetAt: bucket.resetAt,
     };
+  }
+
+  peek({ key, limit, windowMs }: RateLimitInput): RateLimitResult {
+    const now = Date.now();
+    const bucket = this.buckets.get(key);
+
+    if (!bucket || bucket.resetAt <= now) {
+      return { allowed: true, remaining: limit, resetAt: now + windowMs };
+    }
+
+    return {
+      allowed: bucket.count < limit,
+      remaining: Math.max(0, limit - bucket.count),
+      resetAt: bucket.resetAt,
+    };
+  }
+
+  clearKey(key: string): void {
+    this.buckets.delete(key);
+    this.lockouts.delete(key);
+  }
+
+  setLockout(key: string, windowMs: number): void {
+    this.lockouts.set(key, { until: Date.now() + windowMs });
+  }
+
+  checkLockout(key: string): RateLimitResult {
+    const entry = this.lockouts.get(key);
+    const now = Date.now();
+
+    if (!entry || entry.until <= now) {
+      this.lockouts.delete(key);
+      return { allowed: true, remaining: 1, resetAt: now };
+    }
+
+    return { allowed: false, remaining: 0, resetAt: entry.until };
   }
 }
 
@@ -124,53 +153,11 @@ class UpstashRateLimitStore implements RateLimitStore {
   }
 }
 
-/**
- * Redis-backed rate limit store using the unified Redis client (ioredis).
- * Uses INCR/PEXPIRE pattern similar to Upstash but over the ioredis connection.
- * Falls back to in-memory if getRedisClient() returns null.
- */
-class RedisRateLimitStore implements RateLimitStore {
-  private redisPromise: Promise<import('ioredis').Redis | null> | null = null;
-
-  private async getRedis(): Promise<import('ioredis').Redis | null> {
-    if (this.redisPromise === null) {
-      this.redisPromise = getRedisClient();
-    }
-    return this.redisPromise;
-  }
-
-  async check({ key, limit, windowMs }: RateLimitInput): Promise<RateLimitResult> {
-    const redis = await this.getRedis();
-    if (!redis) {
-      return inMemoryRateLimitStore.check({ key, limit, windowMs });
-    }
-
-    const safeKey = `agentflow:rate-limit:${key}`;
-    const now = Date.now();
-
-    const count = await redis.incr(safeKey);
-
-    if (count === 1) {
-      await redis.pexpire(safeKey, windowMs);
-    }
-
-    const ttl = await redis.pttl(safeKey);
-    const resetAt = now + Math.max(ttl, 0);
-
-    return {
-      allowed: count <= limit,
-      remaining: Math.max(0, limit - count),
-      resetAt,
-    };
-  }
-}
-
 const inMemoryRateLimitStore = new InMemoryRateLimitStore();
 let activeRateLimitStore: RateLimitStore | null = null;
 let activeRateLimitStoreMode: RateLimitStoreMode = 'memory';
 
 function createConfiguredRateLimitStore() {
-  // Priority: 1) Upstash REST (if env vars are set), 2) ioredis Redis (if REDIS_HOST is set), 3) in-memory
   if (process.env.RATE_LIMIT_STORE === 'upstash') {
     const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
     const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
@@ -179,12 +166,6 @@ function createConfiguredRateLimitStore() {
       activeRateLimitStoreMode = 'upstash';
       return new UpstashRateLimitStore(url, token);
     }
-  }
-
-  const host = process.env.REDIS_HOST?.trim();
-  if (host) {
-    activeRateLimitStoreMode = 'redis';
-    return new RedisRateLimitStore();
   }
 
   activeRateLimitStoreMode = 'memory';
@@ -208,248 +189,6 @@ export function getRateLimitStoreMode() {
   return activeRateLimitStoreMode;
 }
 
-export const AUTH_BRUTE_FORCE_LIMIT = 5;
-export const AUTH_BRUTE_FORCE_WINDOW_MS = 5 * 60_000;
-export const AUTH_LOCKOUT_WINDOW_MS = 15 * 60_000;
-
-/** Per-IP ceiling for any single API key (shared abuse protection). */
-export const API_KEY_IP_LIMIT = 120;
-export const API_KEY_IP_WINDOW_MS = 60_000;
-
-/** Per-workspace (the "user" dimension) ceiling across all of its API keys. */
-export const API_KEY_WORKSPACE_LIMIT = 600;
-export const API_KEY_WORKSPACE_WINDOW_MS = 60_000;
-
-export interface CompositeRateLimitResult {
-  allowed: boolean;
-  /** The most restrictive bucket that denied the request (when denied). */
-  denied?: RateLimitResult;
-  /** Headers representing the most restrictive still-allowed bucket. */
-  headers: Record<string, string>;
-}
-
-/**
- * Enforces multiple rate-limit dimensions at once (API key + IP + workspace/user).
- * All buckets are checked; the first denial wins (429). When allowed, the returned
- * headers reflect the most restrictive (lowest remaining) bucket so proxies/clients
- * see accurate `X-RateLimit-*` values.
- */
-export async function checkRateLimitComposite(
-  inputs: RateLimitInput[]
-): Promise<CompositeRateLimitResult> {
-  let representative: RateLimitResult | null = null;
-
-  for (const input of inputs) {
-    const result = await checkRateLimit(input);
-
-    if (!result.allowed) {
-      return {
-        allowed: false,
-        denied: result,
-        headers: buildRateLimitExceededHeaders(result),
-      };
-    }
-
-    if (!representative || result.remaining < representative.remaining) {
-      representative = result;
-    }
-  }
-
-  return {
-    allowed: true,
-    headers: buildRateLimitExceededHeaders(
-      representative ?? { allowed: true, remaining: 0, resetAt: Date.now() + 60_000 }
-    ),
-  };
-}
-
-/**
- * Extracts the most likely client IP from common proxy headers.
- * - x-forwarded-for: first IP in the comma-separated list
- * - cf-connecting-ip
- * - x-real-ip
- */
-export function getClientIpFromHeaders(headers: Headers): string {
-  const xff = headers.get('x-forwarded-for');
-  const cf = headers.get('cf-connecting-ip');
-  const xri = headers.get('x-real-ip');
-
-  const candidate =
-    xff?.split(',')[0]?.trim() ||
-    cf?.trim() ||
-    xri?.trim() ||
-    '';
-
-  // Keep return type stable; downstream code expects a string key.
-  return candidate || '0.0.0.0';
-}
-
-export function buildRateLimitExceededHeaders(opts: {
-  allowed: boolean;
-  remaining: number;
-  resetAt: number;
-}): Record<string, string> {
-  const retryAfterSeconds = Math.max(
-    0,
-    Math.ceil((opts.resetAt - Date.now()) / 1000)
-  );
-
-  return {
-    'Retry-After': String(retryAfterSeconds),
-    'X-RateLimit-Remaining': String(opts.remaining),
-    'X-RateLimit-Reset': String(Math.floor(opts.resetAt / 1000)),
-    'X-RateLimit-Allowed': String(opts.allowed),
-  };
-}
-
-export async function checkRateLimitLockout(key: string): Promise<RateLimitResult> {
-  // Lockout is a binary state with an expiration time.
-  // If key has a positive TTL => allowed=false, remaining=0.
-  // NOTE: This CREATES the lockout bucket. Used only by setRateLimitLockout / recordAuthFailure.
-  // For read-only lockout checks, use peekRateLimitLockout instead.
-  return checkRateLimit({ key: `agentflow:lockout:${key}`, limit: 1, windowMs: AUTH_LOCKOUT_WINDOW_MS });
-}
-
-export async function peekRateLimitLockout(key: string): Promise<RateLimitResult> {
-  // Read-only lockout check: does NOT create or mutate the lockout bucket.
-  // Uses peekRateLimit with the same key format as checkRateLimitLockout.
-  return peekRateLimit({
-    key: `agentflow:lockout:${key}`,
-    limit: 1,
-    windowMs: AUTH_LOCKOUT_WINDOW_MS,
-  });
-}
-
-export async function setRateLimitLockout(key: string, windowMs: number): Promise<void> {
-  // Use check() once to create the bucket and rely on PEXPIRE/TTL behavior.
-  await checkRateLimit({ key: `agentflow:lockout:${key}`, limit: 1, windowMs });
-}
-
-export async function clearRateLimitKey(key: string): Promise<void> {
-  const safeKey = `agentflow:rate-limit:${key}`;
-  const mode = getRateLimitStoreMode();
-
-  if (mode === 'upstash') {
-    // Best-effort clear for Upstash store.
-    try {
-      // no-op: Upstash REST API doesn't expose DEL easily
-    } catch {
-      // ignore
-    }
-  }
-
-  if (mode === 'memory') {
-    const mem = activeRateLimitStore ?? inMemoryRateLimitStore;
-    if (mem instanceof InMemoryRateLimitStore) {
-      mem.deleteBucket(safeKey.replace('agentflow:rate-limit:', ''));
-    }
-  }
-
-  if (mode === 'redis') {
-    try {
-      const client = await getRedisClient();
-      if (client) {
-        await client.del(safeKey);
-      }
-    } catch {
-      // ignore
-    }
-  }
-}
-
-export async function peekRateLimit(input: RateLimitInput): Promise<RateLimitResult> {
-  const mode = getRateLimitStoreMode();
-
-  // In-memory: do not mutate buckets.
-  if (mode === 'memory') {
-    const mem = activeRateLimitStore ?? inMemoryRateLimitStore;
-    if (!(mem instanceof InMemoryRateLimitStore)) {
-      return inMemoryRateLimitStore.check(input);
-    }
-    const buckets = mem.getBuckets();
-    const bucket = buckets.get(input.key);
-    const now = Date.now();
-
-    if (!bucket || bucket.resetAt <= now) {
-      const resetAt = now + input.windowMs;
-      return { allowed: true, remaining: Math.max(0, input.limit - 1), resetAt };
-    }
-
-    return {
-      allowed: bucket.count < input.limit,
-      remaining: Math.max(0, input.limit - bucket.count),
-      resetAt: bucket.resetAt,
-    };
-  }
-
-  // Redis (ioredis): peek via PTTL + GET (no mutation)
-  if (mode === 'redis') {
-    const redis = await getRedisClient();
-    if (!redis) {
-      return inMemoryRateLimitStore.check(input);
-    }
-
-    const safeKey = `agentflow:rate-limit:${input.key}`;
-    const [ttlMs, countStr] = await Promise.all([
-      redis.pttl(safeKey),
-      redis.get(safeKey),
-    ]);
-
-    const now = Date.now();
-    const count = countStr ? Number(countStr) : 0;
-    const resetAt = now + Math.max(ttlMs, 0);
-    const allowed = count < input.limit;
-
-    return {
-      allowed,
-      remaining: allowed ? Math.max(0, input.limit - count) : 0,
-      resetAt,
-    };
-  }
-
-  // Upstash: peek via PTTL only (no INCR).
-  const safeKey = `agentflow:rate-limit:${input.key}`;
-  const upstashUrl = process.env.UPSTASH_REDIS_REST_URL?.trim();
-  const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
-
-  if (!upstashUrl || !upstashToken) {
-    return inMemoryRateLimitStore.check(input);
-  }
-
-  const response = await fetch(`${upstashUrl.replace(/\/+$/, '')}/pipeline`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${upstashToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify([['PTTL', safeKey]]),
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    throw new Error('Persistent rate limit store peek failed.');
-  }
-
-  const payload = (await response.json()) as Array<{ result?: number; error?: string }>;
-  const first = payload[0];
-  if (!first || first.error) {
-    throw new Error('Persistent rate limit store peek command failed.');
-  }
-
-  const ttlMs = Number(first.result ?? 0);
-  const now = Date.now();
-  const resetAt = now + Math.max(ttlMs, 0);
-
-  // Treat presence as "used": since we don't know the current count without INCR,
-  // approximate allowed=true only when TTL<=0 (i.e., key absent/expired).
-  const allowed = ttlMs <= 0;
-  return {
-    allowed,
-    remaining: allowed ? Math.max(0, input.limit - 1) : 0,
-    resetAt,
-  };
-}
-
 export async function checkRateLimit(input: RateLimitInput): Promise<RateLimitResult> {
   try {
     return await getRateLimitStore().check(input);
@@ -468,4 +207,123 @@ export async function checkRateLimit(input: RateLimitInput): Promise<RateLimitRe
 
 export function checkInMemoryRateLimit(input: RateLimitInput): RateLimitResult {
   return inMemoryRateLimitStore.check(input);
+}
+
+// ── Client IP extraction ───────────────────────────────────────────
+
+/**
+ * Extracts the client IP address from request headers.
+ * Checks common proxy headers in order: x-forwarded-for, x-real-ip, cf-connecting-ip.
+ */
+export function getClientIpFromHeaders(headers: Headers): string {
+  const forwardedFor = headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  const realIp = headers.get('x-real-ip');
+  if (realIp) return realIp.trim();
+  const cfIp = headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp.trim();
+  return '127.0.0.1';
+}
+
+// ── Auth brute-force constants ──────────────────────────────────────
+
+export const AUTH_BRUTE_FORCE_LIMIT = 5;
+export const AUTH_BRUTE_FORCE_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+export const AUTH_LOCKOUT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+// ── Peek (read without incrementing) ────────────────────────────────
+
+export async function peekRateLimit(input: RateLimitInput): Promise<RateLimitResult> {
+  // In-memory only; auth brute-force uses local state for speed and reliability.
+  return inMemoryRateLimitStore.peek(input);
+}
+
+// ── Clear a rate limit key ─────────────────────────────────────────
+
+export async function clearRateLimitKey(key: string): Promise<void> {
+  // In-memory only; auth brute-force uses local state for speed and reliability.
+  inMemoryRateLimitStore.clearKey(key);
+}
+
+// ── Lockout management ─────────────────────────────────────────────
+
+export async function checkRateLimitLockout(key: string): Promise<RateLimitResult> {
+  try {
+    return inMemoryRateLimitStore.checkLockout(key);
+  } catch {
+    return { allowed: true, remaining: 1, resetAt: Date.now() };
+  }
+}
+
+export async function setRateLimitLockout(key: string, windowMs: number): Promise<void> {
+  try {
+    inMemoryRateLimitStore.setLockout(key, windowMs);
+  } catch {
+    // Best-effort; lockout is a safety net, not a guarantee
+  }
+}
+
+// ── Composite rate limit check ────────────────────────────────────
+
+/**
+ * Check multiple rate limits at once and return the strictest (most restrictive) result.
+ * Used for API key authentication where per-key, per-IP, and per-workspace limits
+ * must all be enforced simultaneously.
+ */
+export async function checkRateLimitComposite(
+  inputs: RateLimitInput[]
+): Promise<RateLimitResult> {
+  if (inputs.length === 0) {
+    return { allowed: true, remaining: Infinity, resetAt: Date.now() };
+  }
+
+  const results = await Promise.all(inputs.map((input) => checkRateLimit(input)));
+
+  let strictest: RateLimitResult = results[0];
+  for (let i = 1; i < results.length; i++) {
+    const current = results[i];
+    // A denied result is always stricter than an allowed one
+    if (!current.allowed && strictest.allowed) {
+      strictest = current;
+    } else if (!current.allowed && !strictest.allowed) {
+      // Both denied: pick the one with the later reset (longer wait)
+      if (current.resetAt > strictest.resetAt) {
+        strictest = current;
+      }
+    } else if (current.allowed && strictest.allowed) {
+      // Both allowed: pick the one with fewer remaining requests
+      if (current.remaining < strictest.remaining) {
+        strictest = current;
+      }
+    }
+    // If current is allowed and strictest is denied, keep strictest
+  }
+
+  return strictest;
+}
+
+// ── API Key rate limit constants ───────────────────────────────────
+
+/** Per-IP rate limit for API key usage (100 requests per minute per IP). */
+export const API_KEY_IP_LIMIT = 100;
+
+/** Window duration for per-IP API key rate limit (1 minute). */
+export const API_KEY_IP_WINDOW_MS = 60_000;
+
+/** Per-workspace rate limit for API key usage (1000 requests per minute per workspace). */
+export const API_KEY_WORKSPACE_LIMIT = 1000;
+
+/** Window duration for per-workspace API key rate limit (1 minute). */
+export const API_KEY_WORKSPACE_WINDOW_MS = 60_000;
+
+// ── Build HTTP rate-limit response headers ─────────────────────────
+
+export function buildRateLimitExceededHeaders(result: RateLimitResult): Record<string, string> {
+  return {
+    'Retry-After': String(Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000))),
+    'X-RateLimit-Limit': String(result.remaining),
+    'X-RateLimit-Reset': String(Math.ceil(result.resetAt / 1000)),
+  };
 }

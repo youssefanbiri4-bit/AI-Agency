@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   if (!rateResult.allowed) {
     return NextResponse.json(
       { error: 'Rate limit exceeded. Try again later.' },
-      { status: 429, headers: rateResult.headers }
+      { status: 429, headers: buildRateLimitExceededHeaders(rateResult) }
     );
   }
 
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
   if (!userRate.allowed) {
     return NextResponse.json(
       { error: 'Export rate limit exceeded for this account. Try again later.' },
-      { status: 429, headers: userRate.headers }
+      { status: 429, headers: buildRateLimitExceededHeaders(userRate) }
     );
   }
 
@@ -120,7 +120,7 @@ export async function GET(request: Request) {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="${baseName}.csv"`,
         'Cache-Control': 'no-store',
-        ...buildRateLimitExceededHeaders(userRate.denied ?? { allowed: true, remaining: 5, resetAt: Date.now() + 60_000 }),
+        ...buildRateLimitExceededHeaders(userRate),
       },
     });
   }

@@ -586,7 +586,7 @@ export async function getProductionReadiness({
   ];
   const rateLimitStoreMode = getRateLimitStoreMode();
   const redisAvailable = isRedisAvailable();
-  const hasPersistentStore = rateLimitStoreMode === 'upstash' || rateLimitStoreMode === 'redis' || redisAvailable;
+  const hasPersistentStore = rateLimitStoreMode === 'upstash' || redisAvailable;
 
   const rateLimits: ProductionCheck[] = [
     {
