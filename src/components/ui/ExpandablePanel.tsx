@@ -86,6 +86,8 @@ export function ExpandablePanel({
     <section
       className={cn(
         'min-w-0 rounded-2xl border border-border bg-surface p-5 shadow-[0_12px_32px_rgba(93,107,107,0.06)] ring-1 ring-foreground/5',
+        'transition-all duration-200 ease-out',
+        'hover:shadow-[0_16px_40px_rgba(93,107,107,0.10)] hover:border-border-strong',
         className
       )}
     >

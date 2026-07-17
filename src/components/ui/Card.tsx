@@ -15,8 +15,10 @@ export function Card({ className, padded = true, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        'min-w-0 rounded-lg border border-border bg-surface-elevated shadow-sm card-hover',
-        'ring-1 ring-foreground/8',
+        'min-w-0 rounded-xl border border-border bg-surface-elevated shadow-sm',
+        'ring-1 ring-foreground/6 dark:ring-foreground/8',
+        'transition-all duration-200 ease-out',
+        'hover:-translate-y-1 hover:shadow-md hover:border-border-strong',
         padded && 'p-6',
         className
       )}

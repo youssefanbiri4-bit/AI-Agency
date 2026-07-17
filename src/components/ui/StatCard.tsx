@@ -82,7 +82,9 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'min-w-0 rounded-lg border border-border bg-surface-elevated p-4 shadow-sm card-hover',
+        'min-w-0 rounded-xl border border-border bg-surface-elevated p-4 shadow-sm',
+        'transition-all duration-200 ease-out',
+        'hover:-translate-y-1 hover:shadow-md hover:border-border-strong',
         className
       )}
     >
@@ -91,7 +93,7 @@ export function StatCard({
           <p className="text-sm font-semibold leading-5 text-foreground-muted">{title}</p>
           <p className="mt-2 text-2xl font-black leading-none tracking-normal text-foreground sm:text-3xl">{value}</p>
         </div>
-        <div className={cn('shrink-0 rounded-lg border border-border p-2 shadow-sm', iconBgColor ?? selectedTone.iconBg)}>
+        <div className={cn('shrink-0 rounded-xl border border-border/60 p-2.5 shadow-sm transition-colors duration-200', iconBgColor ?? selectedTone.iconBg)}>
           <Icon className={cn('h-5 w-5', iconColor ?? selectedTone.icon)} />
         </div>
       </div>

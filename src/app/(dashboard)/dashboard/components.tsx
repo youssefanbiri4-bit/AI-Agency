@@ -65,14 +65,16 @@ export function CommandCard({
   return (
     <section
       className={cn(
-        'min-w-0 rounded-2xl border border-[#5D6B6B]/10 bg-[#F1F7F7]/90 p-6 shadow-[0_12px_32px_rgba(93,107,107,0.06)] ring-1 ring-[#5D6B6B]/5',
+        'min-w-0 rounded-2xl border border-border bg-surface p-6 shadow-[0_12px_32px_rgba(93,107,107,0.06)] ring-1 ring-foreground/5',
+        'transition-all duration-200 ease-out',
+        'hover:shadow-[0_16px_40px_rgba(93,107,107,0.10)] hover:border-border-strong',
         className
       )}
     >
-      <div className="mb-6 flex min-w-0 flex-col gap-2 border-b border-[#5D6B6B]/8 pb-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-6 flex min-w-0 flex-col gap-2 border-b border-divider pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-lg font-black text-[#5D6B6B]">{title}</h2>
-          {description ? <p className="mt-1 text-sm leading-6 text-[#5D6B6B]/58">{description}</p> : null}
+          <h2 className="text-lg font-black text-foreground">{title}</h2>
+          {description ? <p className="mt-1 text-sm leading-6 text-foreground-muted">{description}</p> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>
@@ -108,17 +110,17 @@ export function ManagerStat({
           : 'bg-[#D5E5E5] text-[#F7CBCA]';
 
   return (
-    <div className="rounded-2xl border border-black/7 bg-white p-6 shadow-[0_16px_42px_rgba(93,107,107,0.07)]">
+    <div className="rounded-2xl border border-border bg-surface-elevated p-6 shadow-[0_16px_42px_rgba(93,107,107,0.07)] transition-all duration-200 ease-out hover:-translate-y-1 hover:shadow-[0_20px_48px_rgba(93,107,107,0.12)] hover:border-border-strong">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">{label}</p>
-          <p className="mt-2 text-3xl font-black text-[#5D6B6B]">{value}</p>
+          <p className="text-xs font-black uppercase tracking-[0.13em] text-foreground-muted">{label}</p>
+          <p className="mt-2 text-3xl font-black text-foreground">{value}</p>
         </div>
         <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', accent)}>
           <Icon className="h-5 w-5" />
         </span>
       </div>
-      <p className="mt-4 text-sm font-semibold leading-6 text-black/55">{helper}</p>
+      <p className="mt-4 text-sm font-semibold leading-6 text-foreground-muted">{helper}</p>
     </div>
   );
 }
@@ -149,9 +151,9 @@ export function ProgressRow({ label, value, total }: { label: string; value: num
 
 export function SmallMetric({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-2xl border border-black/7 bg-[#F1F7F7]/68 p-4">
-      <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">{label}</p>
-      <p className="mt-2 text-2xl font-black text-[#5D6B6B]">{value}</p>
+    <div className="rounded-xl border border-border bg-surface p-4 transition-all duration-200 ease-out hover:border-border-strong">
+      <p className="text-xs font-black uppercase tracking-[0.13em] text-foreground-muted">{label}</p>
+      <p className="mt-2 text-2xl font-black text-foreground">{value}</p>
     </div>
   );
 }
@@ -765,10 +767,10 @@ export function HealthScoreCard({
   const allProvidersReady = providerStatus.total > 0 && providerStatus.active === providerStatus.total;
 
   return (
-    <section className="min-w-0 rounded-2xl border border-[#5D6B6B]/10 bg-[#F1F7F7]/90 p-5 shadow-[0_12px_32px_rgba(93,107,107,0.06)] ring-1 ring-[#5D6B6B]/5">
-      <div className="mb-5 border-b border-[#5D6B6B]/8 pb-4">
-        <h2 className="text-lg font-black text-[#5D6B6B]">{t('page.dashboard.healthScorecard', 'Health Scorecard')}</h2>
-        <p className="mt-1 text-sm leading-6 text-[#5D6B6B]/58">
+    <section className="min-w-0 rounded-2xl border border-border bg-surface p-5 shadow-[0_12px_32px_rgba(93,107,107,0.06)] ring-1 ring-foreground/5 transition-all duration-200 ease-out hover:shadow-[0_16px_40px_rgba(93,107,107,0.10)] hover:border-border-strong">
+      <div className="mb-5 border-b border-divider pb-4">
+        <h2 className="text-lg font-black text-foreground">{t('page.dashboard.healthScorecard', 'Health Scorecard')}</h2>
+        <p className="mt-1 text-sm leading-6 text-foreground-muted">
           {t('page.dashboard.healthScorecardDescription', 'Four critical signals for the workspace at a glance.')}
         </p>
       </div>

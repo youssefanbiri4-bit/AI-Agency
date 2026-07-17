@@ -153,41 +153,43 @@ const toneConfig: Record<
     cardClassName: string;
     iconClassName: string;
     actionClassName: string;
+    borderColor: string;
   }
 > = {
   success: {
     icon: CheckCircle2,
-    cardClassName: 'border-border bg-foreground text-foreground-inverse shadow-[0_18px_46px_rgba(0,0,0,0.22)]',
-    iconClassName: 'text-foreground-inverse',
-    actionClassName: 'text-foreground-inverse/90 hover:text-foreground-inverse',
+    cardClassName: 'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.12)]',
+    iconClassName: 'text-success',
+    actionClassName: 'text-success hover:text-foreground',
+    borderColor: 'border-l-success',
   },
   error: {
     icon: AlertCircle,
-    cardClassName:
-      'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.12)]',
+    cardClassName: 'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.12)]',
     iconClassName: 'text-danger',
     actionClassName: 'text-danger hover:text-foreground',
+    borderColor: 'border-l-danger',
   },
   warning: {
     icon: ShieldAlert,
-    cardClassName:
-      'border-border bg-warning-light text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
+    cardClassName: 'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
     iconClassName: 'text-warning',
     actionClassName: 'text-warning hover:text-foreground',
+    borderColor: 'border-l-warning',
   },
   info: {
     icon: Info,
-    cardClassName:
-      'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
+    cardClassName: 'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
     iconClassName: 'text-info',
     actionClassName: 'text-info hover:text-foreground',
+    borderColor: 'border-l-info',
   },
   loading: {
     icon: LoaderCircle,
-    cardClassName:
-      'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
+    cardClassName: 'border-border bg-surface-elevated text-foreground shadow-[0_18px_46px_rgba(0,0,0,0.10)]',
     iconClassName: 'text-info',
     actionClassName: 'text-info hover:text-foreground',
+    borderColor: 'border-l-info',
   },
 };
 
@@ -235,7 +237,11 @@ function ToastViewport({ toasts }: { toasts: ToastRecord[] }) {
   }, [toasts]);
 
   return (
-    <div className="pointer-events-none fixed start-4 top-4 z-[100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 sm:start-6 sm:top-6">
+    <div
+      aria-live="polite"
+      aria-label="Notifications"
+      className="pointer-events-none fixed bottom-4 end-4 z-[100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 sm:bottom-6 sm:end-6"
+    >
       {toasts.map((item) => {
         const config = toneConfig[item.tone];
         const Icon = config.icon;
@@ -245,8 +251,11 @@ function ToastViewport({ toasts }: { toasts: ToastRecord[] }) {
             key={item.id}
             role={item.tone === 'error' || item.tone === 'warning' ? 'alert' : 'status'}
             className={cn(
-              'pointer-events-auto rounded-2xl border px-4 py-3 backdrop-blur-xl transition-all duration-200 ease-out',
-              config.cardClassName
+              'pointer-events-auto toast-enter rounded-xl border border-l-[3px] px-4 py-3 backdrop-blur-xl',
+              'transition-all duration-200 ease-out',
+              'hover:shadow-lg',
+              config.cardClassName,
+              config.borderColor
             )}
           >
             <div className="flex items-start gap-3">
@@ -260,12 +269,7 @@ function ToastViewport({ toasts }: { toasts: ToastRecord[] }) {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold leading-5">{item.title}</p>
                 {item.description ? (
-                  <p
-                    className={cn(
-                      'mt-1 text-sm leading-5',
-                      item.tone === 'success' ? 'text-foreground-inverse/78' : 'text-foreground-muted'
-                    )}
-                  >
+                  <p className="mt-1 text-sm leading-5 text-foreground-muted">
                     {item.description}
                   </p>
                 ) : null}
@@ -279,12 +283,7 @@ function ToastViewport({ toasts }: { toasts: ToastRecord[] }) {
                 type="button"
                 aria-label="Dismiss notification"
                 onClick={() => dismissToast(item.id)}
-                className={cn(
-                  'rounded-md p-1 transition-colors',
-                  item.tone === 'success'
-                    ? 'text-foreground-inverse/68 hover:bg-foreground-inverse/10 hover:text-foreground-inverse'
-                    : 'text-foreground-muted/36 hover:bg-foreground-muted/10 hover:text-foreground-muted'
-                )}
+                className="rounded-md p-1 text-foreground-muted/36 transition-colors hover:bg-foreground-muted/10 hover:text-foreground-muted"
               >
                 <X className="h-4 w-4" />
               </button>

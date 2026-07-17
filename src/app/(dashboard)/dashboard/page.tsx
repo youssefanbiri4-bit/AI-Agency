@@ -530,7 +530,7 @@ async function DashboardContent() {
             >
               {todayActions.length === 0 ? (
                 <EmptyState
-                  icon={CheckCircle2}
+                  icon={<CheckCircle2 className="h-6 w-6" />}
                   title="You're all caught up"
                   description="Create a new campaign or review provider setup when you are ready for the next move."
                   action={
