@@ -82,6 +82,25 @@ export function estimateOpenAICost(
   return Math.round(cost * 10000) / 10000; // 4 decimal precision
 }
 
+/**
+ * Estimate cost for Anthropic Claude API usage.
+ * Based on Claude 3.5 Sonnet pricing (approximate as of 2026):
+ * - Input: $3 / 1M tokens ($0.003 / 1k tokens)
+ * - Output: $15 / 1M tokens ($0.015 / 1k tokens)
+ */
+export function estimateClaudeCost(
+  inputTokens: number = 0,
+  outputTokens: number = 0,
+): number {
+  // Per-token rates: $3/1M input, $15/1M output
+  const CLAUDE_INPUT_RATE = 0.000003;  // $3 / 1M tokens
+  const CLAUDE_OUTPUT_RATE = 0.000015; // $15 / 1M tokens
+
+  const cost = inputTokens * CLAUDE_INPUT_RATE + outputTokens * CLAUDE_OUTPUT_RATE;
+
+  return Math.round(cost * 10000) / 10000; // 4 decimal precision
+}
+
 export function estimateN8nCost(executions: number = 1): number {
   return executions * PRICING.n8n;
 }

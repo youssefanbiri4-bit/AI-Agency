@@ -17,10 +17,11 @@ import 'server-only';
 
 import { startSpan } from '@sentry/nextjs';
 import { generateTextWithOpenAI, type GenerateTextProviderInput } from '@/lib/ai/text-provider';
+import { executeWithClaude, type ClaudeExecutorInput } from '@/features/agents/services/claude-executor';
 import { logger } from '@/lib/logger';
 import { increment, timing } from '@/lib/monitoring/metrics';
 import { getAIPerformanceMonitor } from '@/lib/monitoring/ai-performance';
-import { estimateOpenAICost, recordCost } from '@/lib/usage/cost-tracking';
+import { estimateOpenAICost, estimateClaudeCost, recordCost } from '@/lib/usage/cost-tracking';
 
 const orchestratorLog = logger.child('agents:orchestrator');
 
@@ -47,6 +48,8 @@ export interface AgentOrchestrationNode {
   model?: string;
   /** Tags for analytics grouping */
   tags?: string[];
+  /** AI engine to use for this node. Defaults to 'openai'. Set to 'claude' to route through the Anthropic Claude API. */
+  engine?: 'openai' | 'claude';
 }
 
 export interface AgentOrchestrationPlan {
@@ -246,47 +249,100 @@ async function executeNode(
       });
     }
 
-    // Execute the agent
-    const providerInput: GenerateTextProviderInput = {
-      kind: `multi-agent:${node.agentType}`,
-      systemPrompt: node.systemPrompt,
-      userPrompt: renderedPrompt,
-      maxTokens: node.maxTokens ?? 1024,
-      temperature: node.temperature ?? 0.7,
-    };
+    // Route to the appropriate AI engine
+    const useClaude = node.engine === 'claude';
 
-    const generationResult = await generateTextWithOpenAI(providerInput);
+    if (useClaude) {
+      // ── Claude execution path ──
+      const claudeInput: ClaudeExecutorInput = {
+        agentId: node.agentType,
+        taskContext: renderedPrompt,
+        history: [],
+        systemPrompt: node.systemPrompt,
+        maxTokens: node.maxTokens,
+        temperature: node.temperature,
+      };
 
-    if (generationResult.ok) {
-      result.status = 'success';
-      result.output = generationResult.text;
-      result.model = generationResult.model;
-      result.cached = generationResult.finishReason === 'cache_hit';
+      const claudeResult = await executeWithClaude(claudeInput);
 
-      // Estimate cost
-      const cost = estimateOpenAICost(result.model ?? undefined);
-      result.estimatedCostUsd = cost;
+      if (claudeResult.success) {
+        result.status = 'success';
+        result.output = claudeResult.reasoning;
+        result.model = claudeResult.model ?? 'claude';
+        result.cached = false;
 
-      // Record cost for tracking
-      await recordCost({
-        workspaceId,
-        operationType: 'text_generation',
-        model: result.model ?? undefined,
-        metadata: {
-          agent_type: node.agentType,
-          node_id: node.id,
-          workflow_name: 'multi-agent',
-        },
-      }).catch(() => {});
+        // Estimate cost via shared Claude cost helper
+        const inputTokens = claudeResult.usage?.inputTokens ?? 0;
+        const outputTokens = claudeResult.usage?.outputTokens ?? 0;
+        result.estimatedCostUsd = estimateClaudeCost(inputTokens, outputTokens);
+        result.tokenCount = inputTokens + outputTokens;
 
-      increment('agents.orchestrator.node_success', {
-        agentType: node.agentType,
-        cached: String(result.cached),
-      });
+        // Record cost for tracking
+        await recordCost({
+          workspaceId,
+          operationType: 'text_generation',
+          model: claudeResult.model ?? undefined,
+          metadata: {
+            agent_type: node.agentType,
+            node_id: node.id,
+            workflow_name: 'multi-agent',
+            engine: 'claude',
+          },
+        }).catch(() => {});
+
+        increment('agents.orchestrator.node_success', {
+          agentType: node.agentType,
+          cached: 'false',
+          engine: 'claude',
+        });
+      } else {
+        result.status = 'failed';
+        result.error = claudeResult.error ?? 'Claude execution failed';
+        increment('agents.orchestrator.node_failed', { agentType: node.agentType, engine: 'claude' });
+      }
     } else {
-      result.status = 'failed';
-      result.error = generationResult.error;
-      increment('agents.orchestrator.node_failed', { agentType: node.agentType });
+      // ── OpenAI execution path (default) ──
+      const providerInput: GenerateTextProviderInput = {
+        kind: `multi-agent:${node.agentType}`,
+        systemPrompt: node.systemPrompt,
+        userPrompt: renderedPrompt,
+        maxTokens: node.maxTokens ?? 1024,
+        temperature: node.temperature ?? 0.7,
+      };
+
+      const generationResult = await generateTextWithOpenAI(providerInput);
+
+      if (generationResult.ok) {
+        result.status = 'success';
+        result.output = generationResult.text;
+        result.model = generationResult.model;
+        result.cached = generationResult.finishReason === 'cache_hit';
+
+        // Estimate cost
+        const cost = estimateOpenAICost(result.model ?? undefined);
+        result.estimatedCostUsd = cost;
+
+        // Record cost for tracking
+        await recordCost({
+          workspaceId,
+          operationType: 'text_generation',
+          model: result.model ?? undefined,
+          metadata: {
+            agent_type: node.agentType,
+            node_id: node.id,
+            workflow_name: 'multi-agent',
+          },
+        }).catch(() => {});
+
+        increment('agents.orchestrator.node_success', {
+          agentType: node.agentType,
+          cached: String(result.cached),
+        });
+      } else {
+        result.status = 'failed';
+        result.error = generationResult.error;
+        increment('agents.orchestrator.node_failed', { agentType: node.agentType });
+      }
     }
   } catch (error) {
     result.status = 'failed';

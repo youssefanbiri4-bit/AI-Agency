@@ -48,6 +48,19 @@ const agentCategoryMap: Record<string, ToolCategory> = {
   report: 'analytics',
 };
 
+const agentEngineMap: Record<string, 'openai' | 'claude'> = {
+  // Development & Engineering — routed through Anthropic Claude API
+  'code-review-agent': 'claude',
+  'bug-fix-agent': 'claude',
+  'architecture-agent': 'claude',
+  'testing-agent': 'claude',
+  'documentation-agent': 'claude',
+  'deployment-agent': 'claude',
+  'security-review-agent': 'claude',
+  'database-agent': 'claude',
+  'ui-ux-review-agent': 'claude',
+};
+
 const agentRiskMap: Record<string, ToolRiskLevel> = {
   // Research tools — read only
   market_research: 'read_only',
@@ -149,6 +162,7 @@ export class ToolRegistry {
           icon: config.icon,
           color: config.color,
         },
+        engine: agentEngineMap[agentId] ?? 'openai',
       };
 
       this.register(definition);

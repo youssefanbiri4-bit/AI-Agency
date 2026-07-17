@@ -26,6 +26,7 @@ import {
 } from '@/lib/agents/multi-agent-orchestrator';
 import type { AgentType, JsonObject } from '@/types';
 import { estimateOpenAICost, recordCost } from '@/lib/usage/cost-tracking';
+import { globalToolRegistry } from '@/lib/orchestrator/tool-registry';
 import { getWorkspaceCostBudget } from '@/lib/orchestrator/cost-control';
 import { getTaskQueue } from '@/lib/queue/queues';
 
@@ -323,17 +324,21 @@ async function executeViaOrchestrator(
     agentCount: request.agentTypes.length,
   });
 
-  // Build orchestration plan from agent types
-  const nodes: AgentOrchestrationNode[] = request.agentTypes.map((agentType, index) => ({
-    id: `step-${index}`,
-    name: `${agentType} step`,
-    agentType,
-    systemPrompt: `You are a ${agentType} agent. Execute the requested task.`,
-    userPromptTemplate: index === 0
-      ? JSON.stringify(request.inputData)
-      : `{outputs.step-${index - 1}}`,
-    dependsOn: index > 0 ? [`step-${index - 1}`] : [],
-  }));
+  // Build orchestration plan from agent types, inheriting engine from registry
+  const nodes: AgentOrchestrationNode[] = request.agentTypes.map((agentType, index) => {
+    const toolDef = globalToolRegistry.get(agentType);
+    return {
+      id: `step-${index}`,
+      name: `${agentType} step`,
+      agentType,
+      systemPrompt: `You are a ${agentType} agent. Execute the requested task.`,
+      userPromptTemplate: index === 0
+        ? JSON.stringify(request.inputData)
+        : `{outputs.step-${index - 1}}`,
+      dependsOn: index > 0 ? [`step-${index - 1}`] : [],
+      engine: toolDef?.engine ?? 'openai',
+    };
+  });
 
   const plan: AgentOrchestrationPlan = {
     id: executionId,

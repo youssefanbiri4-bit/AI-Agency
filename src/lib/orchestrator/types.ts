@@ -48,6 +48,8 @@ export interface ToolDefinition {
   maxRetries: number;
   enabled: boolean;
   metadata?: Record<string, string>;
+  /** AI engine to use for this tool. Defaults to 'openai'. Set to 'claude' to route through the Anthropic Claude API. */
+  engine?: 'openai' | 'claude';
 }
 
 export interface ToolExecutionContext {

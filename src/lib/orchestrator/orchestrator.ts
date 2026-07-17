@@ -4,7 +4,8 @@ import { startSpan } from '@sentry/nextjs';
 import { logger } from '@/lib/logger';
 import { increment, timing } from '@/lib/monitoring/metrics';
 import { generateTextWithOpenAI, type GenerateTextProviderInput } from '@/lib/ai/text-provider';
-import { estimateOpenAICost, recordCost } from '@/lib/usage/cost-tracking';
+import { executeWithClaude, type ClaudeExecutorInput } from '@/features/agents/services/claude-executor';
+import { estimateOpenAICost, estimateClaudeCost, recordCost } from '@/lib/usage/cost-tracking';
 import { checkCircuit, recordCircuitSuccess, recordCircuitFailure } from '@/lib/circuit-breaker';
 
 import { ToolRegistry, globalToolRegistry } from './tool-registry';
@@ -574,6 +575,7 @@ export class AgentFlowOrchestrator {
     toolDef: NonNullable<ReturnType<ToolRegistry['get']>>,
     ctx: ToolExecutionContext,
   ): Promise<ToolResult> {
+    const startTime = Date.now();
     const paramStrings: string[] = [];
     for (const [key, value] of Object.entries(ctx.parameters)) {
       paramStrings.push(`${key}: ${String(value)}`);
@@ -599,6 +601,67 @@ ${renderedParams}
 - Provide a comprehensive, structured response
 - If information is missing, note what would be needed`;
 
+    // Route to the appropriate AI engine
+    const useClaude = toolDef.engine === 'claude';
+
+    if (useClaude) {
+      // ── Claude execution path ──
+      const claudeInput: ClaudeExecutorInput = {
+        agentId: toolDef.agentType,
+        taskContext: userPrompt,
+        history: [],
+        systemPrompt,
+        maxTokens: 2048,
+        temperature: 0.7,
+      };
+
+      const claudeResult = await withTimeout(
+        () => executeWithClaude(claudeInput),
+        ctx.timeoutMs,
+        { toolId: ctx.toolId, planId: ctx.planId },
+      );
+
+      if (!claudeResult.success) {
+        throw new OrchestratorError(
+          OrchestratorErrorCode.TOOL_EXECUTION_FAILED,
+          claudeResult.error ?? 'Claude execution failed',
+          { toolId: ctx.toolId, planId: ctx.planId, retryable: true },
+        );
+      }
+
+      // Estimate cost via shared Claude cost helper
+      const inputTokens = claudeResult.usage?.inputTokens ?? 0;
+      const outputTokens = claudeResult.usage?.outputTokens ?? 0;
+      const cost = estimateClaudeCost(inputTokens, outputTokens);
+
+      await recordCost({
+        workspaceId: ctx.workspaceId,
+        operationType: 'orchestrator_tool',
+        model: claudeResult.model ?? undefined,
+        metadata: {
+          tool_id: ctx.toolId,
+          plan_id: ctx.planId,
+          agent_type: toolDef.agentType,
+          engine: 'claude',
+        },
+      }).catch(() => {});
+
+      return {
+        success: true,
+        output: claudeResult.reasoning,
+        error: null,
+        toolCallId: ctx.executionId,
+        durationMs: Date.now() - startTime,
+        cached: false,
+        metadata: {
+          model: claudeResult.model,
+          engine: 'claude',
+          cost,
+        },
+      };
+    }
+
+    // ── OpenAI execution path (default) ──
     const providerInput: GenerateTextProviderInput = {
       kind: `orchestrator:${toolDef.agentType}`,
       systemPrompt,
@@ -638,7 +701,7 @@ ${renderedParams}
       output: generationResult.text,
       error: null,
       toolCallId: ctx.executionId,
-      durationMs: Date.now() - Date.now(),
+      durationMs: Date.now() - startTime,
       cached: generationResult.finishReason === 'cache_hit',
       metadata: {
         model: generationResult.model,
