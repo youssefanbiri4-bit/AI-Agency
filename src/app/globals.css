@@ -19,6 +19,9 @@
   --color-muted: #D8E6E5;
   --color-brand-soft: #F7CBCA;
   --color-accent-soft: #E6DDDA;
+  --ease-premium: cubic-bezier(0.32, 0.72, 0, 1);
+  --shadow-soft: 0 2px 8px rgb(0 0 0 / 0.04);
+  --shadow-elevated: 0 8px 24px rgb(0 0 0 / 0.08);
   --color-border-subtle: rgb(93 107 107 / 0.14);
   --color-copy-muted: rgb(93 107 107 / 0.62);
 
@@ -259,9 +262,24 @@
   button:disabled {
     cursor: not-allowed;
   }
-}
+}  @layer utilities {
+  /* ─── Spatial Minimalism: Glass Panel ─── */
+  .glass-panel {
+    background: rgb(255 255 255 / 0.80);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgb(93 107 107 / 0.12);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.04);
+  }
 
-@layer utilities {
+  .dark .glass-panel {
+    background: rgb(15 23 23 / 0.80);
+    border-color: rgb(232 238 238 / 0.08);
+    box-shadow:
+      0 2px 8px rgb(0 0 0 / 0.04),
+      inset 0 1px 0 rgb(255 255 255 / 0.03);
+  }
+
   .premium-page {
     background: transparent;
   }

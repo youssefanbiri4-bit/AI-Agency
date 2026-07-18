@@ -117,6 +117,9 @@ export const shadows = {
   lg: '0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -2px rgb(0 0 0 / 0.04)',
   xl: '0 20px 25px -5px rgb(0 0 0 / 0.08), 0 10px 10px -5px rgb(0 0 0 / 0.04)',
   'focus-ring': '0 0 0 2px var(--color-ring)',
+  // Spatial Minimalism — premium depth
+  soft: '0 2px 8px rgb(0 0 0 / 0.04)',
+  elevated: '0 8px 24px rgb(0 0 0 / 0.08)',
 } as const;
 
 export const typography = {
@@ -156,6 +159,10 @@ export const transitions = {
   fast: '150ms ease-out',
   base: '200ms ease-out',
   slow: '300ms ease-out',
+  // Spatial Minimalism — premium timing
+  'premium-fast': '150ms cubic-bezier(0.32, 0.72, 0, 1)',
+  'premium-base': '200ms cubic-bezier(0.32, 0.72, 0, 1)',
+  'premium-slow': '300ms cubic-bezier(0.32, 0.72, 0, 1)',
 } as const;
 
 export type ColorToken = keyof typeof colors;
@@ -233,5 +240,6 @@ export const tokenMap = {
   },
   transitionTimingFunction: {
     default: 'ease-out',
+    premium: 'cubic-bezier(0.32, 0.72, 0, 1)',
   },
 } as const;

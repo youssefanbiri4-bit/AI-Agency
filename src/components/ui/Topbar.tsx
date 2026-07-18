@@ -138,14 +138,14 @@ export function Topbar({
   };
 
   return (
-    <header className="fixed start-0 end-0 top-0 z-30 h-20 border-b border-border bg-background/80 shadow-sm backdrop-blur-lg lg:start-60">
+    <header className="glass-panel fixed start-0 end-0 top-0 z-50 h-20 border-b border-border/20 lg:start-60">
       <div className="flex h-full min-w-0 items-center justify-between gap-3 px-3 sm:gap-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <button
             type="button"
             aria-label={isMobileMenuOpen ? t('topbar.closeNavMenu') : t('topbar.openNavMenu')}
             onClick={onMenuClick}
-            className={buttonStyles({ variant: 'ghost', size: 'icon', className: 'lg:hidden' })}
+            className={buttonStyles({ variant: 'ghost', size: 'icon', className: 'lg:hidden transition-[background-color,color] duration-150 ease-premium' })}
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -180,7 +180,7 @@ export function Topbar({
               type="button"
               onClick={() => setLangOpen((o) => !o)}
               aria-label={t('language.switchTo')}
-              className={buttonStyles({ variant: 'ghost', size: 'icon' })}
+              className={buttonStyles({ variant: 'ghost', size: 'icon', className: 'transition-[background-color,color] duration-150 ease-premium' })}
             >
               <Globe className="h-5 w-5" />
             </button>
@@ -191,7 +191,7 @@ export function Topbar({
                     key={l.code}
                     type="button"
                     onClick={() => { setLanguage(l.code as LanguageCode); setLangOpen(false); }}
-                    className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-bold transition hover:bg-primary/10 ${
+                    className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-bold transition-[background-color,color] duration-150 ease-premium hover:bg-primary/10 ${
                       language === l.code ? 'text-primary' : 'text-foreground-muted'
                     }`}
                   >
@@ -209,12 +209,12 @@ export function Topbar({
           <Link
             href="/dashboard/settings"
             aria-label={t('topbar.openSettings')}
-            className={buttonStyles({ variant: 'ghost', size: 'icon' })}
+            className={buttonStyles({ variant: 'ghost', size: 'icon', className: 'transition-[background-color,color] duration-150 ease-premium' })}
           >
             <Settings className="h-5 w-5" />
           </Link>
-          <div className="hidden h-8 w-px bg-border sm:block" />
-          <div className="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-surface-elevated/70 px-2 py-2 shadow-sm sm:px-2.5">
+          <div className="hidden h-8 w-px bg-border/40 sm:block" />
+          <div className="flex min-w-0 items-center gap-3 rounded-lg bg-surface/60 px-2 py-2 shadow-soft sm:px-2.5">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-black text-primary-foreground">
               {profileLabel.charAt(0).toUpperCase()}
             </div>
