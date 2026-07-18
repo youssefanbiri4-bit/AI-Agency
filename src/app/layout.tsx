@@ -22,8 +22,7 @@ import type { LanguageCode } from '@/i18n/index';
 import en from '@/i18n/locales/en.json';
 import ar from '@/i18n/locales/ar.json';
 import { SentrySetup, SentryErrorBoundary } from '@/lib/sentry-client';
-import { ThemeProvider } from '@/lib/theme-context';
-import { ThemeScript } from '@/components/ThemeScript';
+import { ThemeProvider } from '@/features/theme/ThemeProvider';
 import { WebVitalsReporter } from '@/lib/monitoring/web-vitals';
 import { PWAProvider } from '@/components/pwa/PWAProvider';
 import { AnnouncementProvider } from '@/components/customer-success/AnnouncementProvider';
@@ -123,7 +122,6 @@ export default async function RootLayout({
   return (
     <html lang="ar" dir="rtl" className="h-full scroll-smooth" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <ThemeScript />
         <Script src="/agentflow-language-init.js" strategy="beforeInteractive" nonce={nonce} />
         {/* JSON-LD Structured Data */}
         <script

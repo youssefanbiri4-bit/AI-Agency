@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Globe, Menu, Search, Settings, X } from 'lucide-react';
 import { buttonStyles } from './Button';
-import { ThemeToggle } from './ThemeToggle';
+import { ThemeToggle } from '@/features/theme/ThemeToggle';
 import { useDashboardContext } from '@/components/layout/DashboardContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import type { NotificationRecord } from '@/types/database';
