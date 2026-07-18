@@ -41,7 +41,7 @@ export function SharedTemplateView({ agent }: SharedTemplateViewProps) {
           eyebrow={t('dashboardI18n.marketplace.eyebrow', 'Templates')}
           title={t('dashboardI18n.marketplace.sharedTitle', 'Shared Agent Template')}
         />
-        <EmptyState icon={Globe} title={t('dashboardI18n.marketplace.notFound', 'Template not found')} description={t('dashboardI18n.marketplace.notFoundDescription', 'This shared template may have been removed or is not public.')} />
+        <EmptyState icon={<Globe className="h-6 w-6" />} title={t('dashboardI18n.marketplace.notFound', 'Template not found')} description={t('dashboardI18n.marketplace.notFoundDescription', 'This shared template may have been removed or is not public.')} />
       </div>
     );
   }

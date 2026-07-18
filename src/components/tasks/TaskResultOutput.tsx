@@ -597,7 +597,7 @@ function SummaryCard({ output }: { output: StructuredTaskOutput }) {
         </>
       ) : (
         <EmptyState
-          icon={FileText}
+          icon={<FileText className="h-6 w-6" />}
           title="No summary provided"
           description="The callback included structured output, but the summary field was empty."
         />
@@ -659,7 +659,7 @@ function RecommendationsCard({ recommendations }: { recommendations: string[] })
         </ol>
       ) : (
         <EmptyState
-          icon={Star}
+          icon={<Star className="h-6 w-6" />}
           title="No recommendations"
           description="The structured callback did not include recommendation items."
         />
@@ -703,7 +703,7 @@ function NextActionsCard({ actions }: { actions: StructuredOutputAction[] }) {
         </div>
       ) : (
         <EmptyState
-          icon={ClipboardCheck}
+          icon={<ClipboardCheck className="h-6 w-6" />}
           title="No next actions"
           description="The structured callback did not include follow-up actions."
         />
@@ -731,7 +731,7 @@ function QualityNotesCard({ notes }: { notes: string[] }) {
         </ul>
       ) : (
         <EmptyState
-          icon={CheckCircle2}
+          icon={<CheckCircle2 className="h-6 w-6" />}
           title="No quality notes"
           description="The structured callback did not include quality notes."
         />

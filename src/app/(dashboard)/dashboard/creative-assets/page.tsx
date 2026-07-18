@@ -254,11 +254,11 @@ export default async function CreativeAssetsPage() {
       )}
 
       <div className="dashboard-stat-grid">
-        <StatCard title="Total Assets" value={assets.length} icon={Layers3} tone="neutral" />
-        <StatCard title="Draft Prompts" value={draftPrompts} icon={FileText} tone="accent" />
-        <StatCard title="Generated Images" value={generatedImages} icon={ImageIcon} tone="dark" />
-        <StatCard title="Video Assets" value={videoAssets} icon={Video} tone="brand" />
-        <StatCard title="Failed Generations" value={failedGenerations} icon={TriangleAlert} tone="brand" />
+        <StatCard title="Total Assets" value={assets.length} icon={<Layers3 className="h-5 w-5" />} tone="neutral" />
+        <StatCard title="Draft Prompts" value={draftPrompts} icon={<FileText className="h-5 w-5" />} tone="accent" />
+        <StatCard title="Generated Images" value={generatedImages} icon={<ImageIcon className="h-5 w-5" />} tone="dark" />
+        <StatCard title="Video Assets" value={videoAssets} icon={<Video className="h-5 w-5" />} tone="brand" />
+        <StatCard title="Failed Generations" value={failedGenerations} icon={<TriangleAlert className="h-5 w-5" />} tone="brand" />
       </div>
 
       <Card>

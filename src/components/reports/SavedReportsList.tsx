@@ -228,7 +228,7 @@ export function SavedReportsList({
 
       {reports.length === 0 ? (
         <EmptyState
-          icon={FileText}
+          icon={<FileText className="h-6 w-6" />}
           title="No saved reports yet"
           description={
             canManage

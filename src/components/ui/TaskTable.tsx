@@ -75,7 +75,7 @@ export function TaskTable({ tasks, agents, emptyAction, className, selection }: 
   if (!tasks.length) {
     return (
       <EmptyState
-        icon={FileText}
+        icon={<FileText className="h-6 w-6" />}
         title="No tasks to show"
         description="Create a task to start tracking agent work in this workspace."
         action={emptyAction}

@@ -57,7 +57,7 @@ export default async function CreateTaskPage({
 
       {!agentsResult.error && agentsResult.data.length === 0 ? (
         <EmptyState
-          icon={Database}
+          icon={<Database className="h-6 w-6" />}
           title="No agents available"
           description="Seed the agent catalog, then return to create a task."
         />

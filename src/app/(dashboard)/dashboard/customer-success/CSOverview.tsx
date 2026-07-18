@@ -67,27 +67,27 @@ export function CSOverview({ data }: { data: CsPageData }) {
         <StatCard
           title={t('cs.riskScore', 'Churn Risk')}
           value={`${data.churn.riskScore}`}
-          icon={AlertTriangle}
+          icon={<AlertTriangle className="h-5 w-5" />}
           tone={riskStatTone}
           subtitle={data.churn.level.toUpperCase()}
         />
         <StatCard
           title={t('cs.openAlerts', 'Open Alerts')}
           value={data.churn.openAlerts}
-          icon={AlertTriangle}
+          icon={<AlertTriangle className="h-5 w-5" />}
           tone={data.churn.openAlerts > 0 ? 'warning' : 'neutral'}
         />
         <StatCard
           title={t('cs.activeMembers', 'Active Members')}
           value={`${data.retention.activeMembers30d}/${data.retention.totalMembers}`}
-          icon={Activity}
+          icon={<Activity className="h-5 w-5" />}
           tone="primary"
           subtitle={`${data.retention.activeRate}% active (30d)`}
         />
         <StatCard
           title={t('cs.nps', 'NPS')}
           value={data.npsSummary.nps}
-          icon={Star}
+          icon={<Star className="h-5 w-5" />}
           tone={data.npsSummary.nps >= 0 ? 'success' : 'danger'}
           subtitle={`${data.npsSummary.count} responses`}
         />

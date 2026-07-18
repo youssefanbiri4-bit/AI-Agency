@@ -152,7 +152,7 @@ export default async function BackupCenterPage() {
         />
         {backupHistory.data.length === 0 ? (
           <EmptyState
-            icon={Download}
+            icon={<Download className="h-6 w-6" />}
             title="No backups created yet"
             description="Create a backup to generate an immediate JSON download and save a metadata-only history row."
           />

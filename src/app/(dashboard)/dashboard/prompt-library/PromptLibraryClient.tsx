@@ -191,11 +191,11 @@ export function PromptLibraryClient({ prompts, error }: PromptLibraryClientProps
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard title={t('dashboardI18n.promptLibrary.totalPrompts', 'Total Prompts')} value={prompts.length} icon={FileText} subtitle={t('dashboardI18n.promptLibrary.currentWorkspace', 'Current workspace')} />
-        <StatCard title={t('dashboardI18n.promptLibrary.favorites', 'Favorites')} value={prompts.filter((prompt) => prompt.is_favorite).length} icon={Star} tone="brand" subtitle={t('dashboardI18n.promptLibrary.pinnedPrompts', 'Pinned prompts')} />
-        <StatCard title={t('dashboardI18n.promptLibrary.developmentPrompts', 'Development Prompts')} value={prompts.filter((prompt) => prompt.category === 'development').length} icon={Clipboard} tone="accent" subtitle={t('dashboardI18n.promptLibrary.buildWorkflows', 'Build workflows')} />
-        <StatCard title={t('dashboardI18n.promptLibrary.deploymentPrompts', 'Deployment Prompts')} value={prompts.filter((prompt) => prompt.category === 'deployment').length} icon={Upload} tone="dark" subtitle={t('dashboardI18n.promptLibrary.releaseWorkflows', 'Release workflows')} />
-        <StatCard title={t('dashboardI18n.promptLibrary.recentlyUsed', 'Recently Used')} value={recentlyUsed} icon={Clipboard} tone="neutral" subtitle={t('dashboardI18n.promptLibrary.copiedAtLeastOnce', 'Copied at least once')} />
+        <StatCard title={t('dashboardI18n.promptLibrary.totalPrompts', 'Total Prompts')} value={prompts.length} icon={<FileText className="h-5 w-5" />} subtitle={t('dashboardI18n.promptLibrary.currentWorkspace', 'Current workspace')} />
+        <StatCard title={t('dashboardI18n.promptLibrary.favorites', 'Favorites')} value={prompts.filter((prompt) => prompt.is_favorite).length} icon={<Star className="h-5 w-5" />} tone="brand" subtitle={t('dashboardI18n.promptLibrary.pinnedPrompts', 'Pinned prompts')} />
+        <StatCard title={t('dashboardI18n.promptLibrary.developmentPrompts', 'Development Prompts')} value={prompts.filter((prompt) => prompt.category === 'development').length} icon={<Clipboard className="h-5 w-5" />} tone="accent" subtitle={t('dashboardI18n.promptLibrary.buildWorkflows', 'Build workflows')} />
+        <StatCard title={t('dashboardI18n.promptLibrary.deploymentPrompts', 'Deployment Prompts')} value={prompts.filter((prompt) => prompt.category === 'deployment').length} icon={<Upload className="h-5 w-5" />} tone="dark" subtitle={t('dashboardI18n.promptLibrary.releaseWorkflows', 'Release workflows')} />
+        <StatCard title={t('dashboardI18n.promptLibrary.recentlyUsed', 'Recently Used')} value={recentlyUsed} icon={<Clipboard className="h-5 w-5" />} tone="neutral" subtitle={t('dashboardI18n.promptLibrary.copiedAtLeastOnce', 'Copied at least once')} />
       </div>
 
       <Card className="border-[#F7CBCA]/14 bg-[#D5E5E5]/45">
@@ -312,7 +312,7 @@ export function PromptLibraryClient({ prompts, error }: PromptLibraryClientProps
           }
         />
       ) : filteredPrompts.length === 0 ? (
-        <EmptyState icon={Search} title={t('dashboardI18n.promptLibrary.noMatchTitle', 'No prompts match')} description={t('dashboardI18n.promptLibrary.noMatchDescription', 'Clear the search or adjust filters.')} />
+        <EmptyState icon={<Search className="h-6 w-6" />} title={t('dashboardI18n.promptLibrary.noMatchTitle', 'No prompts match')} description={t('dashboardI18n.promptLibrary.noMatchDescription', 'Clear the search or adjust filters.')} />
       ) : (
         <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
           {filteredPrompts.map((prompt) => (

@@ -120,7 +120,7 @@ export default function SupportTicketsClient({ initialTickets }: { initialTicket
       {filtered.length === 0 ? (
         <EmptyState
           variant="first-visit"
-          icon={LifeBuoy}
+          icon={<LifeBuoy className="h-6 w-6" />}
           title="No tickets yet"
           description="Create a support ticket when you need help."
           action={

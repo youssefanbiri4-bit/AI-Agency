@@ -52,7 +52,7 @@ export default async function TaskDetailsPage({
   if (!task) {
     return (
       <EmptyState
-        icon={Zap}
+        icon={<Zap className="h-6 w-6" />}
         title="Task not found"
         description="This task record is not available in the active workspace."
         action={
@@ -223,7 +223,7 @@ export default async function TaskDetailsPage({
               </div>
             ) : (
               <EmptyState
-                icon={FileText}
+                icon={<FileText className="h-6 w-6" />}
                 title="No extra input data"
                 description="Add structured fields when creating future tasks."
               />
@@ -299,7 +299,7 @@ export default async function TaskDetailsPage({
             <Card className="h-fit">
               <CardHeader title="Review Actions" description="Review actions are unavailable for this status." />
               <EmptyState
-                icon={ClipboardCheck}
+                icon={<ClipboardCheck className="h-6 w-6" />}
                 title="Not ready for review"
                 description="Approve and request-change actions only appear for tasks with needs_review status."
               />

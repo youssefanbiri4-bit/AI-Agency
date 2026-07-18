@@ -58,11 +58,11 @@ export function ReleasesClient({ releases, projects }: ReleasesClientProps) {
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard title="Total Releases" value={releases.length} icon={Rocket} subtitle="Current workspace" />
-        <StatCard title="Ready to Deploy" value={releases.filter((release) => release.status === 'ready_to_deploy').length} icon={ExternalLink} tone="accent" />
-        <StatCard title="Deployed" value={releases.filter((release) => release.status === 'deployed').length} icon={Rocket} tone="dark" />
-        <StatCard title="Failed" value={releases.filter((release) => release.status === 'failed').length} icon={ShieldAlert} tone="accent" />
-        <StatCard title="With Known Issues" value={releases.filter((release) => Boolean(release.known_issues?.trim())).length} icon={FileText} tone="neutral" />
+        <StatCard title="Total Releases" value={releases.length} icon={<Rocket className="h-5 w-5" />} subtitle="Current workspace" />
+        <StatCard title="Ready to Deploy" value={releases.filter((release) => release.status === 'ready_to_deploy').length} icon={<ExternalLink className="h-5 w-5" />} tone="accent" />
+        <StatCard title="Deployed" value={releases.filter((release) => release.status === 'deployed').length} icon={<Rocket className="h-5 w-5" />} tone="dark" />
+        <StatCard title="Failed" value={releases.filter((release) => release.status === 'failed').length} icon={<ShieldAlert className="h-5 w-5" />} tone="accent" />
+        <StatCard title="With Known Issues" value={releases.filter((release) => Boolean(release.known_issues?.trim())).length} icon={<FileText className="h-5 w-5" />} tone="neutral" />
       </div>
 
       <Card className="border-[#F7CBCA]/14 bg-[#D5E5E5]/45">
@@ -87,7 +87,7 @@ export function ReleasesClient({ releases, projects }: ReleasesClientProps) {
       </Card>
 
       {releases.length === 0 ? (
-        <EmptyState icon={Rocket} title="No releases yet" description="Create your first release record to track features, build results, deployment URLs, and rollback notes." action={<Button onClick={() => setShowForm(true)}>Create Release</Button>} />
+        <EmptyState icon={<Rocket className="h-6 w-6" />} title="No releases yet" description="Create your first release record to track features, build results, deployment URLs, and rollback notes." action={<Button onClick={() => setShowForm(true)}>Create Release</Button>} />
       ) : (
         <div>
         <div className="grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">

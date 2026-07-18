@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import {
   CheckCircle2,
   Clock3,
@@ -315,13 +315,13 @@ function CampaignMetricCard({
   title,
   value,
   subtitle,
-  icon: Icon,
+  icon,
   tone = 'berry',
 }: {
   title: string;
   value: string | number;
   subtitle: string;
-  icon: typeof Megaphone;
+  icon: ReactNode;
   tone?: 'berry' | 'coral' | 'peach' | 'dark' | 'cream';
 }) {
   const toneClassNames = {
@@ -343,7 +343,7 @@ function CampaignMetricCard({
           </p>
         </div>
         <div className={cn('rounded-lg bg-gradient-to-br p-3 shadow-sm', toneClassNames[tone])}>
-          <Icon className="h-5 w-5" />
+          {icon}
         </div>
       </div>
       <p className="mt-4 text-sm leading-6 text-[#5D6B6B]/58">{subtitle}</p>
@@ -680,35 +680,35 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         <CampaignMetricCard
           title="Total Campaigns"
           value={totalCampaigns}
-          icon={Megaphone}
+          icon={<Megaphone className="h-5 w-5" />}
           tone="berry"
           subtitle="Tasks plus visible provider campaigns"
         />
         <CampaignMetricCard
           title="Active"
           value={activeCampaigns}
-          icon={RadioTower}
+          icon={<RadioTower className="h-5 w-5" />}
           tone="coral"
           subtitle="Connected or metrics-ready channels"
         />
         <CampaignMetricCard
           title="Scheduled"
           value={scheduledCampaigns}
-          icon={Clock3}
+          icon={<Clock3 className="h-5 w-5" />}
           tone="peach"
           subtitle="Pending campaign task queue"
         />
         <CampaignMetricCard
           title="Published"
           value={publishedCampaigns}
-          icon={CheckCircle2}
+          icon={<CheckCircle2 className="h-5 w-5" />}
           tone="dark"
           subtitle="Completed campaign reports"
         />
         <CampaignMetricCard
           title="Failed / Setup Required"
           value={setupRequiredCount}
-          icon={ShieldAlert}
+          icon={<ShieldAlert className="h-5 w-5" />}
           tone="cream"
           subtitle="Provider setup or reconnect items"
         />

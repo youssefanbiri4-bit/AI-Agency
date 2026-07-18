@@ -40,28 +40,28 @@ export function RetentionDashboard({ data, className }: RetentionDashboardProps)
         <StatCard
           title="Total Members"
           value={data.totalMembers}
-          icon={Users}
+          icon={<Users className="h-5 w-5" />}
           tone="primary"
           subtitle="Workspace members"
         />
         <StatCard
           title="Active (30d)"
           value={data.activeMembers30d}
-          icon={Activity}
+          icon={<Activity className="h-5 w-5" />}
           tone="success"
           subtitle={`${data.activeRate}% active rate`}
         />
         <StatCard
           title="Events This Month"
           value={data.thisMonthEvents}
-          icon={Calendar}
+          icon={<Calendar className="h-5 w-5" />}
           tone="neutral"
           subtitle={`${data.eventChangePercent >= 0 ? '+' : ''}${data.eventChangePercent}% vs last month`}
         />
         <StatCard
           title="NPS Score"
           value={data.nps.nps}
-          icon={Star}
+          icon={<Star className="h-5 w-5" />}
           tone={data.nps.nps >= 0 ? 'success' : 'danger'}
           subtitle={`${data.nps.count} responses`}
         />

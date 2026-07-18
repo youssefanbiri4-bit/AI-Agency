@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { type ReactNode } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -79,12 +80,12 @@ function DecisionCard({
   title,
   ready,
   detail,
-  icon: Icon,
+  icon,
 }: {
   title: string;
   ready: boolean;
   detail: string;
-  icon: typeof ShieldCheck;
+  icon: ReactNode;
 }) {
   return (
     <div className={cn(
@@ -98,7 +99,7 @@ function DecisionCard({
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
           ready ? 'bg-white text-[#0F7A4F]' : 'bg-white text-[#B51F30]'
         )}>
-          <Icon className="h-5 w-5" />
+          {icon}
         </span>
         <div>
           <p className="font-black text-[#5D6B6B]">{title}</p>
@@ -219,19 +220,19 @@ export default async function ProductionOperationsPage() {
             title="Internal use"
             ready={readiness.safeToUseInternally}
             detail={readiness.safeToUseInternally ? 'Allowed for private operator use.' : 'Blocked until core security and migration checks pass.'}
-            icon={ShieldCheck}
+            icon={<ShieldCheck className="h-5 w-5" />}
           />
           <DecisionCard
             title="Real clients"
             ready={readiness.safeForRealClients}
             detail={readiness.safeForRealClients ? 'All production requirements are green.' : 'Blocked until every production gate is green.'}
-            icon={RadioTower}
+            icon={<RadioTower className="h-5 w-5" />}
           />
           <DecisionCard
             title="Paid ads"
             ready={readiness.safeForPaidAds}
             detail={readiness.safeForPaidAds ? 'Paid ads gate is green.' : 'Blocked until providers, spend controls, confirmation, and launch mode are green.'}
-            icon={Megaphone}
+            icon={<Megaphone className="h-5 w-5" />}
           />
         </div>
 

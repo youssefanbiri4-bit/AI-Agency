@@ -179,8 +179,12 @@ type CalendarClientProps = {
 
 export function CalendarClient({ items }: CalendarClientProps) {
   const clock = useLiveClock();
-  const today = useMemo(() => startOfDay(new Date()), []);
+  const [today, setToday] = useState<Date | null>(null);
   const [anchorDate, setAnchorDate] = useState(() => startOfDay(new Date()));
+
+  useEffect(() => {
+    setToday(startOfDay(new Date()));
+  }, []);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [typeFilter, setTypeFilter] = useState<FilterType>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all');
@@ -444,7 +448,7 @@ export function CalendarClient({ items }: CalendarClientProps) {
           {monthDays.map((day) => {
             const dayItems = itemsForDay(day);
             const inMonth = day.getMonth() === currentMonth;
-            const isToday = sameDay(day, today);
+            const isToday = today ? sameDay(day, today) : false;
             const isSelected = selectedDay ? sameDay(day, selectedDay) : false;
             return (
               <button

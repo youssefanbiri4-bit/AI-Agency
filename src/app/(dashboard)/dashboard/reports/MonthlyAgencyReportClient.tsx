@@ -662,7 +662,7 @@ export function MonthlyAgencyReportClient({
       <div className="grid gap-6 xl:grid-cols-3">
         <MiniCard title="Publishing Attempts Summary">
           {report.periodAttempts.length === 0 ? (
-            <EmptyState icon={FileText} title="No attempts in this period" description="Publish and draft attempts will appear here once logged." />
+            <EmptyState icon={<FileText className="h-6 w-6" />} title="No attempts in this period" description="Publish and draft attempts will appear here once logged." />
           ) : (
             <div className="space-y-3">
               {report.periodAttempts.slice(0, 6).map((attempt) => (

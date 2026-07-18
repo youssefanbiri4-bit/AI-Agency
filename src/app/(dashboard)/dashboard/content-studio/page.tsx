@@ -286,10 +286,10 @@ export default async function ContentStudioPage({ searchParams }: ContentStudioP
       />
 
       <div className="dashboard-stat-grid">
-        <StatCard title="Total Items" value={totalItems} icon={Layers3} tone="neutral" />
-        <StatCard title="Ready Items" value={readyItems} icon={Workflow} tone="accent" />
-        <StatCard title="Setup Required" value={setupRequiredItems} icon={TriangleAlert} tone="brand" />
-        <StatCard title="Linked Assets" value={linkedAssets} icon={PenSquare} tone="dark" />
+        <StatCard title="Total Items" value={totalItems} icon={<Layers3 className="h-5 w-5" />} tone="neutral" />
+        <StatCard title="Ready Items" value={readyItems} icon={<Workflow className="h-5 w-5" />} tone="accent" />
+        <StatCard title="Setup Required" value={setupRequiredItems} icon={<TriangleAlert className="h-5 w-5" />} tone="brand" />
+        <StatCard title="Linked Assets" value={linkedAssets} icon={<PenSquare className="h-5 w-5" />} tone="dark" />
       </div>
 
       {itemsResult.error ? (

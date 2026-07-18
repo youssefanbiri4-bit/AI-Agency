@@ -90,28 +90,28 @@ export function AIPerformanceDashboard({ className }: { className?: string }) {
         <StatCard
           title="Cache Hit Rate"
           value={cacheStats ? `${cacheStats.cache.hitRate}%` : '—'}
-          icon={Database}
+          icon={<Database className="h-5 w-5" />}
           tone={cacheStats && cacheStats.cache.hitRate > 50 ? 'success' : 'warning'}
           subtitle={`${cacheStats?.cache.hits ?? 0} hits`}
         />
         <StatCard
           title="Cached Entries"
           value={cacheStats?.cache.size ?? 0}
-          icon={Activity}
+          icon={<Activity className="h-5 w-5" />}
           tone="neutral"
           subtitle={`${cacheStats?.cache.evictions ?? 0} evictions`}
         />
         <StatCard
           title="Tokens Saved"
           value={cacheStats ? cacheStats.cost.totalSavedTokens.toLocaleString() : '—'}
-          icon={Zap}
+          icon={<Zap className="h-5 w-5" />}
           tone="success"
           subtitle="Estimated"
         />
         <StatCard
           title="Cost Saved"
           value={cacheStats ? `$${cacheStats.cost.totalSavedCost.toFixed(4)}` : '—'}
-          icon={TrendingUp}
+          icon={<TrendingUp className="h-5 w-5" />}
           tone="success"
           subtitle={`$${cacheStats?.cost.estimatedMonthlySavings.toFixed(2)}/mo estimated`}
         />

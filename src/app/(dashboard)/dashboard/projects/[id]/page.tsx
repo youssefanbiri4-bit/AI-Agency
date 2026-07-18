@@ -257,7 +257,7 @@ export default async function ProjectDetailPage({
           <CardHeader title="Next Actions" description="Manual checklist stored in project metadata." />
           {metadata.next_actions.length === 0 ? (
             <EmptyState
-              icon={CheckSquare}
+              icon={<CheckSquare className="h-6 w-6" />}
               title="No next actions yet"
               description="Add one action per line in the edit form below."
             />
@@ -335,7 +335,7 @@ export default async function ProjectDetailPage({
           </Notice>
         ) : safePatchPlansResult.data.length === 0 ? (
           <EmptyState
-            icon={SearchCode}
+            icon={<SearchCode className="h-6 w-6" />}
             title="No patch plans yet"
             description="Create a safe implementation plan before asking Codex to modify files."
             action={
@@ -370,7 +370,7 @@ export default async function ProjectDetailPage({
           <CardHeader title="Related Tasks" description="Linked task IDs stored in project metadata." />
           {relatedTasks.length === 0 ? (
             <EmptyState
-              icon={CheckSquare}
+              icon={<CheckSquare className="h-6 w-6" />}
               title="No linked tasks"
               description="Use the project task shortcut to open the existing task creation flow with project context."
               action={
@@ -394,7 +394,7 @@ export default async function ProjectDetailPage({
         <Card>
           <CardHeader title="Related Content & Campaigns" description="Content relationships can be added later without changing provider logic." />
           <EmptyState
-            icon={Megaphone}
+            icon={<Megaphone className="h-6 w-6" />}
             title="Open Content Studio"
             description="Create or review related campaign and content records from the existing studio."
             action={
@@ -408,7 +408,7 @@ export default async function ProjectDetailPage({
         <Card>
           <CardHeader title="Related Creative Assets" description="Creative asset relationships can be added later without changing storage records." />
           <EmptyState
-            icon={ImageIcon}
+            icon={<ImageIcon className="h-6 w-6" />}
             title="Open Creative Assets"
             description="Manage prompts, images, videos, and reusable campaign visuals."
             action={
@@ -529,7 +529,7 @@ function GitHubRepositoryPanel({
 
       {!owner || !repo ? (
         <EmptyState
-          icon={GitBranch}
+          icon={<GitBranch className="h-6 w-6" />}
           title="No GitHub repository linked"
           description="Add a GitHub URL, owner, repository name, and optional default branch in the project form below."
         />

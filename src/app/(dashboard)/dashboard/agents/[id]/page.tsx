@@ -56,7 +56,7 @@ export default async function AgentDetailPage({
   if (!agent) {
     return (
       <EmptyState
-        icon={BarChart3}
+        icon={<BarChart3 className="h-6 w-6" />}
         title="Agent not found"
         description="The requested agent is not part of the active Supabase catalog."
         action={
@@ -128,21 +128,21 @@ export default async function AgentDetailPage({
           <StatCard
             title="Task History"
             value={taskStats.total}
-            icon={FileText}
+            icon={<FileText className="h-5 w-5" />}
             tone="neutral"
             subtitle={taskStats.total === 0 ? 'Create a task to begin' : 'Real assigned tasks'}
           />
           <StatCard
             title="Pending"
             value={taskStats.pending}
-            icon={Database}
+            icon={<Database className="h-5 w-5" />}
             tone="accent"
             subtitle="Saved in Supabase"
           />
           <StatCard
             title="Stored Results"
             value={resultCount}
-            icon={Workflow}
+            icon={<Workflow className="h-5 w-5" />}
             tone="brand"
             subtitle="Real callback results"
           />
@@ -248,7 +248,7 @@ export default async function AgentDetailPage({
       <Card>
         <CardHeader title="Activity Log" description="Execution logs will remain empty until real automation is connected." />
         <EmptyState
-          icon={ShieldCheck}
+          icon={<ShieldCheck className="h-6 w-6" />}
           title="No execution activity"
           description="Run a connected task to add execution events."
         />

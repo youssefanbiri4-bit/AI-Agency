@@ -47,8 +47,7 @@ export function DocsCenterClient({
   return (
     <div
       dir="rtl"
-      className="space-y-8 text-right"
-      style={{ fontFamily: 'Cairo, Tajawal, "Noto Sans Arabic", sans-serif' }}
+      className="space-y-8 text-right [font-family:'Cairo',Tajawal,'Noto_Sans_Arabic',sans-serif]"
     >
       <section className="rounded-[28px] border border-black/7 bg-white/90 p-5 shadow-[0_24px_70px_rgba(93,107,107,0.08)] sm:p-7">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">

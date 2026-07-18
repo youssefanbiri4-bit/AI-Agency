@@ -92,7 +92,7 @@ export function CSFeedback({ feedback }: { feedback: CustomerFeedbackRecord[] })
       )}
 
       {feedback.length === 0 ? (
-        <EmptyState title={t('cs.noFeedback', 'No feedback yet')} icon={MessageSquare} variant="first-visit" />
+        <EmptyState title={t('cs.noFeedback', 'No feedback yet')} icon={<MessageSquare className="h-6 w-6" />} variant="first-visit" />
       ) : (
         <div className="space-y-2">
           {feedback.map((f) => (

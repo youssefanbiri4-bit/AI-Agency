@@ -67,7 +67,7 @@ export function CSNps({ nps, summary }: { nps: NpsResponseRecord[]; summary: Nps
         />
         <div className="p-4">
           {summary.trend.length === 0 ? (
-            <EmptyState title={t('cs.noNps', 'No NPS responses')} icon={Star} variant="first-visit" />
+            <EmptyState title={t('cs.noNps', 'No NPS responses')} icon={<Star className="h-6 w-6" />} variant="first-visit" />
           ) : (
             <div className="space-y-1">
               {summary.trend.map((tr) => (

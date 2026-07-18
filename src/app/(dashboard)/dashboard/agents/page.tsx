@@ -207,28 +207,28 @@ export default function AgentsPage() {
         <StatCard
           title="Agent Catalog"
           value={agentStats.total}
-          icon={Users}
+          icon={<Users className="h-5 w-5" />}
           tone="brand"
           subtitle={isLoadingAgents ? 'Loading Supabase catalog' : catalogSubtitle}
         />
         <StatCard
           title="Departments"
           value={departments.length}
-          icon={Filter}
+          icon={<Filter className="h-5 w-5" />}
           tone="brand"
           subtitle="Strategy, growth, operations, and engineering"
         />
         <StatCard
           title="Task History"
           value={tasks.length}
-          icon={Database}
+          icon={<Database className="h-5 w-5" />}
           tone="neutral"
           subtitle={tasks.length === 0 ? 'Create a task to start history' : 'Real workspace tasks'}
         />
         <StatCard
           title="Workflows"
           value="Guarded"
-          icon={Workflow}
+          icon={<Workflow className="h-5 w-5" />}
           tone="accent"
           subtitle="n8n execution waits for setup"
         />
@@ -320,13 +320,13 @@ export default function AgentsPage() {
         />
       ) : loadError ? (
         <EmptyState
-          icon={Database}
+          icon={<Database className="h-6 w-6" />}
           title="Supabase agent catalog is not available"
           description="Run the schema and seed SQL, then refresh the catalog."
         />
       ) : sortedAgents.length === 0 ? (
         <EmptyState
-          icon={Users}
+          icon={<Users className="h-6 w-6" />}
           title="No agents match these filters"
           description="Clear the filters or search a different capability."
           action={<Button onClick={resetFilters}>Reset Filters</Button>}

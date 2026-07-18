@@ -279,7 +279,7 @@ export function PullRequestAssistantPanel({
           </div>
 
           {filteredPulls.length === 0 ? (
-            <EmptyState icon={GitPullRequest} title="No pull requests match" description={pulls.length ? 'Adjust filters or refresh PR data.' : 'No pull requests were returned by GitHub.'} />
+            <EmptyState icon={<GitPullRequest className="h-6 w-6" />} title="No pull requests match" description={pulls.length ? 'Adjust filters or refresh PR data.' : 'No pull requests were returned by GitHub.'} />
           ) : (
             <div className="space-y-3">
               {filteredPulls.map((pull) => {
@@ -319,7 +319,7 @@ export function PullRequestAssistantPanel({
 
         <section className="rounded-lg border border-black/7 bg-white/88 p-5">
           {!selectedPr ? (
-            <EmptyState icon={GitPullRequest} title="Select a pull request" description="Open a PR to review metadata and generate a saved report." />
+            <EmptyState icon={<GitPullRequest className="h-6 w-6" />} title="Select a pull request" description="Open a PR to review metadata and generate a saved report." />
           ) : (
             <div className="space-y-5">
               <div>

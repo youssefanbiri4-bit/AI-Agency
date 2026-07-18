@@ -91,13 +91,13 @@ export function ManagerStat({
   label,
   value,
   helper,
-  icon: Icon,
+  icon,
   tone = 'berry',
 }: {
   label: string;
   value: number | string;
   helper: string;
-  icon: typeof FileText;
+  icon: ReactNode;
   tone?: 'berry' | 'coral' | 'peach' | 'dark';
 }) {
   const accent =
@@ -117,7 +117,7 @@ export function ManagerStat({
           <p className="mt-2 text-3xl font-black text-foreground">{value}</p>
         </div>
         <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', accent)}>
-          <Icon className="h-5 w-5" />
+          {icon}
         </span>
       </div>
       <p className="mt-4 text-sm font-semibold leading-6 text-foreground-muted">{helper}</p>
@@ -209,10 +209,10 @@ export function DashboardContentFallback() {
         </section>
 
         <div className="dashboard-stat-grid">
-          <ManagerStat label="Tasks" value="..." helper="Loading with timeout protection" icon={FileText} />
-          <ManagerStat label="Reviews" value="..." helper="Safe fallback remains visible" icon={AlertCircle} tone="coral" />
-          <ManagerStat label="Content" value="..." helper="Widgets load independently" icon={CheckCircle2} tone="dark" />
-          <ManagerStat label="Providers" value="..." helper="Provider checks cannot freeze this page" icon={RadioTower} />
+          <ManagerStat label="Tasks" value="..." helper="Loading with timeout protection" icon={<FileText className="h-5 w-5" />} />
+          <ManagerStat label="Reviews" value="..." helper="Safe fallback remains visible" icon={<AlertCircle className="h-5 w-5" />} tone="coral" />
+          <ManagerStat label="Content" value="..." helper="Widgets load independently" icon={<CheckCircle2 className="h-5 w-5" />} tone="dark" />
+          <ManagerStat label="Providers" value="..." helper="Provider checks cannot freeze this page" icon={<RadioTower className="h-5 w-5" />} />
         </div>
 
         <CommandCard title="Workspace Shortcuts" description="Routes stay available even while dashboard data is recovering.">
@@ -778,27 +778,27 @@ export function HealthScoreCard({
         <StatCard
           title={t('page.dashboard.providerStatus', 'Provider Status')}
           value={`${providerStatus.active}/${providerStatus.total}`}
-          icon={RadioTower}
+          icon={<RadioTower className="h-5 w-5" />}
           tone={allProvidersReady ? 'success' : 'warning'}
           subtitle={t('page.dashboard.readyLabel', 'ready')}
         />
         <StatCard
           title={t('page.dashboard.schedulerHealth', 'Scheduler Health')}
           value={schedulerHealthy ? t('page.dashboard.schedulerRunning', 'Running') : t('page.dashboard.schedulerNeedsSetup', 'Needs setup')}
-          icon={RefreshCw}
+          icon={<RefreshCw className="h-5 w-5" />}
           tone={schedulerHealthy ? 'success' : 'warning'}
         />
         <StatCard
           title={t('page.dashboard.reviewQueue', 'Review Queue')}
           value={reviewQueue}
-          icon={AlertCircle}
+          icon={<AlertCircle className="h-5 w-5" />}
           tone={reviewQueue > 0 ? 'danger' : 'neutral'}
           subtitle={t('page.dashboard.reviewQueueSubtitle', 'Tasks pending review')}
         />
         <StatCard
           title={t('page.dashboard.readyContent', 'Ready Content')}
           value={readyContent}
-          icon={CheckCircle2}
+          icon={<CheckCircle2 className="h-5 w-5" />}
           tone="success"
           subtitle={t('page.dashboard.readyToPublish', 'Ready to publish')}
         />

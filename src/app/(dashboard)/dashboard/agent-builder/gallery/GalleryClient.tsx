@@ -152,7 +152,7 @@ export function GalleryClient({
 
       {tab === 'builtIn' ? (
         builtInTemplates.length === 0 ? (
-          <EmptyState icon={Sparkles} title={t('dashboardI18n.marketplace.builtIn', 'Built-in Templates')} description={t('common.noData', 'No data available.')} />
+          <EmptyState icon={<Sparkles className="h-6 w-6" />} title={t('dashboardI18n.marketplace.builtIn', 'Built-in Templates')} description={t('common.noData', 'No data available.')} />
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {builtInTemplates.map((template) => {
@@ -275,7 +275,7 @@ export function GalleryClient({
 
       {tab === 'workspace' ? (
         workspaceAgents.length === 0 ? (
-          <EmptyState icon={Bot} title={t('dashboardI18n.marketplace.yourWorkspace', 'Your Workspace Agents')} description={t('dashboardI18n.agentBuilder.emptyDescription', 'Build your first no-code AI agent, then publish it as a template.')} />
+          <EmptyState icon={<Bot className="h-6 w-6" />} title={t('dashboardI18n.marketplace.yourWorkspace', 'Your Workspace Agents')} description={t('dashboardI18n.agentBuilder.emptyDescription', 'Build your first no-code AI agent, then publish it as a template.')} />
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {workspaceAgents.map((agent) => {

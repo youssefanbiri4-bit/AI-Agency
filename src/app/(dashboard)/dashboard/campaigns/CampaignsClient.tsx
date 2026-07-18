@@ -817,7 +817,7 @@ export function CampaignsClient({
 
         {campaignReports.length === 0 ? (
           <EmptyState
-            icon={TrendingUp}
+            icon={<TrendingUp className="h-6 w-6" />}
             title="No generated campaign reports yet"
             description="Create a planner, tracker, or analyzer task, run it from Task Details, then review the generated report."
           />

@@ -123,7 +123,7 @@ export function CSTickets({ tickets }: { tickets: SupportTicketRecord[] }) {
       )}
 
       {tickets.length === 0 ? (
-        <EmptyState title={t('cs.noTickets', 'No support tickets')} icon={Ticket} variant="first-visit" />
+        <EmptyState title={t('cs.noTickets', 'No support tickets')} icon={<Ticket className="h-6 w-6" />} variant="first-visit" />
       ) : (
         <div className="space-y-2">
           {tickets.map((tk) => (

@@ -643,14 +643,14 @@ export default async function RecoveryPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Total Issues" value={issues.length} icon={LifeBuoy} tone="neutral" />
-        <StatCard title="Failed Items" value={failedCount} icon={AlertTriangle} tone="accent" />
-        <StatCard title="Setup Required" value={setupCount} icon={Wrench} tone="brand" />
-        <StatCard title="Approval Pending" value={approvalCount} icon={Clock} tone="neutral" />
-        <StatCard title="Token Missing" value={tokenMissingCount} icon={ShieldAlert} tone="accent" />
-        <StatCard title="Manual Only" value={manualOnlyCount} icon={LifeBuoy} tone="dark" />
-        <StatCard title="Unsupported" value={unsupportedCount} icon={RadioTower} tone="neutral" />
-        <StatCard title="Retryable Issues" value={retryableCount} icon={LifeBuoy} tone="brand" />
+        <StatCard title="Total Issues" value={issues.length} icon={<LifeBuoy className="h-5 w-5" />} tone="neutral" />
+        <StatCard title="Failed Items" value={failedCount} icon={<AlertTriangle className="h-5 w-5" />} tone="accent" />
+        <StatCard title="Setup Required" value={setupCount} icon={<Wrench className="h-5 w-5" />} tone="brand" />
+        <StatCard title="Approval Pending" value={approvalCount} icon={<Clock className="h-5 w-5" />} tone="neutral" />
+        <StatCard title="Token Missing" value={tokenMissingCount} icon={<ShieldAlert className="h-5 w-5" />} tone="accent" />
+        <StatCard title="Manual Only" value={manualOnlyCount} icon={<LifeBuoy className="h-5 w-5" />} tone="dark" />
+        <StatCard title="Unsupported" value={unsupportedCount} icon={<RadioTower className="h-5 w-5" />} tone="neutral" />
+        <StatCard title="Retryable Issues" value={retryableCount} icon={<LifeBuoy className="h-5 w-5" />} tone="brand" />
       </div>
 
       <RecoveryClient

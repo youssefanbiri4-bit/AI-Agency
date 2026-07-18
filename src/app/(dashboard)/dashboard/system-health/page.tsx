@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -69,7 +70,7 @@ function HealthSection({
   );
 }
 
-function MetricCard({ label, value, helper, icon: Icon }: { label: string; value: string | number; helper: string; icon: typeof Activity }) {
+function MetricCard({ label, value, helper, icon }: { label: string; value: string | number; helper: string; icon: ReactNode }) {
   return (
     <div className="rounded-2xl border border-black/7 bg-[#F1F7F7]/72 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -78,7 +79,7 @@ function MetricCard({ label, value, helper, icon: Icon }: { label: string; value
           <p className="mt-2 text-2xl font-black text-[#5D6B6B]">{value}</p>
         </div>
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#F7CBCA] shadow-sm">
-          <Icon className="h-5 w-5" />
+          {icon}
         </span>
       </div>
       <p className="mt-3 text-sm font-semibold leading-6 text-black/55">{helper}</p>
@@ -317,17 +318,17 @@ export default async function SystemHealthPage() {
 
         <HealthSection title="Operational Health" description="Real counts from workspace content, publishing attempts, tasks, projects, releases, assets, and recovery-style blockers.">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <MetricCard label="Content Items" value={summary.metrics.content.total} helper={`${summary.metrics.content.ready} ready / ${summary.metrics.content.failed} failed`} icon={ClipboardList} />
-            <MetricCard label="Publish Attempts" value={summary.metrics.attempts.total} helper={`${summary.metrics.attempts.succeeded} succeeded / ${summary.metrics.attempts.failed} failed`} icon={RadioTower} />
-            <MetricCard label="Tasks" value={summary.metrics.tasks.pending + summary.metrics.tasks.processing + summary.metrics.tasks.needs_review + summary.metrics.tasks.completed + summary.metrics.tasks.failed} helper={`${summary.metrics.tasks.needs_review} need review`} icon={FileText} />
-            <MetricCard label="Projects" value={summary.metrics.projects.total} helper={`${summary.metrics.projects.active} active / ${summary.metrics.projects.ready_to_deploy} ready`} icon={FolderKanban} />
-            <MetricCard label="Releases" value={summary.metrics.releases.total} helper={`${summary.metrics.releases.failed} failed / latest: ${summary.metrics.releases.latest}`} icon={Rocket} />
+            <MetricCard label="Content Items" value={summary.metrics.content.total} helper={`${summary.metrics.content.ready} ready / ${summary.metrics.content.failed} failed`} icon={<ClipboardList className="h-5 w-5" />} />
+            <MetricCard label="Publish Attempts" value={summary.metrics.attempts.total} helper={`${summary.metrics.attempts.succeeded} succeeded / ${summary.metrics.attempts.failed} failed`} icon={<RadioTower className="h-5 w-5" />} />
+            <MetricCard label="Tasks" value={summary.metrics.tasks.pending + summary.metrics.tasks.processing + summary.metrics.tasks.needs_review + summary.metrics.tasks.completed + summary.metrics.tasks.failed} helper={`${summary.metrics.tasks.needs_review} need review`} icon={<FileText className="h-5 w-5" />} />
+            <MetricCard label="Projects" value={summary.metrics.projects.total} helper={`${summary.metrics.projects.active} active / ${summary.metrics.projects.ready_to_deploy} ready`} icon={<FolderKanban className="h-5 w-5" />} />
+            <MetricCard label="Releases" value={summary.metrics.releases.total} helper={`${summary.metrics.releases.failed} failed / latest: ${summary.metrics.releases.latest}`} icon={<Rocket className="h-5 w-5" />} />
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard label="Recovery Issues" value={summary.metrics.recovery.totalIssues} helper={`${summary.metrics.recovery.criticalBlockers} critical blockers`} icon={LifeBuoy} />
-            <MetricCard label="Assets Missing Media" value={summary.metrics.assets.missingMedia} helper={`${summary.metrics.assets.linked} linked / ${summary.metrics.assets.unlinked} unlinked`} icon={HardDrive} />
-            <MetricCard label="Setup Required Content" value={summary.metrics.content.setup_required} helper={`${summary.metrics.content.approval_pending} approval pending`} icon={AlertTriangle} />
-            <MetricCard label="Manual Only" value={summary.metrics.content.manual_only + summary.metrics.attempts.manual_only} helper="LinkedIn/manual handoff workflows" icon={Gauge} />
+            <MetricCard label="Recovery Issues" value={summary.metrics.recovery.totalIssues} helper={`${summary.metrics.recovery.criticalBlockers} critical blockers`} icon={<LifeBuoy className="h-5 w-5" />} />
+            <MetricCard label="Assets Missing Media" value={summary.metrics.assets.missingMedia} helper={`${summary.metrics.assets.linked} linked / ${summary.metrics.assets.unlinked} unlinked`} icon={<HardDrive className="h-5 w-5" />} />
+            <MetricCard label="Setup Required Content" value={summary.metrics.content.setup_required} helper={`${summary.metrics.content.approval_pending} approval pending`} icon={<AlertTriangle className="h-5 w-5" />} />
+            <MetricCard label="Manual Only" value={summary.metrics.content.manual_only + summary.metrics.attempts.manual_only} helper="LinkedIn/manual handoff workflows" icon={<Gauge className="h-5 w-5" />} />
           </div>
         </HealthSection>
 

@@ -114,8 +114,7 @@ export const SwipeableSidebar = forwardRef<HTMLDivElement, SwipeableSidebarProps
           if (typeof ref === 'function') ref(node);
           else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
         }}
-        className="fixed inset-0 z-50 lg:hidden"
-        style={{ pointerEvents: 'none' }}
+        className="fixed inset-0 z-50 lg:hidden pointer-events-none"
       >
         <div
           className="absolute inset-0 bg-black/32 backdrop-blur-sm transition-opacity duration-300"

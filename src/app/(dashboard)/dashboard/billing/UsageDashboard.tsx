@@ -60,28 +60,28 @@ export function UsageDashboard({
         <StatCard
           title="Current Plan"
           value={plan}
-          icon={Zap}
+          icon={<Zap className="h-5 w-5" />}
           tone="primary"
           subtitle={`${memberCount} ${memberCount === 1 ? 'member' : 'members'}`}
         />
         <StatCard
           title="Total Operations"
           value={String(totalUsed)}
-          icon={BarChart3}
+          icon={<BarChart3 className="h-5 w-5" />}
           tone="success"
           subtitle="This period"
         />
         <StatCard
           title="Team Size"
           value={String(memberCount)}
-          icon={Users}
+          icon={<Users className="h-5 w-5" />}
           tone="neutral"
           subtitle="Active members"
         />
         <StatCard
           title="Enforcement"
           value="Soft"
-          icon={Info}
+          icon={<Info className="h-5 w-5" />}
           tone="neutral"
           subtitle="No hard limits"
         />

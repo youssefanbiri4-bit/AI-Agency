@@ -61,7 +61,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
     if (!selectedTask) {
       return (
         <EmptyState
-          icon={FileText}
+          icon={<FileText className="h-6 w-6" />}
           title="Task not found"
           description="The selected task is not available in the active workspace."
           action={
@@ -166,7 +166,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
               <ReviewForm taskId={selectedTask.id} />
             ) : (
               <EmptyState
-                icon={ClipboardCheck}
+                icon={<ClipboardCheck className="h-6 w-6" />}
                 title="No review action available"
                 description="Only tasks with needs_review status can be approved or sent back."
               />
@@ -193,7 +193,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
 
       {reviewQueueResult.data.length === 0 ? (
         <EmptyState
-          icon={ClipboardCheck}
+          icon={<ClipboardCheck className="h-6 w-6" />}
           title="No tasks waiting for review"
           description="Open Tasks to find work that needs follow-up."
           action={

@@ -300,12 +300,12 @@ export function TasksClient({ tasks, agents, departments, initialSearch = '' }: 
       />
 
       <div className="dashboard-stat-grid">
-        <StatCard title={t('dashboardI18n.common.total')} value={taskStats.total} icon={FileText} tone="neutral" subtitle={taskStats.total === 0 ? t('page.tasks.createToBegin', 'Create a task to begin') : t('page.tasks.realWorkspaceTasks', 'Real workspace tasks')} />
-        <StatCard title={t('status.pending')} value={taskStats.pending} icon={Clock} tone="accent" />
-        <StatCard title={t('status.processing')} value={taskStats.processing} icon={Zap} tone="brand" />
-        <StatCard title={t('status.needsReview')} value={taskStats.needsReview} icon={AlertCircle} tone="accent" />
-        <StatCard title={t('status.completed')} value={taskStats.completed} icon={CheckCircle2} tone="dark" />
-        <StatCard title={t('status.failed')} value={taskStats.failed} icon={AlertCircle} tone="accent" />
+        <StatCard title={t('dashboardI18n.common.total')} value={taskStats.total} icon={<FileText className="h-5 w-5" />} tone="neutral" subtitle={taskStats.total === 0 ? t('page.tasks.createToBegin', 'Create a task to begin') : t('page.tasks.realWorkspaceTasks', 'Real workspace tasks')} />
+        <StatCard title={t('status.pending')} value={taskStats.pending} icon={<Clock className="h-5 w-5" />} tone="accent" />
+        <StatCard title={t('status.processing')} value={taskStats.processing} icon={<Zap className="h-5 w-5" />} tone="brand" />
+        <StatCard title={t('status.needsReview')} value={taskStats.needsReview} icon={<AlertCircle className="h-5 w-5" />} tone="accent" />
+        <StatCard title={t('status.completed')} value={taskStats.completed} icon={<CheckCircle2 className="h-5 w-5" />} tone="dark" />
+        <StatCard title={t('status.failed')} value={taskStats.failed} icon={<AlertCircle className="h-5 w-5" />} tone="accent" />
       </div>
 
       <section className="min-w-0 rounded-lg border border-[#F7CBCA]/8 bg-white/58 p-4 shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] sm:p-5">

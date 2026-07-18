@@ -262,7 +262,7 @@ export function GitHubIssuesPanel({
 
         <section className="rounded-lg border border-black/7 bg-white/88 p-5">
           {!selectedIssue ? (
-            <EmptyState icon={Bug} title="Select an issue" description="Open an issue to review details and create a pending task." />
+            <EmptyState icon={<Bug className="h-6 w-6" />} title="Select an issue" description="Open an issue to review details and create a pending task." />
           ) : (
             <div className="space-y-5">
               <div>

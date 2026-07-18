@@ -84,8 +84,7 @@ export default async function DocDetailPage({
     <div className="-mx-4 -my-6 min-h-screen bg-[var(--theme-background,#F1F7F7)] px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <div
         dir="rtl"
-        className="mx-auto max-w-[1320px] space-y-6 text-right"
-        style={{ fontFamily: 'Cairo, Tajawal, "Noto Sans Arabic", sans-serif' }}
+        className="mx-auto max-w-[1320px] space-y-6 text-right [font-family:'Cairo',Tajawal,'Noto_Sans_Arabic',sans-serif]"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/dashboard/docs" className={buttonStyles({ variant: 'ghost', size: 'sm' })}>

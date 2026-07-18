@@ -90,11 +90,11 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard title="Total Projects" value={projects.length} icon={FolderKanban} subtitle="Current workspace" />
-        <StatCard title="Active Projects" value={countStatus(projects, ['active'])} icon={ArrowRight} tone="brand" subtitle="In motion" />
-        <StatCard title="Ready to Deploy" value={countStatus(projects, ['ready_to_deploy'])} icon={ExternalLink} tone="accent" subtitle="Awaiting release" />
-        <StatCard title="Deployed" value={countStatus(projects, ['deployed'])} icon={GitBranch} tone="dark" subtitle="Live projects" />
-        <StatCard title="Linked GitHub Repos" value={linkedGitHubProjects} icon={GitBranch} tone="accent" subtitle="Read-only tracking" />
+        <StatCard title="Total Projects" value={projects.length} icon={<FolderKanban className="h-5 w-5" />} subtitle="Current workspace" />
+        <StatCard title="Active Projects" value={countStatus(projects, ['active'])} icon={<ArrowRight className="h-5 w-5" />} tone="brand" subtitle="In motion" />
+        <StatCard title="Ready to Deploy" value={countStatus(projects, ['ready_to_deploy'])} icon={<ExternalLink className="h-5 w-5" />} tone="accent" subtitle="Awaiting release" />
+        <StatCard title="Deployed" value={countStatus(projects, ['deployed'])} icon={<GitBranch className="h-5 w-5" />} tone="dark" subtitle="Live projects" />
+        <StatCard title="Linked GitHub Repos" value={linkedGitHubProjects} icon={<GitBranch className="h-5 w-5" />} tone="accent" subtitle="Read-only tracking" />
       </div>
 
       <Card className="border-[#F7CBCA]/14 bg-[#D5E5E5]/45">

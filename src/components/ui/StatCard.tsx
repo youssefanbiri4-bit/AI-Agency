@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +16,7 @@ type StatTone =
 interface StatCardProps {
   title: string;
   value: string | number;
-  icon: LucideIcon;
+  icon: ReactNode;
   tone?: StatTone;
   iconColor?: string;
   iconBgColor?: string;
@@ -32,7 +32,7 @@ interface StatCardProps {
 export function StatCard({
   title,
   value,
-  icon: Icon,
+  icon,
   tone = 'primary',
   iconColor,
   iconBgColor,
@@ -94,7 +94,9 @@ export function StatCard({
           <p className="mt-2 text-2xl font-black leading-none tracking-normal text-foreground sm:text-3xl">{value}</p>
         </div>
         <div className={cn('shrink-0 rounded-xl border border-border/60 p-2.5 shadow-sm transition-colors duration-200', iconBgColor ?? selectedTone.iconBg)}>
-          <Icon className={cn('h-5 w-5', iconColor ?? selectedTone.icon)} />
+          <span className={cn('flex items-center justify-center', iconColor ?? selectedTone.icon)}>
+            {icon}
+          </span>
         </div>
       </div>
       {(subtitle || trend) && (
