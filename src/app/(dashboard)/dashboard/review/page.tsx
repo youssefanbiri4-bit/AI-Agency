@@ -141,7 +141,7 @@ export default async function ReviewPage({ searchParams }: ReviewPageProps) {
                 department: selectedAgent?.department,
               }}
               emptyState={{
-                icon: Workflow,
+                icon: <Workflow className="h-6 w-6" />,
                 title: 'No result yet',
                 description: 'Run the task to store a result before review.',
               }}

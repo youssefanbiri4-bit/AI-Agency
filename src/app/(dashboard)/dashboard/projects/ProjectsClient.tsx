@@ -181,7 +181,7 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
 
       {projects.length === 0 ? (
         <EmptyState
-          icon={FolderKanban}
+          icon={<FolderKanban className="h-6 w-6" />}
           title="No projects yet"
           description="Create your first project workspace to organize tasks, releases, notes, and development progress."
           action={
@@ -193,7 +193,7 @@ export function ProjectsClient({ projects }: ProjectsClientProps) {
         />
       ) : filteredProjects.length === 0 ? (
         <EmptyState
-          icon={Search}
+          icon={<Search className="h-6 w-6" />}
           title="No projects match"
           description="Clear the search or adjust filters to see more project records."
         />

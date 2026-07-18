@@ -24,7 +24,7 @@ export function ReviewHistory({ reviews, currentUserId }: ReviewHistoryProps) {
   if (reviews.length === 0) {
     return (
       <EmptyState
-        icon={Star}
+        icon={<Star className="h-6 w-6" />}
         title="No reviews recorded"
         description="Review a task to save feedback here."
       />

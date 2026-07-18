@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { CheckCircle2, ClipboardCheck, FileText, Star } from 'lucide-react';
 import type { JsonObject, JsonValue } from '@/types';
 import { CopyReportButton } from './CopyReportButton';
@@ -19,7 +19,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Notice } from '@/components/ui/Notice';
 
 interface ResultEmptyState {
-  icon: LucideIcon;
+  icon: ReactNode;
   title: string;
   description: string;
 }

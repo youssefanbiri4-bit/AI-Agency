@@ -296,7 +296,7 @@ export function PromptLibraryClient({ prompts, error }: PromptLibraryClientProps
 
       {prompts.length === 0 ? (
         <EmptyState
-          icon={Clipboard}
+          icon={<Clipboard className="h-6 w-6" />}
           title={t('dashboardI18n.promptLibrary.emptyTitle', 'No prompts saved yet')}
           description={t('dashboardI18n.promptLibrary.emptyDescription', 'Save your best prompts for development, deployment, ads, reports, provider setup, and project workflows.')}
           action={

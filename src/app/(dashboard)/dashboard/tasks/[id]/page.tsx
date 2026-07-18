@@ -243,12 +243,12 @@ export default async function TaskDetailsPage({
             emptyState={
               task.status === 'processing'
                 ? {
-                    icon: Workflow,
+                    icon: <Workflow className="h-6 w-6" />,
                     title: 'Waiting for n8n result',
                     description: 'This task has been sent to n8n and will update after the callback is received.',
                   }
                 : {
-                    icon: FileText,
+                    icon: <FileText className="h-6 w-6" />,
                     title: 'No result yet',
                     description: 'Run the task after n8n is connected to store output.',
                   }

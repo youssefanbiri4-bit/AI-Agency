@@ -274,7 +274,7 @@ export default async function CreativeAssetsPage() {
         />
         {assets.length === 0 ? (
           <EmptyState
-            icon={ImageIcon}
+            icon={<ImageIcon className="h-6 w-6" />}
             title="No creative assets yet"
             description="Create a prompt-ready creative asset for Reels, campaigns, thumbnails, stories, or ads."
             action={

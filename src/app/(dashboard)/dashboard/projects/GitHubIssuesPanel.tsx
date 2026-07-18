@@ -126,7 +126,7 @@ export function GitHubIssuesPanel({
       <Card>
         <CardHeader title="GitHub Issues" description="Convert repository issues into pending AgentFlow AI tasks." />
         <EmptyState
-          icon={GitPullRequest}
+          icon={<GitPullRequest className="h-6 w-6" />}
           title="No GitHub repository linked to this project"
           description="Add a GitHub repository URL in the project form to load issues safely."
           action={
@@ -207,7 +207,7 @@ export function GitHubIssuesPanel({
 
           {filteredIssues.length === 0 ? (
             <EmptyState
-              icon={CircleDot}
+              icon={<CircleDot className="h-6 w-6" />}
               title="No GitHub issues match"
               description={issues.length ? 'Adjust filters or refresh issue data.' : 'No issues were returned by GitHub for this repository.'}
             />

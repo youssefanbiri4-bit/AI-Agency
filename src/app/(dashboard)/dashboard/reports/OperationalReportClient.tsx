@@ -177,13 +177,13 @@ export function OperationalReportClient({ attempts, reportText }: OperationalRep
 
         {attempts.length === 0 ? (
           <EmptyState
-            icon={Clipboard}
+            icon={<Clipboard className="h-6 w-6" />}
             title="No publish attempts yet"
             description="Create or schedule content from Content & Ads Studio to start tracking activity."
           />
         ) : filteredAttempts.length === 0 ? (
           <EmptyState
-            icon={Search}
+            icon={<Search className="h-6 w-6" />}
             title="No attempts match these filters"
             description="Try another provider, status, content type, date range, or search term."
           />

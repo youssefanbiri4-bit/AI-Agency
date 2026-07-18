@@ -215,12 +215,12 @@ export function NotificationsCenterClient({
   return (
     <div className="space-y-8">
       <div className="dashboard-stat-grid">
-        <SummaryTile label="Unread" value={stats.unread} icon={Bell} tone="brand" />
-        <SummaryTile label="Errors" value={stats.errors} icon={ShieldAlert} tone="error" />
-        <SummaryTile label="Warnings" value={stats.warnings} icon={AlertTriangle} tone="warning" />
-        <SummaryTile label="Provider Issues" value={stats.provider} icon={RadioTower} tone="brand" />
-        <SummaryTile label="Scheduler Issues" value={stats.scheduler} icon={CalendarDays} tone="warning" />
-        <SummaryTile label="Task / Review Updates" value={stats.taskReview} icon={ClipboardCheck} tone="neutral" />
+        <SummaryTile label="Unread" value={stats.unread} icon={<Bell className="h-5 w-5" />} tone="brand" />
+        <SummaryTile label="Errors" value={stats.errors} icon={<ShieldAlert className="h-5 w-5" />} tone="error" />
+        <SummaryTile label="Warnings" value={stats.warnings} icon={<AlertTriangle className="h-5 w-5" />} tone="warning" />
+        <SummaryTile label="Provider Issues" value={stats.provider} icon={<RadioTower className="h-5 w-5" />} tone="brand" />
+        <SummaryTile label="Scheduler Issues" value={stats.scheduler} icon={<CalendarDays className="h-5 w-5" />} tone="warning" />
+        <SummaryTile label="Task / Review Updates" value={stats.taskReview} icon={<ClipboardCheck className="h-5 w-5" />} tone="neutral" />
       </div>
 
       <Card>
@@ -308,7 +308,7 @@ export function NotificationsCenterClient({
 
           {visibleNotifications.length === 0 ? (
             <EmptyState
-              icon={Inbox}
+              icon={<Inbox className="h-6 w-6" />}
               title="No notifications yet"
               description="Important task updates, provider alerts, scheduler results, and publishing messages will appear here."
               action={
@@ -346,12 +346,12 @@ export function NotificationsCenterClient({
 function SummaryTile({
   label,
   value,
-  icon: Icon,
+  icon,
   tone,
 }: {
   label: string;
   value: number;
-  icon: typeof Bell;
+  icon: React.ReactNode;
   tone: 'brand' | 'warning' | 'error' | 'neutral';
 }) {
   const toneClassName = {
@@ -369,7 +369,7 @@ function SummaryTile({
           <p className="mt-2 text-3xl font-black leading-none text-black">{value}</p>
         </div>
         <div className={cn('rounded-lg border border-black/8 p-3', toneClassName)}>
-          <Icon className="h-5 w-5" />
+          {icon}
         </div>
       </div>
     </article>
@@ -476,7 +476,7 @@ function NotificationDetail({
     return (
       <Card>
         <EmptyState
-          icon={Inbox}
+          icon={<Inbox className="h-6 w-6" />}
           title="No notification selected"
           description="Choose a notification to read the full operational context."
         />

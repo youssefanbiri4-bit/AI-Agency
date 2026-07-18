@@ -206,7 +206,7 @@ export function GalleryClient({
       {tab === 'marketplace' ? (
         marketplaceAgents.length === 0 ? (
           <EmptyState
-            icon={Store}
+            icon={<Store className="h-6 w-6" />}
             title={t('dashboardI18n.marketplace.community', 'Marketplace')}
             description={t('dashboardI18n.marketplace.noMarketplace', 'No published templates yet. Publish one from the Agent Builder.')}
           />

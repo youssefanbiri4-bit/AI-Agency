@@ -292,7 +292,7 @@ export function RecoveryClient({
 
           {filteredIssues.length === 0 ? (
             <EmptyState
-              icon={LifeBuoy}
+              icon={<LifeBuoy className="h-6 w-6" />}
               title="No recovery issues found"
               description="Everything looks clear. Create or schedule content to continue tracking publishing readiness."
               action={

@@ -218,7 +218,7 @@ export function AgentBuilderClient({ agents, prompts, error }: AgentBuilderClien
         <h2 className="text-lg font-black text-slate-950">{t('dashboardI18n.agentBuilder.myAgents', 'My Agents')}</h2>
         {agents.length === 0 ? (
           <EmptyState
-            icon={Wand2}
+            icon={<Wand2 className="h-6 w-6" />}
             title={t('dashboardI18n.agentBuilder.emptyTitle', 'No agents yet')}
             description={t('dashboardI18n.agentBuilder.emptyDescription', 'Build your first no-code AI agent, then publish it as a template.')}
             action={

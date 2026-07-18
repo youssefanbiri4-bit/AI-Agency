@@ -209,7 +209,7 @@ export function PullRequestAssistantPanel({
       <Card>
         <CardHeader title="Pull Request Assistant" description="Review GitHub pull requests safely before merge decisions." />
         <EmptyState
-          icon={GitPullRequest}
+          icon={<GitPullRequest className="h-6 w-6" />}
           title="No GitHub repository linked to this project"
           description="Add a GitHub repository URL in the project form to load pull requests safely."
           action={<Link href="#edit-project" className={buttonStyles({ variant: 'secondary' })}>Add GitHub Repository</Link>}

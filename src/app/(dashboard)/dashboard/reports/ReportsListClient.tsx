@@ -111,7 +111,7 @@ export function ReportsListClient({ reports }: ReportsListClientProps) {
 
       {reports.length === 0 ? (
         <EmptyState
-          icon={FileText}
+          icon={<FileText className="h-6 w-6" />}
           title="No generated reports yet. Run and approve tasks to create reports."
           description="Completed and review-ready structured outputs will appear here."
           action={
@@ -122,7 +122,7 @@ export function ReportsListClient({ reports }: ReportsListClientProps) {
         />
       ) : filteredReports.length === 0 ? (
         <EmptyState
-          icon={Search}
+          icon={<Search className="h-6 w-6" />}
           title="No reports match these filters"
           description="Try another report title, summary, agent, department, or status."
         />
