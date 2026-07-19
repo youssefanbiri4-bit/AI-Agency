@@ -115,7 +115,7 @@ export function UsageDashboard({
                   </div>
                 ) : (
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-foreground/10">
-                    <div className="h-2.5 rounded-full bg-emerald-300" style={{ width: '15%' }} />
+                    <div className="h-2.5 w-[15%] rounded-full bg-emerald-300" />
                   </div>
                 )}
                 <div className="flex justify-between text-xs text-foreground-muted">

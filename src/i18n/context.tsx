@@ -24,7 +24,7 @@ async function loadLanguageTranslations(code: LanguageCode): Promise<Translation
   return en as Translations;
 }
 
-function getInitialLanguage(): LanguageCode {
+function readStoredLanguage(): LanguageCode {
   if (typeof window === 'undefined') return DEFAULT_LANGUAGE;
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -44,9 +44,16 @@ export function LanguageProvider({
   children: ReactNode;
   translations: Partial<Record<LanguageCode, Translations>>;
 }) {
-  const [language, setLanguageState] = useState<LanguageCode>(getInitialLanguage);
+  const [language, setLanguageState] = useState<LanguageCode>(DEFAULT_LANGUAGE);
   const [loadedTranslations, setLoadedTranslations] =
     useState<Partial<Record<LanguageCode, Translations>>>(translations);
+
+  useEffect(() => {
+    const stored = readStoredLanguage();
+    if (stored !== language) {
+      setLanguageState(stored);
+    }
+  }, []);
 
   useEffect(() => {
     try {

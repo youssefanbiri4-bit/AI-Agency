@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Circle, Sparkles, X } from 'lucide-react';
 import { useLanguage } from '@/i18n/context';
@@ -35,6 +35,11 @@ export function OnboardingChecklist({
 }: OnboardingChecklistProps) {
   const { t } = useLanguage();
   const [dismissed, setDismissed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const steps = useMemo<OnboardingStep[]>(
     () => [
@@ -77,7 +82,7 @@ export function OnboardingChecklist({
   const total = steps.length;
   const allDone = completed === total;
 
-  if (dismissed || (typeof window !== 'undefined' && window.localStorage.getItem(DISMISS_KEY) === '1' && allDone)) {
+  if (dismissed || (mounted && typeof window !== 'undefined' && window.localStorage.getItem(DISMISS_KEY) === '1' && allDone)) {
     return null;
   }
 

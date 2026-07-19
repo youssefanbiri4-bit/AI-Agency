@@ -98,7 +98,7 @@ export function WhiteLabelSettings({
           backgroundColor: config.colors.background,
           color: config.colors.text,
         }}>
-          <div className="flex items-center gap-3 mb-3" style={{ backgroundColor: config.colors.header, padding: '8px 12px', borderRadius: '8px' }}>
+          <div className="mb-3 flex items-center gap-3 rounded-lg px-3 py-2" style={{ backgroundColor: config.colors.header }}>
             <div className="h-8 w-8 rounded" style={{ backgroundColor: config.colors.primary }} />
             <span className="font-bold" style={{ color: config.colors.text }}>
               {config.companyName || 'Your Company'}
