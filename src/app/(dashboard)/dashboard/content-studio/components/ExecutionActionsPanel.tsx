@@ -40,9 +40,9 @@ interface ExecutionActionsPanelProps {
 
 function ReadinessCheckCard({ label, status }: { label: string; status: string }) {
   return (
-    <div className="rounded-lg border border-black/8 bg-white px-4 py-4 shadow-sm">
-      <p className="text-sm font-bold text-black">{label}</p>
-      <p className="mt-2 text-sm leading-6 text-black/58">{status}</p>
+    <div className="rounded-lg border border-black/8 bg-surface-elevated px-4 py-4 shadow-sm">
+      <p className="text-sm font-bold text-foreground">{label}</p>
+      <p className="mt-2 text-sm leading-6 text-foreground/58">{status}</p>
     </div>
   );
 }
@@ -337,12 +337,12 @@ export function ExecutionActionsPanel({
       </div>
 
       {selectedItem.provider_error ? (
-        <p className="mt-4 text-sm leading-6 text-black/58">{selectedItem.provider_error}</p>
+        <p className="mt-4 text-sm leading-6 text-foreground/58">{selectedItem.provider_error}</p>
       ) : null}
       {selectedItem.status === 'scheduled' &&
       (selectedItem.content_type === 'linkedin_post_planner' ||
         isMetaAdContentType(selectedItem.content_type)) ? (
-        <p className="mt-4 text-sm leading-6 text-black/58">
+        <p className="mt-4 text-sm leading-6 text-foreground/58">
           This item is manual-only and will not auto-publish.
         </p>
       ) : null}

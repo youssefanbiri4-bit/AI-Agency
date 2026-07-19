@@ -310,7 +310,7 @@ export function CampaignPlanner({
   }
 
   return (
-    <Card id="one-click-campaign-planner" className="scroll-mt-24 border-[#F7CBCA]/14 bg-white/92">
+    <Card id="one-click-campaign-planner" className="scroll-mt-24 border-[#F7CBCA]/14 bg-surface-elevated/92">
       <CardHeader
         title="One-Click Campaign Planner"
         description="Enter one campaign idea and generate copy-ready platform packages, creative direction, and a suggested calendar plan."
@@ -456,7 +456,7 @@ export function CampaignPlanner({
                 {platformOptions.map((platform) => (
                   <label
                     key={platform.value}
-                    className="flex items-center gap-2 rounded-lg border border-black/8 bg-white px-3 py-2 text-sm font-bold text-black/70"
+                    className="flex items-center gap-2 rounded-lg border border-black/8 bg-surface-elevated px-3 py-2 text-sm font-bold text-foreground/70"
                   >
                     <input
                       type="checkbox"
@@ -483,17 +483,17 @@ export function CampaignPlanner({
             </div>
           </div>
 
-          <div className="space-y-3 rounded-lg border border-black/8 bg-white p-4">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-black/38">Provider readiness awareness</p>
+          <div className="space-y-3 rounded-lg border border-black/8 bg-surface-elevated p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-foreground/38">Provider readiness awareness</p>
             <div className="flex flex-wrap gap-2">
               {readinessRows.map(([label, state]) => (
-                <span key={label} className="inline-flex items-center gap-2 rounded-full border border-black/8 bg-[#F1F7F7] px-3 py-1 text-xs font-bold text-black/62">
+                <span key={label} className="inline-flex items-center gap-2 rounded-full border border-black/8 bg-[#F1F7F7] px-3 py-1 text-xs font-bold text-foreground/62">
                   {label}
                   <StatusBadge status={state as Parameters<typeof StatusBadge>[0]['status']} type="system" size="sm" />
                 </span>
               ))}
             </div>
-            <p className="text-sm leading-6 text-black/55">
+            <p className="text-sm leading-6 text-foreground/55">
               Provider readiness is shown for context only. Planning and draft creation do not require providers to be ready.
             </p>
           </div>
@@ -509,7 +509,7 @@ export function CampaignPlanner({
             <div className="rounded-lg border border-dashed border-[#F7CBCA]/18 bg-[#D5E5E5]/28 p-8 text-center">
               <Layers3 className="mx-auto h-8 w-8 text-[#F7CBCA]" />
               <h3 className="mt-4 text-lg font-black text-[#5D6B6B]">Generated campaign output will appear here</h3>
-              <p className="mt-2 text-sm leading-6 text-black/58">
+              <p className="mt-2 text-sm leading-6 text-foreground/58">
                 The planner creates copy packages, a creative brief, and a suggested content calendar without publishing anything.
               </p>
             </div>
@@ -529,13 +529,13 @@ export function CampaignPlanner({
                 ))}
               </div>
 
-              <Card className="bg-white">
+              <Card className="bg-surface-elevated">
                 <CardHeader
                   title={tabs.find((tab) => tab.value === activeTab)?.label ?? 'Campaign Plan'}
                   description="Review, copy, or create draft Content Studio items from this generated plan."
                   action={<FileText className="h-5 w-5 text-[#F7CBCA]" />}
                 />
-                <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-lg border border-black/8 bg-[#F1F7F7]/70 p-4 text-sm leading-6 text-black/72">
+                <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-lg border border-black/8 bg-[#F1F7F7]/70 p-4 text-sm leading-6 text-foreground/72">
                   {formatPlatformPackage(plan, activeTab)}
                 </pre>
               </Card>
@@ -572,7 +572,7 @@ export function CampaignPlanner({
               </div>
 
               <div className="rounded-lg border border-black/8 bg-[#F1F7F7]/70 p-4">
-                <label className="flex items-start gap-3 text-sm font-bold text-black/72">
+                <label className="flex items-start gap-3 text-sm font-bold text-foreground/72">
                   <input
                     type="checkbox"
                     checked={scheduleDrafts}
@@ -581,7 +581,7 @@ export function CampaignPlanner({
                   />
                   <span>
                     Add to Calendar as Draft Plan
-                    <span className="mt-1 block text-sm font-medium leading-6 text-black/55">
+                    <span className="mt-1 block text-sm font-medium leading-6 text-foreground/55">
                       Uses the generated day/time suggestions as `schedule_at` values. Items stay draft and nothing auto-publishes.
                     </span>
                   </span>
@@ -610,17 +610,17 @@ export function CampaignPlanner({
         <div className="rounded-lg border border-black/8 bg-[#F1F7F7]/62 p-4">
           <CheckCircle2 className="h-5 w-5 text-[#F7CBCA]" />
           <p className="mt-2 font-bold text-[#5D6B6B]">Draft-only workflow</p>
-          <p className="mt-1 text-sm leading-6 text-black/55">Generated output is copy-ready until you explicitly create drafts.</p>
+          <p className="mt-1 text-sm leading-6 text-foreground/55">Generated output is copy-ready until you explicitly create drafts.</p>
         </div>
         <div className="rounded-lg border border-black/8 bg-[#F1F7F7]/62 p-4">
           <Sparkles className="h-5 w-5 text-[#F7CBCA]" />
           <p className="mt-2 font-bold text-[#5D6B6B]">Brand Kit aware</p>
-          <p className="mt-1 text-sm leading-6 text-black/55">Defaults use saved offer, audience, tone, CTA, hashtags, visual style, and colors.</p>
+          <p className="mt-1 text-sm leading-6 text-foreground/55">Defaults use saved offer, audience, tone, CTA, hashtags, visual style, and colors.</p>
         </div>
         <div className="rounded-lg border border-black/8 bg-[#F1F7F7]/62 p-4">
           <CalendarDays className="h-5 w-5 text-[#F7CBCA]" />
           <p className="mt-2 font-bold text-[#5D6B6B]">Calendar planning</p>
-          <p className="mt-1 text-sm leading-6 text-black/55">Schedule suggestions are planning fields only and never trigger publishing from this panel.</p>
+          <p className="mt-1 text-sm leading-6 text-foreground/55">Schedule suggestions are planning fields only and never trigger publishing from this panel.</p>
         </div>
       </div>
     </Card>

@@ -47,13 +47,11 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          {
-            key: "Content-Security-Policy",
-            value:
-              process.env.NODE_ENV === "development"
-                ? "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';"
-                : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests;",
-          },
+          // Content-Security-Policy is set dynamically by Edge Middleware
+          // (see src/middleware.ts → dashboard-edge-auth.ts → security-headers.ts).
+          // A static CSP here would overwrite the nonce-based CSP and cause
+          // hydration mismatches between the server-rendered nonce="" and the
+          // browser's CSP header.  All other security headers remain static.
           { key: "X-Content-Type-Options", value: "nosniff" },
           {
             key: "Referrer-Policy",
@@ -62,7 +60,7 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
             value:
-              "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=(), interest-cohort=()",
+              "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
           },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-XSS-Protection", value: "0" },
@@ -76,7 +74,6 @@ const nextConfig: NextConfig = {
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
           { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
-          { key: "Reporting-Endpoints", value: "csp-endpoint=\"/api/csp-violation\"" },
         ],
       },
       // Cache static assets aggressively (immutable, 1 year)

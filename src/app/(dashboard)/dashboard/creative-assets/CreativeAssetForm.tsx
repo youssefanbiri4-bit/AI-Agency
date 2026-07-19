@@ -534,7 +534,7 @@ export function CreativeAssetForm({
         </Notice>
       )}
 
-      <Card className="border-[#F7CBCA]/12 bg-white/90">
+      <Card className="border-[#F7CBCA]/12 bg-surface-elevated/90">
         <CardHeader
           title="Brand Context"
           description={
@@ -546,22 +546,22 @@ export function CreativeAssetForm({
         />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="muted-panel p-3">
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">Brand</p>
-            <p className="mt-1 text-sm font-semibold text-black">{brandKit.brandName}</p>
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/38">Brand</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{brandKit.brandName}</p>
           </div>
           <div className="muted-panel p-3">
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">Offer</p>
-            <p className="mt-1 line-clamp-2 text-sm font-semibold text-black">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/38">Offer</p>
+            <p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">
               {brandKit.offer ?? 'Not set'}
             </p>
           </div>
           <div className="muted-panel p-3">
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">Colors</p>
-            <p className="mt-1 text-sm font-semibold text-black">{brandColors || 'Not set'}</p>
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/38">Colors</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{brandColors || 'Not set'}</p>
           </div>
           <div className="muted-panel p-3">
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">Visual Style</p>
-            <p className="mt-1 line-clamp-2 text-sm font-semibold text-black">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/38">Visual Style</p>
+            <p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">
               {brandKit.visualStyle ?? 'Not set'}
             </p>
           </div>
@@ -770,8 +770,8 @@ export function CreativeAssetForm({
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
             <div className="flex min-w-0 flex-col justify-center gap-3">
               <div>
-                <p className="text-sm font-black text-black">Upload a creative image</p>
-                <p className="mt-1 text-sm leading-6 text-black/58">
+                <p className="text-sm font-black text-foreground">Upload a creative image</p>
+                <p className="mt-1 text-sm leading-6 text-foreground/58">
                   PNG, JPG, WEBP up to 10MB
                 </p>
               </div>
@@ -810,15 +810,15 @@ export function CreativeAssetForm({
                   </>
                 ) : null}
               </div>
-              <p className="min-h-5 truncate text-xs font-bold text-black/44">
+              <p className="min-h-5 truncate text-xs font-bold text-foreground/44">
                 {selectedImageName || (asset?.storage_path ? 'Current asset image' : 'Drag an image here or choose one from your computer.')}
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-black/8 bg-white">
+            <div className="overflow-hidden rounded-lg border border-black/8 bg-surface-elevated">
               {previewUrl ? (
                 <div>
-                  <div className="border-b border-black/8 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-black/42">
+                  <div className="border-b border-black/8 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-foreground/42">
                     Preview
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -829,7 +829,7 @@ export function CreativeAssetForm({
                   />
                 </div>
               ) : (
-                <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 px-4 text-center text-black/46">
+                <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 px-4 text-center text-foreground/46">
                   <ImageIcon className="h-8 w-8 text-[#F7CBCA]" />
                   <p className="text-xs font-bold">Preview</p>
                 </div>
@@ -865,8 +865,8 @@ export function CreativeAssetForm({
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
             <div className="flex min-w-0 flex-col justify-center gap-3">
               <div>
-                <p className="text-sm font-black text-black">Upload a Reel video</p>
-                <p className="mt-1 text-sm leading-6 text-black/58">
+                <p className="text-sm font-black text-foreground">Upload a Reel video</p>
+                <p className="mt-1 text-sm leading-6 text-foreground/58">
                   MP4, MOV, WEBM up to {formatBytes(MAX_VIDEO_UPLOAD_BYTES)}
                 </p>
               </div>
@@ -905,7 +905,7 @@ export function CreativeAssetForm({
                   </>
                 ) : null}
               </div>
-              <div className="min-h-5 space-y-1 text-xs font-bold text-black/44">
+              <div className="min-h-5 space-y-1 text-xs font-bold text-foreground/44">
                 <p className="truncate">
                   {selectedVideoName || 'Choose a video from your computer.'}
                 </p>
@@ -917,10 +917,10 @@ export function CreativeAssetForm({
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-black/8 bg-white">
+            <div className="overflow-hidden rounded-lg border border-black/8 bg-surface-elevated">
               {videoPreviewUrl ? (
                 <div>
-                  <div className="border-b border-black/8 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-black/42">
+                  <div className="border-b border-black/8 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-foreground/42">
                     Video Preview
                   </div>
                   <video
@@ -931,7 +931,7 @@ export function CreativeAssetForm({
                   />
                 </div>
               ) : (
-                <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 px-4 text-center text-black/46">
+                <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 px-4 text-center text-foreground/46">
                   <Play className="h-8 w-8 text-[#F7CBCA]" />
                   <p className="text-xs font-bold">Video preview</p>
                 </div>

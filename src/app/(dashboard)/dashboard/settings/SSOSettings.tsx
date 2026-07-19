@@ -79,7 +79,7 @@ function ProviderCard({
                   value={provider.tenantId ?? ''}
                   onChange={(e) => onToggle({ ...provider, tenantId: e.target.value || null })}
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                  className="mt-1 h-9 w-full rounded border border-border bg-white px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
+                  className="mt-1 h-9 w-full rounded border border-border bg-surface-elevated px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
                 />
               </div>
             )}
@@ -92,7 +92,7 @@ function ProviderCard({
                   value={provider.clientId ?? ''}
                   onChange={(e) => onToggle({ ...provider, clientId: e.target.value || null })}
                   placeholder="OAuth 2.0 Client ID"
-                  className="mt-1 h-9 w-full rounded border border-border bg-white px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
+                  className="mt-1 h-9 w-full rounded border border-border bg-surface-elevated px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
                 />
               </div>
             )}
@@ -106,7 +106,7 @@ function ProviderCard({
                     value={provider.issuerUrl ?? ''}
                     onChange={(e) => onToggle({ ...provider, issuerUrl: e.target.value || null })}
                     placeholder="https://your-domain.okta.com"
-                    className="mt-1 h-9 w-full rounded border border-border bg-white px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
+                    className="mt-1 h-9 w-full rounded border border-border bg-surface-elevated px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -116,7 +116,7 @@ function ProviderCard({
                     value={provider.domain ?? ''}
                     onChange={(e) => onToggle({ ...provider, domain: e.target.value || null })}
                     placeholder="your-domain.okta.com"
-                    className="mt-1 h-9 w-full rounded border border-border bg-white px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
+                    className="mt-1 h-9 w-full rounded border border-border bg-surface-elevated px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
                   />
                 </div>
               </>
@@ -129,7 +129,7 @@ function ProviderCard({
                 value={provider.callbackUrl ?? ''}
                 onChange={(e) => onToggle({ ...provider, callbackUrl: e.target.value || null })}
                 placeholder="https://yourapp.com/auth/callback/sso"
-                className="mt-1 h-9 w-full rounded border border-border bg-white px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
+                className="mt-1 h-9 w-full rounded border border-border bg-surface-elevated px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
               />
             </div>
           </div>
@@ -146,7 +146,7 @@ function ProviderCard({
               })}
               placeholder="yourcompany.com&#10;subsidiary.com"
               rows={3}
-              className="mt-1 w-full rounded border border-border bg-white px-2 py-1 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
+              className="mt-1 w-full rounded border border-border bg-surface-elevated px-2 py-1 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none"
             />
           </div>
 
@@ -158,7 +158,7 @@ function ProviderCard({
                 onChange={(e) => onToggle({ ...provider, enabled: e.target.checked })}
                 className="peer sr-only"
               />
-              <div className="peer h-5 w-9 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white" />
+              <div className="peer h-5 w-9 rounded-full bg-surface after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-border after:bg-surface-elevated after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white" />
             </label>
             <span className="text-sm font-bold">Enable {info.name} SSO</span>
           </div>

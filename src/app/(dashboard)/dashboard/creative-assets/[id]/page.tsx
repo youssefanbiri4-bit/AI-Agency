@@ -43,8 +43,8 @@ function valueOrEmpty(value?: string | null) {
 function DetailBlock({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs font-black uppercase tracking-[0.16em] text-black/42">{label}</p>
-      <p className="mt-1 break-words text-sm leading-6 text-black/70">{valueOrEmpty(value)}</p>
+      <p className="text-xs font-black uppercase tracking-[0.16em] text-foreground/42">{label}</p>
+      <p className="mt-1 break-words text-sm leading-6 text-foreground/70">{valueOrEmpty(value)}</p>
     </div>
   );
 }
@@ -90,14 +90,14 @@ function AssetContextPanel({ asset }: { asset: CreativeAssetRecord }) {
               className="max-h-[420px] w-full bg-black object-contain"
             />
           ) : (
-            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 px-6 text-center text-black/52">
+            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 px-6 text-center text-foreground/52">
               <Play className="h-10 w-10 text-[#F7CBCA]" />
               <p className="text-sm font-bold">No video saved yet</p>
             </div>
           )}
         </div>
         {video?.filename ? (
-          <p className="mt-3 break-words text-xs font-bold text-black/48">{video.filename}</p>
+          <p className="mt-3 break-words text-xs font-bold text-foreground/48">{video.filename}</p>
         ) : null}
       </Card>
 
@@ -122,7 +122,7 @@ function AssetContextPanel({ asset }: { asset: CreativeAssetRecord }) {
               className="max-h-[420px] w-full object-contain"
             />
           ) : (
-            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 px-6 text-center text-black/52">
+            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 px-6 text-center text-foreground/52">
               <ImageIcon className="h-10 w-10 text-[#F7CBCA]" />
               <p className="text-sm font-bold">No image saved yet</p>
             </div>

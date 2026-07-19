@@ -87,10 +87,10 @@ function getCampaignBadgeStatus(campaign: MetaCampaignWithInsights): MetaCampaig
 function CampaignField({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
+      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-foreground/42">
         {label}
       </dt>
-      <dd className="mt-1 break-words text-sm font-semibold text-black">
+      <dd className="mt-1 break-words text-sm font-semibold text-foreground">
         {displayValue(value)}
       </dd>
     </div>
@@ -100,10 +100,10 @@ function CampaignField({ label, value }: { label: string; value: string | null }
 function MetricField({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-2 shadow-sm">
-      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
+      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-foreground/42">
         {label}
       </dt>
-      <dd className="mt-1 break-words text-sm font-bold text-black">{value}</dd>
+      <dd className="mt-1 break-words text-sm font-bold text-foreground">{value}</dd>
     </div>
   );
 }
@@ -121,10 +121,10 @@ function MetaCampaignsStatePanel({
     <div className="mt-4 flex min-w-0 flex-col gap-3 border-t border-[#5D6B6B]/8 pt-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <h5 className="break-words text-sm font-bold text-black">Campaigns</h5>
+          <h5 className="break-words text-sm font-bold text-foreground">Campaigns</h5>
           <StatusBadge status={badgeStatus} type="system" size="sm" />
         </div>
-        <p className="mt-2 text-sm leading-6 text-black/58">{message}</p>
+        <p className="mt-2 text-sm leading-6 text-foreground/58">{message}</p>
       </div>
 
       {actionLabel && (
@@ -228,10 +228,10 @@ function DiagnosisBlock({ insights }: { insights: MetaCampaignInsights | null })
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <div className="min-w-0">
-        <h6 className="text-xs font-bold uppercase tracking-[0.14em] text-black/42">
+        <h6 className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/42">
           Local diagnosis
         </h6>
-        <ul className="mt-2 space-y-1 text-sm leading-6 text-black/62">
+        <ul className="mt-2 space-y-1 text-sm leading-6 text-foreground/62">
           {diagnosis.findings.map((finding) => (
             <li key={finding}>{finding}</li>
           ))}
@@ -239,10 +239,10 @@ function DiagnosisBlock({ insights }: { insights: MetaCampaignInsights | null })
       </div>
 
       <div className="min-w-0">
-        <h6 className="text-xs font-bold uppercase tracking-[0.14em] text-black/42">
+        <h6 className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/42">
           Next actions
         </h6>
-        <ul className="mt-2 space-y-1 text-sm leading-6 text-black/62">
+        <ul className="mt-2 space-y-1 text-sm leading-6 text-foreground/62">
           {diagnosis.nextActions.map((action) => (
             <li key={action}>{action}</li>
           ))}
@@ -270,11 +270,11 @@ function MetaCampaignInsightsPanel({
     <div className="mt-4 space-y-4 border-t border-[#5D6B6B]/8 pt-4">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h6 className="break-words text-sm font-bold text-black">
+          <h6 className="break-words text-sm font-bold text-foreground">
             Last 30 days metrics
           </h6>
           {campaign.insights?.dateStart && campaign.insights.dateStop && (
-            <p className="mt-1 text-xs font-semibold text-black/48">
+            <p className="mt-1 text-xs font-semibold text-foreground/48">
               {campaign.insights.dateStart} to {campaign.insights.dateStop}
             </p>
           )}
@@ -288,7 +288,7 @@ function MetaCampaignInsightsPanel({
 
       {stateMessage && (
         <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm leading-6 text-black/58">{stateMessage}</p>
+          <p className="text-sm leading-6 text-foreground/58">{stateMessage}</p>
           {(campaign.insightsState === 'token_invalid' ||
             campaign.insightsState === 'permission_issue') && (
             <Link
@@ -334,8 +334,8 @@ export function MetaCampaigns({
     <div className="mt-4 min-w-0 space-y-3 border-t border-[#5D6B6B]/8 pt-4">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h5 className="break-words text-sm font-bold text-black">Campaigns</h5>
-          <p className="mt-1 text-sm leading-6 text-black/58">
+          <h5 className="break-words text-sm font-bold text-foreground">Campaigns</h5>
+          <p className="mt-1 text-sm leading-6 text-foreground/58">
             {campaigns.length} {campaigns.length === 1 ? 'campaign' : 'campaigns'}
           </p>
         </div>
@@ -352,7 +352,7 @@ export function MetaCampaigns({
             <summary className="flex cursor-pointer list-none items-start justify-between gap-3 rounded-xl px-1 py-2 transition-colors hover:bg-[#F1F7F7]">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h6 className="break-words text-sm font-bold text-black">
+                  <h6 className="break-words text-sm font-bold text-foreground">
                     {displayValue(campaign.name)}
                   </h6>
                   <StatusBadge
@@ -361,7 +361,7 @@ export function MetaCampaigns({
                     size="sm"
                   />
                 </div>
-                <p className="mt-1 break-words text-xs font-semibold text-black/48">
+                <p className="mt-1 break-words text-xs font-semibold text-foreground/48">
                   {displayValue(campaign.effectiveStatus ?? campaign.status)} ·{' '}
                   {displayValue(campaign.objective)}
                 </p>

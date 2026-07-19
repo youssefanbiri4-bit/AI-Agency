@@ -51,7 +51,7 @@ function ColorInput({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-1 h-8 w-full rounded border border-border bg-white px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
+          className="mt-1 h-8 w-full rounded border border-border bg-surface-elevated px-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
         />
       </div>
     </div>
@@ -137,7 +137,7 @@ export function WhiteLabelSettings({
               onChange={(e) => setConfig((prev) => ({ ...prev, enabled: e.target.checked }))}
               className="peer sr-only"
             />
-            <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white" />
+            <div className="peer h-6 w-11 rounded-full bg-surface after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-surface-elevated after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white" />
           </label>
           <span className="text-sm font-bold">Enable White Label</span>
         </div>
@@ -151,7 +151,7 @@ export function WhiteLabelSettings({
               value={config.companyName ?? ''}
               onChange={(e) => setConfig((prev) => ({ ...prev, companyName: e.target.value || null }))}
               placeholder="Your Company Name"
-              className="mt-1 h-10 w-full rounded-lg border border-border bg-white px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
+              className="mt-1 h-10 w-full rounded-lg border border-border bg-surface-elevated px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
             />
           </div>
           <div>
@@ -162,7 +162,7 @@ export function WhiteLabelSettings({
               value={config.tagline ?? ''}
               onChange={(e) => setConfig((prev) => ({ ...prev, tagline: e.target.value || null }))}
               placeholder="Your Platform Tagline"
-              className="mt-1 h-10 w-full rounded-lg border border-border bg-white px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
+              className="mt-1 h-10 w-full rounded-lg border border-border bg-surface-elevated px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
             />
           </div>
         </div>
@@ -177,7 +177,7 @@ export function WhiteLabelSettings({
               onChange={(e) => setConfig((prev) => ({ ...prev, hideAgentFlowBranding: e.target.checked }))}
               className="peer sr-only"
             />
-            <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white" />
+            <div className="peer h-6 w-11 rounded-full bg-surface after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-surface-elevated after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white" />
           </label>
           <span className="text-sm font-bold">Hide AgentFlow AI Branding</span>
         </div>
@@ -208,7 +208,7 @@ export function WhiteLabelSettings({
             value={config.logoUrl ?? ''}
             onChange={(e) => setConfig((prev) => ({ ...prev, logoUrl: e.target.value || null }))}
             placeholder="https://your-cdn.com/logo.png"
-            className="mt-1 h-10 w-full rounded-lg border border-border bg-white px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
+            className="mt-1 h-10 w-full rounded-lg border border-border bg-surface-elevated px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
           />
           <p className="mt-1 text-xs text-foreground-muted">URL to your company logo (PNG, SVG, or WebP)</p>
         </div>
@@ -221,7 +221,7 @@ export function WhiteLabelSettings({
             value={config.logoAltText ?? ''}
             onChange={(e) => setConfig((prev) => ({ ...prev, logoAltText: e.target.value || null }))}
             placeholder="Your Company Logo"
-            className="mt-1 h-10 w-full rounded-lg border border-border bg-white px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
+            className="mt-1 h-10 w-full rounded-lg border border-border bg-surface-elevated px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
           />
         </div>
 
@@ -233,7 +233,7 @@ export function WhiteLabelSettings({
             value={config.faviconUrl ?? ''}
             onChange={(e) => setConfig((prev) => ({ ...prev, faviconUrl: e.target.value || null }))}
             placeholder="https://your-cdn.com/favicon.ico"
-            className="mt-1 h-10 w-full rounded-lg border border-border bg-white px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
+            className="mt-1 h-10 w-full rounded-lg border border-border bg-surface-elevated px-3 text-sm focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
           />
         </div>
 
@@ -245,7 +245,7 @@ export function WhiteLabelSettings({
             onChange={(e) => setConfig((prev) => ({ ...prev, customCss: e.target.value || null }))}
             placeholder=".sidebar { background: #f00; }"
             rows={4}
-            className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
+            className="mt-1 w-full rounded-lg border border-border bg-surface-elevated px-3 py-2 font-mono text-xs focus:border-[#F7CBCA] focus:outline-none focus:ring-2 focus:ring-[#F7CBCA]/18"
           />
           <p className="mt-1 text-xs text-foreground-muted">Custom CSS overrides for advanced branding. Be careful with selectors.</p>
         </div>

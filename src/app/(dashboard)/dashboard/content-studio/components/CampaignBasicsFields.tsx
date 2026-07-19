@@ -147,7 +147,7 @@ export function CampaignBasicsFields({
             ))}
           </Select>
           {selectedItem ? (
-            <p className="mt-2 text-xs text-black/44">
+            <p className="mt-2 text-xs text-foreground/44">
               {t('dashboardI18n.contentStudio.fixedType', 'Platform/type stays fixed after creation for this foundation.')}
             </p>
           ) : null}
@@ -167,7 +167,7 @@ export function CampaignBasicsFields({
               </option>
             ))}
           </Select>
-          <p className="mt-2 text-xs text-black/44">
+          <p className="mt-2 text-xs text-foreground/44">
             {schedulerReady
               ? 'Scheduled items are queued for secure server-side execution at or after the planned time.'
               : schedulerMessage}
@@ -337,7 +337,7 @@ export function CampaignBasicsFields({
             disabled={savePending || isGenerating}
             defaultValue={formatDatetimeLocal(selectedItem?.schedule_at)}
           />
-          <p className="mt-2 text-xs text-black/44">
+          <p className="mt-2 text-xs text-foreground/44">
             {t('dashboardI18n.contentStudio.scheduleGuard', 'Scheduled items are only processed when provider readiness allows it. Google Ads stays paused-only, and manual-only providers will never be marked published.')}
           </p>
         </div>

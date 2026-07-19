@@ -21,7 +21,7 @@ export function ContentLibraryBanner({ itemCount }: ContentLibraryBannerProps) {
         action={<FileText className="h-5 w-5 text-[#F7CBCA]" />}
       />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-semibold leading-6 text-black/58">
+        <p className="text-sm font-semibold leading-6 text-foreground/58">
           {itemCount} item{itemCount === 1 ? '' : 's'} match this studio view. Opening an item from the library returns here on the correct platform tab.
         </p>
         <Link href="/dashboard/content-library" className={buttonStyles({ variant: 'secondary' })}>

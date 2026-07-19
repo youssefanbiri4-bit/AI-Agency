@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -362,11 +362,18 @@ export function MonthlyAgencyReportClient({
   schedulerLine,
 }: MonthlyAgencyReportClientProps) {
   const toast = useToast();
-  const now = new Date();
+  const [now, setNow] = useState<Date | null>(null);
   const [period, setPeriod] = useState<PeriodPreset>('this_month');
   const [reportType, setReportType] = useState<ReportType>('monthly');
-  const [customStart, setCustomStart] = useState(toDateInput(new Date(now.getFullYear(), now.getMonth(), 1)));
-  const [customEnd, setCustomEnd] = useState(toDateInput(now));
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+
+  useEffect(() => {
+    const current = new Date();
+    setNow(current);
+    setCustomStart(toDateInput(new Date(current.getFullYear(), current.getMonth(), 1)));
+    setCustomEnd(toDateInput(current));
+  }, []);
 
   const report = useMemo(() => {
     const range = getPeriodRange(period, customStart, customEnd);

@@ -66,7 +66,7 @@ export function AgentCard({ agent, onClick, compact = false }: AgentCardProps) {
 
       {!compact && (
         <div className="mt-4 rounded-lg border border-border bg-status-neutral-bg p-4">
-          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.1em] text-black/42">
+          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.1em] text-foreground/42">
             <Lightbulb className="h-3.5 w-3.5 text-primary-light" />
             When to use
           </p>

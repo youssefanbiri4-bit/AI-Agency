@@ -32,13 +32,13 @@ import { generatePromptAction } from './actions';
 import { CreativeAssetDeleteButton } from './CreativeAssetDeleteButton';
 
 const statusTone: Record<CreativeAssetStatus, string> = {
-  draft: 'bg-black/8 text-black/64',
+  draft: 'bg-black/8 text-foreground/64',
   prompt_ready: 'bg-[#D5E5E5]/58 text-[#F7CBCA]',
   generating: 'bg-[#F1F7F7]/58 text-[#E7F5DC]',
   generated: 'bg-[#D4EDDA]/58 text-[#155724]',
   failed: 'bg-[#FFD4D4]/58 text-[#A00000]',
   selected: 'bg-black text-white',
-  archived: 'bg-black/8 text-black/48',
+  archived: 'bg-black/8 text-foreground/48',
 };
 
 function formatLabel(value: string) {
@@ -121,7 +121,7 @@ function CreativeAssetCard({ asset }: { asset: CreativeAssetRecord }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center text-black/46">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center text-foreground/46">
             {videoAsset ? (
               <Play className="h-7 w-7 text-[#F7CBCA]" />
             ) : (
@@ -136,34 +136,34 @@ function CreativeAssetCard({ asset }: { asset: CreativeAssetRecord }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <Link href={`/dashboard/creative-assets/${asset.id}`}>
-              <h2 className="break-words text-lg font-black text-black transition-colors hover:text-[#F7CBCA]">
+              <h2 className="break-words text-lg font-black text-foreground transition-colors hover:text-[#F7CBCA]">
                 {asset.title}
               </h2>
             </Link>
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge className={statusTone[asset.status]}>{formatLabel(asset.status)}</Badge>
-              <Badge className="bg-black/8 text-black/64">{formatLabel(asset.asset_type)}</Badge>
+              <Badge className="bg-black/8 text-foreground/64">{formatLabel(asset.asset_type)}</Badge>
               {videoAsset ? <Badge className="bg-black text-white">Video</Badge> : null}
               <Badge className="bg-[#D5E5E5]/58 text-[#F7CBCA]">{formatLabel(asset.platform)}</Badge>
             </div>
           </div>
-          <p className="shrink-0 text-xs font-bold uppercase tracking-[0.14em] text-black/38">
+          <p className="shrink-0 text-xs font-bold uppercase tracking-[0.14em] text-foreground/38">
             {formatDate(asset.created_at)}
           </p>
         </div>
 
-        <div className="mt-4 grid gap-3 text-sm text-black/58 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 text-sm text-foreground/58 sm:grid-cols-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-black/36">Source</p>
-            <p className="mt-1 font-semibold text-black/70">{formatLabel(asset.source)}</p>
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-foreground/36">Source</p>
+            <p className="mt-1 font-semibold text-foreground/70">{formatLabel(asset.source)}</p>
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-black/36">Linked</p>
-            <p className="mt-1 font-semibold text-black/70">{linkedLabel(asset)}</p>
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-foreground/36">Linked</p>
+            <p className="mt-1 font-semibold text-foreground/70">{linkedLabel(asset)}</p>
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-black/36">Prompt</p>
-            <p className="mt-1 font-semibold text-black/70">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-foreground/36">Prompt</p>
+            <p className="mt-1 font-semibold text-foreground/70">
               {asset.prompt ? 'Ready' : 'Draft'}
             </p>
           </div>

@@ -107,7 +107,7 @@ export function CreativeMessageFields({
 
       {selectedItem ? (
         <div className="mb-5 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-black/38">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/38">
             {t('dashboardI18n.contentStudio.existingContentPreserved', 'Existing field content is preserved. New AI generations are appended below a divider for review before saving.')}
           </p>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

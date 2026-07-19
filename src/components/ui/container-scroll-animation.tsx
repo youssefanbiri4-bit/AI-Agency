@@ -27,7 +27,7 @@ export function ContainerScrollAnimation({
           <div className="pointer-events-none absolute inset-x-8 top-8 h-32 rounded-full bg-[#F7CBCA]/14 blur-3xl sm:inset-x-20 sm:h-40" />
           <div
             className={cn(
-              'section-fade relative origin-top rounded-[2rem] border border-black/10 bg-white/72 p-2 shadow-[0_35px_100px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-3',
+              'section-fade relative origin-top rounded-[2rem] border border-black/10 bg-surface-elevated/72 p-2 shadow-[0_35px_100px_rgba(0,0,0,0.18)] backdrop-blur-xl sm:p-3',
               className
             )}
           >

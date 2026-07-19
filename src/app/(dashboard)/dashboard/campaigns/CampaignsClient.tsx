@@ -86,7 +86,7 @@ const gradientButtonClassName =
 const warmOutlineButtonClassName =
   'border-[#5D6B6B]/12 bg-[#F1F7F7] text-[#5D6B6B] hover:border-[#F7CBCA]/35 hover:bg-[#D5E5E5]/55 hover:text-[#F7CBCA]';
 const premiumCardClassName =
-  'rounded-2xl border-[#5D6B6B]/8 bg-white shadow-[0_20px_58px_rgba(93,107,107,0.08)]';
+  'rounded-2xl border-[#5D6B6B]/8 bg-surface-elevated shadow-[0_20px_58px_rgba(93,107,107,0.08)]';
 const softPanelClassName =
   'rounded-2xl border border-[#5D6B6B]/8 bg-[#F1F7F7] shadow-sm';
 
@@ -287,7 +287,7 @@ function CampaignTrackingBoard({ items }: { items: CampaignBoardItem[] }) {
               <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#5D6B6B]/54">
+                    <span className="rounded-full border border-[#5D6B6B]/10 bg-surface-elevated px-2.5 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#5D6B6B]/54">
                       {formatPlatform(item.platform)}
                     </span>
                     <CampaignStatusBadge status={item.status} />
@@ -309,7 +309,7 @@ function CampaignTrackingBoard({ items }: { items: CampaignBoardItem[] }) {
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-2">
+                <div className="rounded-xl border border-[#5D6B6B]/8 bg-surface-elevated px-3 py-2">
                   <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#5D6B6B]/38">
                     Readiness
                   </p>
@@ -317,13 +317,13 @@ function CampaignTrackingBoard({ items }: { items: CampaignBoardItem[] }) {
                     {item.providerReadiness}
                   </p>
                 </div>
-                <div className="rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-2">
+                <div className="rounded-xl border border-[#5D6B6B]/8 bg-surface-elevated px-3 py-2">
                   <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#5D6B6B]/38">
                     Updated
                   </p>
                   <p className="mt-1 text-sm font-bold text-[#5D6B6B]/72">{item.updatedLabel}</p>
                 </div>
-                <div className="rounded-xl border border-[#5D6B6B]/8 bg-white px-3 py-2">
+                <div className="rounded-xl border border-[#5D6B6B]/8 bg-surface-elevated px-3 py-2">
                   <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#5D6B6B]/38">
                     Linked
                   </p>
@@ -401,7 +401,7 @@ export function CampaignsClient({
 
               <Field id="campaignGoal" label="Campaign goal" required>
                 <div className="relative">
-                  <ChevronDown className="pointer-events-none absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/34" />
+                  <ChevronDown className="pointer-events-none absolute end-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/34" />
                   <Select id="campaignGoal" name="campaignGoal" required disabled={isPlannerPending} defaultValue="">
                     <option value="" disabled>Select goal</option>
                     <option value="Lead generation">Lead generation</option>
@@ -827,14 +827,14 @@ export function CampaignsClient({
               <article key={report.taskId} className={cn(softPanelClassName, 'min-w-0 p-4 transition-all hover:-translate-y-1 hover:border-[#F7CBCA]/22 hover:shadow-[0_18px_38px_rgba(202,40,81,0.12)]')}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <h3 className="break-words font-bold text-black">{report.title}</h3>
-                    <p className="mt-1 text-sm text-black/52">
+                    <h3 className="break-words font-bold text-foreground">{report.title}</h3>
+                    <p className="mt-1 text-sm text-foreground/52">
                       {report.agentName} · Updated {report.updatedLabel}
                     </p>
                   </div>
                   <StatusBadge status={report.status} type="task" size="sm" />
                 </div>
-                <p className="mt-4 text-sm leading-6 text-black/62">{report.summaryPreview}</p>
+                <p className="mt-4 text-sm leading-6 text-foreground/62">{report.summaryPreview}</p>
                 <div className="mt-4">
                   <Link
                     href={report.href}
@@ -864,8 +864,8 @@ export function CampaignsClient({
             {pendingCampaignTasks.map((task) => (
               <div key={task.taskId} className={cn(softPanelClassName, 'flex min-w-0 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between')}>
                 <div className="min-w-0">
-                  <h3 className="break-words text-sm font-bold text-black">{task.title}</h3>
-                  <p className="mt-1 text-xs text-black/52">
+                  <h3 className="break-words text-sm font-bold text-foreground">{task.title}</h3>
+                  <p className="mt-1 text-xs text-foreground/52">
                     {task.agentName} · Updated {task.updatedLabel}
                   </p>
                 </div>

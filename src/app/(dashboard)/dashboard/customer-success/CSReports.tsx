@@ -36,7 +36,7 @@ function ExportButton({ onClick, label }: { onClick: () => void; label: string }
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+      className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-surface"
     >
       <Download className="h-4 w-4" />
       {label}
@@ -105,8 +105,8 @@ export function CSReports({ data }: { data: CsPageData }) {
 
       <Card>
         <CardHeader title={t('cs.apiExport', 'Programmatic export')} />
-        <div className="p-4 text-sm text-gray-500">
-          <code className="rounded bg-gray-100 px-1.5 py-0.5 dark:bg-gray-800">
+        <div className="p-4 text-sm text-foreground-muted">
+          <code className="rounded bg-surface px-1.5 py-0.5">
             GET /api/customer-success/export?type=tickets&amp;format=csv
           </code>
         </div>

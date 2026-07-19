@@ -92,14 +92,14 @@ export function CreativeAssetsSection({
         action={<ImageIcon className="h-5 w-5 text-[#F7CBCA]" />}
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-black/58">
-        <span className="basis-full text-black/62">{selectedStudio.assetGuidance}</span>
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-foreground/58">
+        <span className="basis-full text-foreground/62">{selectedStudio.assetGuidance}</span>
         <span>
-          {t('dashboardI18n.contentStudio.linkedAssetCount', 'Linked asset count')}: <strong className="text-black">{selectedAssetNames.length}</strong>
+          {t('dashboardI18n.contentStudio.linkedAssetCount', 'Linked asset count')}: <strong className="text-foreground">{selectedAssetNames.length}</strong>
         </span>
         <span>
           {t('dashboardI18n.contentStudio.assetNames', 'Asset names')}:{' '}
-          <strong className="text-black">{selectedAssetNames.join(', ') || t('dashboardI18n.contentStudio.noneLinkedYet', 'None linked yet')}</strong>
+          <strong className="text-foreground">{selectedAssetNames.join(', ') || t('dashboardI18n.contentStudio.noneLinkedYet', 'None linked yet')}</strong>
         </span>
         <Link href="/dashboard/creative-assets" className={buttonStyles({ variant: 'outline', size: 'sm' })}>
           Creative Assets
@@ -164,7 +164,7 @@ export function CreativeAssetsSection({
             return (
               <div
                 key={asset.id}
-                className="flex items-start gap-3 rounded-lg border border-black/8 bg-white px-4 py-3 shadow-sm transition-colors hover:border-[#F7CBCA]/28 hover:bg-[#F9F7FB]"
+                className="flex items-start gap-3 rounded-lg border border-black/8 bg-surface-elevated px-4 py-3 shadow-sm transition-colors hover:border-[#F7CBCA]/28 hover:bg-[#F9F7FB]"
               >
                 <input
                   id={inputId}
@@ -212,10 +212,10 @@ export function CreativeAssetsSection({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <label htmlFor={inputId} className="block cursor-pointer break-words font-semibold text-black">
+                  <label htmlFor={inputId} className="block cursor-pointer break-words font-semibold text-foreground">
                     {asset.title}
                   </label>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-black/48">
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-foreground/48">
                     <span>{formatContentStudioPlatformLabel(asset.platform, t)}</span>
                     <span>{asset.asset_type.replace(/_/g, ' ')}</span>
                     {isVideo ? <span>video asset</span> : null}

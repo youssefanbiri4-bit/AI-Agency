@@ -339,11 +339,11 @@ export default async function ContentStudioPage({ searchParams }: ContentStudioP
         </div>
       </details>
 
-      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-white p-4 h-12" />}>
+      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-surface-elevated p-4 h-12" />}>
         <SchedulerControls canRunScheduler={canRunScheduler} />
       </Suspense>
 
-      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-white p-6 h-96" />}>
+      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-surface-elevated p-6 h-96" />}>
         <ContentStudioClient
         items={filteredItems}
         selectedItem={selectedItem}

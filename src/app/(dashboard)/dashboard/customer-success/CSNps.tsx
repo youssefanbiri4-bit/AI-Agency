@@ -72,15 +72,15 @@ export function CSNps({ nps, summary }: { nps: NpsResponseRecord[]; summary: Nps
             <div className="space-y-1">
               {summary.trend.map((tr) => (
                 <div key={tr.period} className="flex items-center gap-3 text-sm">
-                  <span className="w-16 text-gray-500">{tr.period}</span>
-                  <div className="h-2 flex-1 rounded-full bg-gray-100 dark:bg-gray-800">
+                  <span className="w-16 text-foreground-muted">{tr.period}</span>
+                  <div className="h-2 flex-1 rounded-full bg-surface">
                     <div
                       className="h-2 rounded-full bg-primary"
                       style={{ width: `${Math.min(100, Math.abs(tr.nps))}%` }}
                     />
                   </div>
                   <span className="w-16 text-right font-medium">{tr.nps}</span>
-                  <span className="w-12 text-right text-xs text-gray-400">{tr.count}</span>
+                  <span className="w-12 text-right text-xs text-foreground-muted">{tr.count}</span>
                 </div>
               ))}
             </div>
@@ -106,7 +106,7 @@ export function CSNps({ nps, summary }: { nps: NpsResponseRecord[]; summary: Nps
               onChange={(e) => setComment(e.target.value)}
               placeholder={t('cs.npsComment', 'Comment (optional)')}
               rows={2}
-              className="w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700"
+              className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
             />
             <button
               type="button"
@@ -123,11 +123,11 @@ export function CSNps({ nps, summary }: { nps: NpsResponseRecord[]; summary: Nps
       {nps.length > 0 && (
         <Card>
           <CardHeader title={t('cs.recentNps', 'Recent responses')} />
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+          <div className="divide-y divide-border">
             {nps.slice(0, 10).map((r) => (
               <div key={r.id} className="flex items-center justify-between p-3 text-sm">
                 <span className="font-medium">{r.score}/10</span>
-                <span className="flex-1 px-3 text-gray-500">{r.comment || '—'}</span>
+                <span className="flex-1 px-3 text-foreground-muted">{r.comment || '—'}</span>
                 <Badge tone={r.score >= 9 ? 'success' : r.score <= 6 ? 'danger' : 'warning'}>
                   {r.score >= 9 ? 'promoter' : r.score <= 6 ? 'detractor' : 'passive'}
                 </Badge>

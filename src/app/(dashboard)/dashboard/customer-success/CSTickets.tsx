@@ -87,20 +87,20 @@ export function CSTickets({ tickets }: { tickets: SupportTicketRecord[] }) {
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder={t('cs.subject', 'Subject')}
-              className="w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700"
+              className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
             />
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('cs.description', 'Describe the issue')}
               rows={4}
-              className="w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700"
+              className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
             />
             <div className="flex items-center gap-3">
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="rounded-md border border-gray-300 bg-transparent px-2 py-1.5 text-sm dark:border-gray-700"
+                className="rounded-md border border-border bg-transparent px-2 py-1.5 text-sm"
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>
@@ -127,7 +127,7 @@ export function CSTickets({ tickets }: { tickets: SupportTicketRecord[] }) {
       ) : (
         <div className="space-y-2">
           {tickets.map((tk) => (
-            <div key={tk.id} className="rounded-md border border-gray-200 p-3 dark:border-gray-800">
+            <div key={tk.id} className="rounded-md border border-border p-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
@@ -135,14 +135,14 @@ export function CSTickets({ tickets }: { tickets: SupportTicketRecord[] }) {
                     <Badge tone={statusTone(tk.status)}>{tk.status}</Badge>
                     <Badge tone="neutral">{tk.priority}</Badge>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-gray-500">{tk.description}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-foreground-muted">{tk.description}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <select
                     value={tk.status}
                     disabled={pending}
                     onChange={(e) => changeStatus(tk.id, e.target.value)}
-                    className="rounded-md border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700"
+                    className="rounded-md border border-border bg-transparent px-2 py-1 text-xs"
                   >
                     {STATUSES.map((s) => (
                       <option key={s} value={s}>
@@ -154,7 +154,7 @@ export function CSTickets({ tickets }: { tickets: SupportTicketRecord[] }) {
                     type="button"
                     disabled={pending}
                     onClick={() => remove(tk.id)}
-                    className="rounded-md border border-gray-300 p-1.5 text-gray-500 hover:text-red-600 dark:border-gray-700"
+                    className="rounded-md border border-border p-1.5 text-foreground-muted hover:text-red-600"
                     aria-label="Delete"
                   >
                     <Trash2 className="h-4 w-4" />

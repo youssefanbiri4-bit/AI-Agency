@@ -53,19 +53,19 @@ function timeoutMessage(sectionName: string): string {
 function DashboardRouteFallback() {
   return (
     <div className="-mx-4 -my-6 min-h-screen bg-[var(--theme-background,#F1F7F7)] px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <section className="rounded-2xl border border-black/7 bg-white/90 p-6 shadow-[0_24px_70px_rgba(93,107,107,0.08)]">
+      <section className="rounded-2xl border border-black/7 bg-surface-elevated/90 p-6 shadow-[0_24px_70px_rgba(93,107,107,0.08)]">
         <h1 className="text-2xl font-black text-[#5D6B6B]">Workspace route is preparing</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-black/58">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground/58">
           Navigation remains available while this page finishes loading. Slow data requests are isolated from the dashboard shell.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Link href="/dashboard" className="rounded-lg border border-[#F7CBCA]/15 bg-white/78 px-4 py-2 text-sm font-bold text-black shadow-sm">
+          <Link href="/dashboard" className="rounded-lg border border-[#F7CBCA]/15 bg-surface-elevated/78 px-4 py-2 text-sm font-bold text-foreground shadow-sm">
             Command Center
           </Link>
-          <Link href="/dashboard/system-health" className="rounded-lg border border-[#F7CBCA]/15 bg-white/78 px-4 py-2 text-sm font-bold text-black shadow-sm">
+          <Link href="/dashboard/system-health" className="rounded-lg border border-[#F7CBCA]/15 bg-surface-elevated/78 px-4 py-2 text-sm font-bold text-foreground shadow-sm">
             System Health
           </Link>
-          <Link href="/dashboard/settings" className="rounded-lg border border-[#F7CBCA]/15 bg-white/78 px-4 py-2 text-sm font-bold text-black shadow-sm">
+          <Link href="/dashboard/settings" className="rounded-lg border border-[#F7CBCA]/15 bg-surface-elevated/78 px-4 py-2 text-sm font-bold text-foreground shadow-sm">
             Settings
           </Link>
         </div>

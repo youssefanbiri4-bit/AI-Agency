@@ -14,7 +14,7 @@ export function BrandContextCard({ brandKit, brandKitExists }: BrandContextCardP
   const { t } = useLanguage();
 
   return (
-    <Card className="border-[#F7CBCA]/12 bg-white/90">
+    <Card className="border-[#F7CBCA]/12 bg-surface-elevated/90">
       <CardHeader
         title={t('dashboardI18n.contentStudio.brandContext')}
         description={
@@ -26,24 +26,24 @@ export function BrandContextCard({ brandKit, brandKitExists }: BrandContextCardP
       />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="muted-panel p-3">
-          <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">{t('dashboardI18n.contentStudio.brand')}</p>
-          <p className="mt-1 text-sm font-semibold text-black">{brandKit.brandName}</p>
+          <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/38">{t('dashboardI18n.contentStudio.brand')}</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{brandKit.brandName}</p>
         </div>
         <div className="muted-panel p-3">
-          <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">{t('dashboardI18n.contentStudio.tone')}</p>
-          <p className="mt-1 text-sm font-semibold text-black">
+          <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/38">{t('dashboardI18n.contentStudio.tone')}</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
             {brandKit.toneOfVoice ?? t('dashboardI18n.common.notSet')}
           </p>
         </div>
         <div className="muted-panel p-3">
-          <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">{t('dashboardI18n.contentStudio.defaultCta')}</p>
-          <p className="mt-1 text-sm font-semibold text-black">
+          <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/38">{t('dashboardI18n.contentStudio.defaultCta')}</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
             {brandKit.defaultCta ?? t('dashboardI18n.common.notSet')}
           </p>
         </div>
         <div className="muted-panel p-3">
-          <p className="text-xs font-black uppercase tracking-[0.12em] text-black/38">{t('dashboardI18n.contentStudio.hashtags')}</p>
-          <p className="mt-1 line-clamp-2 text-sm font-semibold text-black">
+          <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/38">{t('dashboardI18n.contentStudio.hashtags')}</p>
+          <p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">
             {brandKit.defaultHashtags ?? t('dashboardI18n.common.notSet')}
           </p>
         </div>

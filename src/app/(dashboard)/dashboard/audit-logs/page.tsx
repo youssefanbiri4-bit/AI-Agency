@@ -172,19 +172,19 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
       {/* Stats cards */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="p-4">
-          <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">Total Events</p>
+          <p className="text-xs font-black uppercase tracking-[0.13em] text-foreground/42">Total Events</p>
           <p className="mt-2 text-2xl font-black text-[#5D6B6B]">{statsResult.data?.total ?? 0}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">Critical</p>
+          <p className="text-xs font-black uppercase tracking-[0.13em] text-foreground/42">Critical</p>
           <p className="mt-2 text-2xl font-black text-[#A30D1D]">{statsResult.data?.bySeverity.critical ?? 0}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">Warnings</p>
+          <p className="text-xs font-black uppercase tracking-[0.13em] text-foreground/42">Warnings</p>
           <p className="mt-2 text-2xl font-black text-[#B51F30]">{statsResult.data?.bySeverity.warning ?? 0}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-xs font-black uppercase tracking-[0.13em] text-black/42">Info</p>
+          <p className="text-xs font-black uppercase tracking-[0.13em] text-foreground/42">Info</p>
           <p className="mt-2 text-2xl font-black text-[#0F5F3E]">{statsResult.data?.bySeverity.info ?? 0}</p>
         </Card>
       </div>
@@ -198,7 +198,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
         />
         <form method="GET" className="flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[200px]">
-            <label htmlFor="search" className="block text-xs font-bold uppercase tracking-[0.12em] text-black/42 mb-1">
+            <label htmlFor="search" className="block text-xs font-bold uppercase tracking-[0.12em] text-foreground/42 mb-1">
               Search
             </label>
             <input
@@ -207,18 +207,18 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
               type="text"
               defaultValue={params.search ?? ''}
               placeholder="Search event type, message, entity..."
-              className="w-full rounded-lg border border-black/8 bg-white px-3 py-2 text-sm text-black/80 placeholder:text-black/35"
+              className="w-full rounded-lg border border-black/8 bg-surface-elevated px-3 py-2 text-sm text-foreground/80 placeholder:text-foreground/35"
             />
           </div>
           <div className="w-[150px]">
-            <label htmlFor="severity" className="block text-xs font-bold uppercase tracking-[0.12em] text-black/42 mb-1">
+            <label htmlFor="severity" className="block text-xs font-bold uppercase tracking-[0.12em] text-foreground/42 mb-1">
               Severity
             </label>
             <select
               id="severity"
               name="severity"
               defaultValue={params.severity ?? ''}
-              className="w-full rounded-lg border border-black/8 bg-white px-3 py-2 text-sm text-black/80"
+              className="w-full rounded-lg border border-black/8 bg-surface-elevated px-3 py-2 text-sm text-foreground/80"
             >
               <option value="">All severities</option>
               <option value="critical">Critical</option>
@@ -228,14 +228,14 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
             </select>
           </div>
           <div className="w-[200px]">
-            <label htmlFor="eventType" className="block text-xs font-bold uppercase tracking-[0.12em] text-black/42 mb-1">
+            <label htmlFor="eventType" className="block text-xs font-bold uppercase tracking-[0.12em] text-foreground/42 mb-1">
               Event Type
             </label>
             <select
               id="eventType"
               name="eventType"
               defaultValue={params.eventType ?? ''}
-              className="w-full rounded-lg border border-black/8 bg-white px-3 py-2 text-sm text-black/80"
+              className="w-full rounded-lg border border-black/8 bg-surface-elevated px-3 py-2 text-sm text-foreground/80"
             >
               <option value="">All event types</option>
               {(eventTypesResult.data ?? []).map((type) => (
@@ -246,7 +246,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
             </select>
           </div>
           <div className="w-[150px]">
-            <label htmlFor="entityType" className="block text-xs font-bold uppercase tracking-[0.12em] text-black/42 mb-1">
+            <label htmlFor="entityType" className="block text-xs font-bold uppercase tracking-[0.12em] text-foreground/42 mb-1">
               Entity Type
             </label>
             <input
@@ -255,11 +255,11 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
               type="text"
               defaultValue={params.entityType ?? ''}
               placeholder="e.g. task, api_key"
-              className="w-full rounded-lg border border-black/8 bg-white px-3 py-2 text-sm text-black/80 placeholder:text-black/35"
+              className="w-full rounded-lg border border-black/8 bg-surface-elevated px-3 py-2 text-sm text-foreground/80 placeholder:text-foreground/35"
             />
           </div>
           <div className="w-[160px]">
-            <label htmlFor="userId" className="block text-xs font-bold uppercase tracking-[0.12em] text-black/42 mb-1">
+            <label htmlFor="userId" className="block text-xs font-bold uppercase tracking-[0.12em] text-foreground/42 mb-1">
               Actor (user id)
             </label>
             <input
@@ -268,11 +268,11 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
               type="text"
               defaultValue={params.userId ?? ''}
               placeholder="user uuid"
-              className="w-full rounded-lg border border-black/8 bg-white px-3 py-2 text-sm text-black/80 placeholder:text-black/35"
+              className="w-full rounded-lg border border-black/8 bg-surface-elevated px-3 py-2 text-sm text-foreground/80 placeholder:text-foreground/35"
             />
           </div>
           <div className="w-[150px]">
-            <label htmlFor="dateFrom" className="block text-xs font-bold uppercase tracking-[0.12em] text-black/42 mb-1">
+            <label htmlFor="dateFrom" className="block text-xs font-bold uppercase tracking-[0.12em] text-foreground/42 mb-1">
               From
             </label>
             <input
@@ -280,11 +280,11 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
               name="dateFrom"
               type="date"
               defaultValue={params.dateFrom ?? ''}
-              className="w-full rounded-lg border border-black/8 bg-white px-3 py-2 text-sm text-black/80"
+              className="w-full rounded-lg border border-black/8 bg-surface-elevated px-3 py-2 text-sm text-foreground/80"
             />
           </div>
           <div className="w-[150px]">
-            <label htmlFor="dateTo" className="block text-xs font-bold uppercase tracking-[0.12em] text-black/42 mb-1">
+            <label htmlFor="dateTo" className="block text-xs font-bold uppercase tracking-[0.12em] text-foreground/42 mb-1">
               To
             </label>
             <input
@@ -292,7 +292,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
               name="dateTo"
               type="date"
               defaultValue={params.dateTo ?? ''}
-              className="w-full rounded-lg border border-black/8 bg-white px-3 py-2 text-sm text-black/80"
+              className="w-full rounded-lg border border-black/8 bg-surface-elevated px-3 py-2 text-sm text-foreground/80"
             />
           </div>
           <button
@@ -330,7 +330,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
           <div className="overflow-x-auto">
             <table className="min-w-[1200px] w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-black/8 text-xs font-black uppercase tracking-[0.12em] text-black/42">
+                <tr className="border-b border-black/8 text-xs font-black uppercase tracking-[0.12em] text-foreground/42">
                   <th className="px-3 py-3 w-[160px]">Timestamp</th>
                   <th className="px-3 py-3 w-[90px]">Severity</th>
                   <th className="px-3 py-3 w-[180px]">Event Type</th>
@@ -345,7 +345,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
                     key={record.id}
                     className="border-b border-black/6 align-top hover:bg-[#F1F7F7]/40 transition-colors"
                   >
-                    <td className="px-3 py-3 text-xs text-black/58 whitespace-nowrap">
+                    <td className="px-3 py-3 text-xs text-foreground/58 whitespace-nowrap">
                       {formatDateTime(record.createdAt)}
                     </td>
                     <td className="px-3 py-3">
@@ -354,17 +354,17 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
                     <td className="px-3 py-3">
                       <CodeInline>{record.eventType}</CodeInline>
                     </td>
-                    <td className="px-3 py-3 text-black/68 max-w-[400px] break-words">
-                      {record.message || <span className="text-black/35 italic">No message</span>}
+                    <td className="px-3 py-3 text-foreground/68 max-w-[400px] break-words">
+                      {record.message || <span className="text-foreground/35 italic">No message</span>}
                     </td>
-                    <td className="px-3 py-3 text-xs text-black/52">
+                    <td className="px-3 py-3 text-xs text-foreground/52">
                       {record.entityType ? (
                         <span>
                           {record.entityType}
                           {record.entityId && `:${record.entityId.slice(0, 8)}`}
                         </span>
                       ) : (
-                        <span className="text-black/35 italic">—</span>
+                        <span className="text-foreground/35 italic">—</span>
                       )}
                     </td>
                     <td className="px-3 py-3">
@@ -372,7 +372,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
                         <summary className="cursor-pointer text-xs font-bold text-[#5D6B6B] hover:text-[#F7CBCA] transition-colors">
                           Details
                         </summary>
-                        <div className="mt-2 rounded-lg border border-black/8 bg-[#F1F7F7]/72 p-3 text-xs text-black/58 whitespace-pre-wrap max-w-[300px] break-words">
+                        <div className="mt-2 rounded-lg border border-black/8 bg-[#F1F7F7]/72 p-3 text-xs text-foreground/58 whitespace-pre-wrap max-w-[300px] break-words">
                           <p><strong>ID:</strong> {record.id}</p>
                           {record.userId && <p><strong>User:</strong> {record.userId.slice(0, 12)}...</p>}
                           {record.ipHash && <p><strong>IP Hash:</strong> {record.ipHash}</p>}
@@ -397,7 +397,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
           <div className="rounded-2xl border border-black/7 bg-[#F1F7F7]/62 p-6 text-center">
             <History className="mx-auto h-10 w-10 text-[#F7CBCA]" />
             <p className="mt-3 font-black text-[#5D6B6B]">No audit log entries found</p>
-            <p className="mt-1 text-sm text-black/55">
+            <p className="mt-1 text-sm text-foreground/55">
               {filter.search || filter.severity || filter.eventType
                 ? 'Try adjusting your filters.'
                 : 'Audit events will appear here as security-sensitive operations are performed.'}
@@ -416,7 +416,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
                 Previous
               </Link>
             )}
-            <span className="text-sm text-black/58">
+            <span className="text-sm text-foreground/58">
               Page {logsResult.data.page} of {logsResult.data.totalPages}
             </span>
             {logsResult.data.page < logsResult.data.totalPages && (
@@ -443,22 +443,22 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
         </p>
         {retentionResult.data && (
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <div className="rounded-lg border border-black/8 bg-white/60 p-3">
-              <p className="text-xs font-black uppercase tracking-[0.12em] text-black/42">Total retained</p>
+            <div className="rounded-lg border border-black/8 bg-surface-elevated/60 p-3">
+              <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/42">Total retained</p>
               <p className="mt-1 text-lg font-black text-[#5D6B6B]">{retentionResult.data.total}</p>
             </div>
-            <div className="rounded-lg border border-black/8 bg-white/60 p-3">
-              <p className="text-xs font-black uppercase tracking-[0.12em] text-black/42">Eligible for deletion</p>
+            <div className="rounded-lg border border-black/8 bg-surface-elevated/60 p-3">
+              <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/42">Eligible for deletion</p>
               <p className="mt-1 text-lg font-black text-[#B51F30]">{retentionResult.data.eligibleForDeletion}</p>
             </div>
-            <div className="rounded-lg border border-black/8 bg-white/60 p-3">
-              <p className="text-xs font-black uppercase tracking-[0.12em] text-black/42">Next scheduled cleanup</p>
+            <div className="rounded-lg border border-black/8 bg-surface-elevated/60 p-3">
+              <p className="text-xs font-black uppercase tracking-[0.12em] text-foreground/42">Next scheduled cleanup</p>
               <p className="mt-1 text-sm font-bold text-[#0F5F3E]">Daily cron</p>
             </div>
           </div>
         )}
         {retentionResult.data && retentionResult.data.eligibleForDeletion > 0 && (
-          <p className="mt-3 text-xs text-black/55">
+          <p className="mt-3 text-xs text-foreground/55">
             {retentionResult.data.eligibleBySeverity.critical} critical,{' '}
             {retentionResult.data.eligibleBySeverity.warning} warning, and{' '}
             {retentionResult.data.eligibleBySeverity.info} info records are past their

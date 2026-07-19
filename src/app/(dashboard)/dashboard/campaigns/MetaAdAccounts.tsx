@@ -38,10 +38,10 @@ function AccountField({
 }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-black/42">
+      <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-foreground/42">
         {label}
       </dt>
-      <dd className="mt-1 break-words text-sm font-semibold text-black">
+      <dd className="mt-1 break-words text-sm font-semibold text-foreground">
         {displayValue(value)}
       </dd>
     </div>
@@ -61,10 +61,10 @@ function MetaAdAccountsState({
     <div className="mt-4 flex min-w-0 flex-col gap-4 rounded-2xl border border-[#5D6B6B]/8 bg-[#F1F7F7] p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <h4 className="break-words text-sm font-bold text-black">Meta ad accounts</h4>
+          <h4 className="break-words text-sm font-bold text-foreground">Meta ad accounts</h4>
           <StatusBadge status={badgeStatus} type="system" size="sm" />
         </div>
-        <p className="mt-2 text-sm leading-6 text-black/58">{message}</p>
+        <p className="mt-2 text-sm leading-6 text-foreground/58">{message}</p>
       </div>
 
       {actionLabel && (
@@ -159,8 +159,8 @@ export async function MetaAdAccounts({ workspaceId, userId }: MetaAdAccountsProp
     <div className="mt-4 min-w-0 space-y-3">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h4 className="break-words text-sm font-bold text-black">Meta ad accounts</h4>
-          <p className="mt-1 text-sm leading-6 text-black/58">
+          <h4 className="break-words text-sm font-bold text-foreground">Meta ad accounts</h4>
+          <p className="mt-1 text-sm leading-6 text-foreground/58">
             {data.accounts.length} connected {data.accounts.length === 1 ? 'account' : 'accounts'}
           </p>
         </div>

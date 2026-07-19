@@ -76,7 +76,7 @@ export function CSFeedback({ feedback }: { feedback: CustomerFeedbackRecord[] })
               onChange={(e) => setMessage(e.target.value)}
               placeholder={t('cs.feedbackPlaceholder', 'What could we improve?')}
               rows={3}
-              className="w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm dark:border-gray-700"
+              className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
             />
             <button
               type="button"
@@ -96,7 +96,7 @@ export function CSFeedback({ feedback }: { feedback: CustomerFeedbackRecord[] })
       ) : (
         <div className="space-y-2">
           {feedback.map((f) => (
-            <div key={f.id} className="flex items-start justify-between gap-3 rounded-md border border-gray-200 p-3 dark:border-gray-800">
+            <div key={f.id} className="flex items-start justify-between gap-3 rounded-md border border-border p-3">
               <div>
                 <div className="flex items-center gap-2">
                   {f.rating && (
@@ -113,7 +113,7 @@ export function CSFeedback({ feedback }: { feedback: CustomerFeedbackRecord[] })
                 type="button"
                 disabled={pending}
                 onClick={() => remove(f.id)}
-                className="shrink-0 rounded-md border border-gray-300 p-1.5 text-gray-500 hover:text-red-600 dark:border-gray-700"
+                className="shrink-0 rounded-md border border-border p-1.5 text-foreground-muted hover:text-red-600"
                 aria-label="Delete"
               >
                 <Trash2 className="h-4 w-4" />

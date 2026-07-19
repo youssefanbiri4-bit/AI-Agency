@@ -107,21 +107,21 @@ export function CSOverview({ data }: { data: CsPageData }) {
           />
           <div className="p-4">
             <Sparkline values={data.retention.dailyActive.map((d) => d.activeUsers)} />
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-gray-500">
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs text-foreground-muted">
               <div>
-                <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                <div className="text-lg font-semibold text-foreground">
                   {data.retention.thisMonthEvents}
                 </div>
                 {t('cs.thisMonth', 'This month')}
               </div>
               <div>
-                <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                <div className="text-lg font-semibold text-foreground">
                   {data.retention.lastMonthEvents}
                 </div>
                 {t('cs.lastMonth', 'Last month')}
               </div>
               <div>
-                <div className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                <div className="text-lg font-semibold text-foreground">
                   {data.retention.activeRate}%
                 </div>
                 {t('cs.activeRateShort', 'Active')}
@@ -150,12 +150,12 @@ export function CSOverview({ data }: { data: CsPageData }) {
               <EmptyState title={t('cs.noSignals', 'No active churn signals')} variant="first-visit" />
             ) : (
               data.churn.signals.map((s, i) => (
-                <div key={i} className="rounded-md border border-gray-200 p-3 dark:border-gray-800">
+                <div key={i} className="rounded-md border border-border p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{s.title}</span>
                     <Badge tone={s.severity === 'critical' ? 'danger' : 'warning'}>{s.severity}</Badge>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">{s.message}</p>
+                  <p className="mt-1 text-xs text-foreground-muted">{s.message}</p>
                 </div>
               ))
             )}
@@ -184,13 +184,13 @@ export function CSOverview({ data }: { data: CsPageData }) {
             <EmptyState title={t('cs.noAlerts', 'No churn alerts yet')} variant="first-visit" />
           ) : (
             data.churnAlerts.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded-md border border-gray-200 p-3 dark:border-gray-800">
+              <div key={a.id} className="flex items-center justify-between rounded-md border border-border p-3">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{a.title}</span>
                     {a.acknowledged ? <Badge tone="success">{t('cs.ack', 'Acknowledged')}</Badge> : <Badge tone="warning">{t('cs.open', 'Open')}</Badge>}
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-500">{a.message}</p>
+                  <p className="mt-0.5 text-xs text-foreground-muted">{a.message}</p>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   {!a.acknowledged && (
@@ -198,7 +198,7 @@ export function CSOverview({ data }: { data: CsPageData }) {
                       type="button"
                       disabled={pending}
                       onClick={() => acknowledge(a.id)}
-                      className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs font-medium disabled:opacity-50 dark:border-gray-700"
+                      className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium disabled:opacity-50"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       {t('cs.ackBtn', 'Acknowledge')}
@@ -222,7 +222,7 @@ export function CSOverview({ data }: { data: CsPageData }) {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t('cs.winBackNote', 'Optional win-back note…')}
-              className="w-full rounded-md border border-gray-300 bg-transparent px-3 py-1.5 text-sm dark:border-gray-700"
+              className="w-full rounded-md border border-border bg-transparent px-3 py-1.5 text-sm"
             />
           </div>
         </div>

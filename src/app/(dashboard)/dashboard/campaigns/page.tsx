@@ -282,7 +282,7 @@ function CampaignHero({
       <div className="absolute inset-0 bg-gradient-to-br from-[#F7CBCA] via-[#F7CBCA] to-[#E7F5DC] opacity-95" />
       <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.6fr)] lg:items-end">
         <div className="min-w-0">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/18 bg-white/12 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white/82 backdrop-blur">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/18 bg-surface-elevated/12 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white/82 backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" />
             Ads & Growth
           </div>
@@ -362,7 +362,7 @@ function PinterestAdsConnectionCard({
     <div className="mt-4 flex min-w-0 flex-col gap-5 rounded-lg border border-[#5D6B6B]/8 bg-[#F1F7F7] p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="break-words text-base font-bold text-black">
+          <h3 className="break-words text-base font-bold text-foreground">
             Pinterest Ads
           </h3>
           <StatusBadge
@@ -371,11 +371,11 @@ function PinterestAdsConnectionCard({
             size="sm"
           />
         </div>
-        <p className="mt-2 text-sm leading-6 text-black/58">
+        <p className="mt-2 text-sm leading-6 text-foreground/58">
           Read-only Pinterest Ads provider foundation. Actual connection stays disabled until the server environment is complete.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
-            <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
+        <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-foreground/42">
+            <span className="rounded-full border border-[#5D6B6B]/10 bg-surface-elevated px-2.5 py-1">
               Scopes: {readiness.scopes.join(', ')}
             </span>
           {!isConfigured && (
@@ -441,7 +441,7 @@ function GoogleAdsConnectionCard({
       <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="break-words text-base font-bold text-black">
+            <h3 className="break-words text-base font-bold text-foreground">
               Google Ads
             </h3>
             <StatusBadge
@@ -450,11 +450,11 @@ function GoogleAdsConnectionCard({
               size="sm"
             />
           </div>
-          <p className="mt-2 text-sm leading-6 text-black/58">
+          <p className="mt-2 text-sm leading-6 text-foreground/58">
             Read-only Google Ads connection for accessible customer accounts, campaigns, and last 30 days metrics. Publishing stays disabled.
           </p>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
-            <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-foreground/42">
+            <span className="rounded-full border border-[#5D6B6B]/10 bg-surface-elevated px-2.5 py-1">
               Scope: {readiness.scopes.join(', ')}
             </span>
             {!isConfigured && (
@@ -463,7 +463,7 @@ function GoogleAdsConnectionCard({
               </span>
             )}
             {connection.connectedAt && (
-              <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
+              <span className="rounded-full border border-[#5D6B6B]/10 bg-surface-elevated px-2.5 py-1">
                 Connected {formatDateTime(connection.connectedAt)}
               </span>
             )}
@@ -496,7 +496,7 @@ function GoogleAdsConnectionCard({
       {isConnected && <GoogleAdsAccounts data={campaignMetrics} />}
 
       {needsReconnect && (
-        <p className="mt-4 text-sm leading-6 text-black/58">
+        <p className="mt-4 text-sm leading-6 text-foreground/58">
           Reconnect Google Ads before campaign metrics can be displayed.
         </p>
       )}
@@ -714,7 +714,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         />
       </div>
 
-      <Card className="rounded-lg border-[#5D6B6B]/8 bg-white shadow-[0_20px_58px_rgba(93,107,107,0.08)]">
+      <Card className="rounded-lg border-[#5D6B6B]/8 bg-surface-elevated shadow-[0_20px_58px_rgba(93,107,107,0.08)]">
         <CardHeader
           title="Ad Platform Connections"
           description="Connect read-only ad platform access before importing campaign performance."
@@ -730,7 +730,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         <div className="flex min-w-0 flex-col gap-5 rounded-lg border border-[#5D6B6B]/8 bg-[#F1F7F7] p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="break-words text-base font-bold text-black">
+              <h3 className="break-words text-base font-bold text-foreground">
                 Meta Ads / Instagram & Facebook
               </h3>
               <StatusBadge
@@ -739,15 +739,15 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
                 size="sm"
               />
             </div>
-            <p className="mt-2 text-sm leading-6 text-black/58">
+            <p className="mt-2 text-sm leading-6 text-foreground/58">
               Read-only Meta Ads tracking for ad accounts, campaigns, last 30 days insights, and local performance diagnosis.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-black/42">
-              <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.14em] text-foreground/42">
+              <span className="rounded-full border border-[#5D6B6B]/10 bg-surface-elevated px-2.5 py-1">
                 Scope: {metaConnection.scopes.includes('ads_read') ? 'ads_read' : 'ads_read required'}
               </span>
               {metaConnection.connectedAt && (
-                <span className="rounded-full border border-[#5D6B6B]/10 bg-white px-2.5 py-1">
+                <span className="rounded-full border border-[#5D6B6B]/10 bg-surface-elevated px-2.5 py-1">
                   Connected {formatDateTime(metaConnection.connectedAt)}
                 </span>
               )}
@@ -776,7 +776,7 @@ export default async function CampaignsPage({ searchParams }: CampaignsPageProps
         />
       </Card>
 
-      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-white p-6 h-48" />}>
+      <Suspense fallback={<div className="animate-pulse rounded-2xl border border-black/7 bg-surface-elevated p-6 h-48" />}>
         <CampaignsClient
           campaignBoardItems={campaignBoardItems}
           campaignReports={campaignReports}

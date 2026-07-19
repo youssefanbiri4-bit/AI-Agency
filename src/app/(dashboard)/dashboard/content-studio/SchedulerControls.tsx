@@ -121,51 +121,51 @@ export function SchedulerControls({ canRunScheduler }: SchedulerControlsProps) {
 
             <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Scanned</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.scanned)}</p>
+                <p className="font-bold text-foreground">Scanned</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.scanned)}</p>
               </div>
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Executed</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.executed)}</p>
+                <p className="font-bold text-foreground">Executed</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.executed)}</p>
               </div>
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Succeeded</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.succeeded)}</p>
+                <p className="font-bold text-foreground">Succeeded</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.succeeded)}</p>
               </div>
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Failed</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.failed)}</p>
+                <p className="font-bold text-foreground">Failed</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.failed)}</p>
               </div>
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Setup Required</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.setup_required)}</p>
+                <p className="font-bold text-foreground">Setup Required</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.setup_required)}</p>
               </div>
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Approval Pending</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.approval_pending)}</p>
+                <p className="font-bold text-foreground">Approval Pending</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.approval_pending)}</p>
               </div>
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Manual Only</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.manual_only)}</p>
+                <p className="font-bold text-foreground">Manual Only</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.manual_only)}</p>
               </div>
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Unsupported</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.unsupported)}</p>
+                <p className="font-bold text-foreground">Unsupported</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.unsupported)}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Skipped</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.skipped)}</p>
+                <p className="font-bold text-foreground">Skipped</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.skipped)}</p>
               </div>
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Token Missing</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.token_missing)}</p>
+                <p className="font-bold text-foreground">Token Missing</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.token_missing)}</p>
               </div>
               <div className="muted-panel p-4">
-                <p className="font-bold text-black">Billing Required</p>
-                <p className="mt-1 text-black/62">{countLabel(summary.quota_limit)}</p>
+                <p className="font-bold text-foreground">Billing Required</p>
+                <p className="mt-1 text-foreground/62">{countLabel(summary.quota_limit)}</p>
               </div>
             </div>
           </div>

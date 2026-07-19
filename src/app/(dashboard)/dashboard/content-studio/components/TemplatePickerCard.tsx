@@ -57,19 +57,19 @@ export function TemplatePickerCard({
         {visibleCampaignTemplates.map((template) => (
           <div
             key={template.id}
-            className="rounded-lg border border-black/8 bg-white px-4 py-4 shadow-sm transition-colors hover:border-[#F7CBCA]/24 hover:bg-[#F9F7FB]"
+            className="rounded-lg border border-black/8 bg-surface-elevated px-4 py-4 shadow-sm transition-colors hover:border-[#F7CBCA]/24 hover:bg-[#F9F7FB]"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="break-words font-bold text-black">{template.name}</h3>
+                  <h3 className="break-words font-bold text-foreground">{template.name}</h3>
                   <Badge tone="brand">{template.platformLabel}</Badge>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-black/62">{template.goal}</p>
-                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-black/36">
+                <p className="mt-2 text-sm leading-6 text-foreground/62">{template.goal}</p>
+                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.12em] text-foreground/36">
                   {t('dashboardI18n.contentStudio.bestFor')}
                 </p>
-                <p className="mt-1 text-sm leading-6 text-black/58">{template.bestFor}</p>
+                <p className="mt-1 text-sm leading-6 text-foreground/58">{template.bestFor}</p>
               </div>
               <Button
                 type="button"
@@ -92,10 +92,10 @@ export function TemplatePickerCard({
             </div>
 
             <div className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-black/36">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground/36">
                 {t('dashboardI18n.contentStudio.fieldsIncluded')}
               </p>
-              <p className="mt-1 text-sm leading-6 text-black/58">
+              <p className="mt-1 text-sm leading-6 text-foreground/58">
                 {template.fieldsIncluded.join(', ')}
               </p>
             </div>

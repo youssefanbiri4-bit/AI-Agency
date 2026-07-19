@@ -78,7 +78,7 @@ export function PaginationControls({
         ))}
         {pages[pages.length - 1] < totalPages && (
           <>
-            {pages[pages.length - 1] < totalPages - 1 && <span className="px-1 text-sm text-black/30">...</span>}
+            {pages[pages.length - 1] < totalPages - 1 && <span className="px-1 text-sm text-foreground-muted">...</span>}
             <button
               type="button"
               onClick={() => onGoToPage(totalPages)}

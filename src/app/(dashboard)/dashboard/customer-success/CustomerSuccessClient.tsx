@@ -31,7 +31,7 @@ export function CustomerSuccessClient({ data }: { data: CsPageData }) {
         <PageTitle t={t} />
         <Card>
           <CardHeader title={t('cs.notConfigured', 'Customer Success unavailable')} />
-          <p className="p-4 text-sm text-gray-500">
+          <p className="p-4 text-sm text-foreground-muted">
             {t('cs.notConfiguredHelp', 'Database connection is not configured.')}
           </p>
         </Card>
@@ -43,7 +43,7 @@ export function CustomerSuccessClient({ data }: { data: CsPageData }) {
     <div className="space-y-6">
       <PageTitle t={t} />
 
-      <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex flex-wrap gap-2 border-b border-border">
         {TABS.map((tb) => {
           const Icon = tb.icon;
           const active = tab === tb.id;
@@ -55,13 +55,13 @@ export function CustomerSuccessClient({ data }: { data: CsPageData }) {
               className={`flex items-center gap-2 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                 active
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+                  : 'border-transparent text-foreground-muted hover:text-foreground'
               }`}
             >
               <Icon className="h-4 w-4" />
               {t(tb.labelKey, defaultLabel(tb.id))}
               {tb.id === 'tickets' && data.tickets.length > 0 && (
-                <span className="ml-1 rounded-full bg-gray-100 px-1.5 text-xs dark:bg-gray-800">
+                <span className="ml-1 rounded-full bg-surface px-1.5 text-xs">
                   {data.tickets.length}
                 </span>
               )}
@@ -86,7 +86,7 @@ function PageTitle({ t }: { t: (k: string, f: string) => string }) {
         <ShieldAlert className="h-6 w-6 text-primary" />
         {t('cs.title', 'Customer Success')}
       </h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-foreground-muted">
         {t('cs.subtitle', 'Retention, churn prevention, support and feedback.')}
       </p>
     </div>

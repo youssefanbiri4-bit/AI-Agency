@@ -39,24 +39,24 @@ export function ReadinessPanel({
 
       <div className="grid gap-3 md:grid-cols-2">
         <div
-          className="rounded-lg border border-black/8 bg-white px-4 py-4 shadow-sm"
+          className="rounded-lg border border-black/8 bg-surface-elevated px-4 py-4 shadow-sm"
         >
           <div className="flex items-center justify-between gap-3">
-            <p className="font-semibold text-black">
+            <p className="font-semibold text-foreground">
               {formatContentStudioPlatformLabel(selectedPlatform, t)}
             </p>
             <StatusBadge status={readiness.state} type="system" size="sm" />
           </div>
-          <p className="mt-2 text-sm leading-6 text-black/58">{readiness.message}</p>
+          <p className="mt-2 text-sm leading-6 text-foreground/58">{readiness.message}</p>
           {readiness.missing.length > 0 ? (
-            <p className="mt-2 text-xs text-black/48">
+            <p className="mt-2 text-xs text-foreground/48">
               Missing: {readiness.missing.join(', ')}
             </p>
           ) : null}
         </div>
-        <div className="rounded-lg border border-black/8 bg-white px-4 py-4 shadow-sm">
-          <p className="font-semibold text-black">{t('dashboardI18n.contentStudio.actionType', 'Action Type')}</p>
-          <p className="mt-2 text-sm leading-6 text-black/58">
+        <div className="rounded-lg border border-black/8 bg-surface-elevated px-4 py-4 shadow-sm">
+          <p className="font-semibold text-foreground">{t('dashboardI18n.contentStudio.actionType', 'Action Type')}</p>
+          <p className="mt-2 text-sm leading-6 text-foreground/58">
             {selectedType === 'google_ads_campaign_draft'
               ? t('dashboardI18n.contentStudio.pausedAdDraft', 'paused ad draft')
               : selectedType === 'linkedin_post_planner'
