@@ -36,14 +36,14 @@ function MetricCard({
   label,
   value,
   previousValue,
-  icon: Icon,
+  icon,
   format = 'number',
   trend,
 }: {
   label: string;
   value: number;
   previousValue?: number;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ReactNode;
   format?: 'number' | 'percent';
   trend?: 'up' | 'down';
 }) {
@@ -56,7 +56,7 @@ function MetricCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Icon className="h-5 w-5 text-primary" />
+            {icon}
           </div>
           <div>
             <p className="text-sm text-foreground-muted">{label}</p>
@@ -138,26 +138,26 @@ export function MarketingAnalytics({
           label="Page Views"
           value={metrics.pageViews}
           previousValue={previousMetrics?.pageViews}
-          icon={BarChart3}
+          icon={<BarChart3 className="h-5 w-5 text-primary" />}
         />
         <MetricCard
           label="Unique Visitors"
           value={metrics.uniqueVisitors}
           previousValue={previousMetrics?.uniqueVisitors}
-          icon={Users}
+          icon={<Users className="h-5 w-5 text-primary" />}
         />
         <MetricCard
           label="Conversion Rate"
           value={metrics.conversionRate}
           previousValue={previousMetrics?.conversionRate}
-          icon={MousePointerClick}
+          icon={<MousePointerClick className="h-5 w-5 text-primary" />}
           format="percent"
         />
         <MetricCard
           label="Referral Signups"
           value={metrics.referralSignups}
           previousValue={previousMetrics?.referralSignups}
-          icon={Share2}
+          icon={<Share2 className="h-5 w-5 text-primary" />}
         />
       </div>
 

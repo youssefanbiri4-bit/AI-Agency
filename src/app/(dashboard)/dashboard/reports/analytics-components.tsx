@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Layers3 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { buttonStyles } from '@/components/ui/Button';
 import { percent, topEntries, label, safeDashboardHref } from './analytics-utils';
 import type { NextAction } from './analytics-types';
@@ -8,12 +8,12 @@ export function MetricTile({
   label: metricLabel,
   value,
   helper,
-  icon: Icon,
+  icon,
 }: {
   label: string;
   value: number | string;
   helper?: string;
-  icon: typeof Layers3;
+  icon: ReactNode;
 }) {
   return (
     <div className="min-w-0 rounded-2xl border border-black/7 bg-white p-4 shadow-[0_14px_36px_rgba(93,107,107,0.06)]">
@@ -23,7 +23,7 @@ export function MetricTile({
           <p className="mt-2 break-words text-2xl font-black tracking-normal text-[#5D6B6B]">{value}</p>
         </div>
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D5E5E5]/72 text-[#F7CBCA]">
-          <Icon className="h-5 w-5" />
+          {icon}
         </span>
       </div>
       {helper ? <p className="mt-3 text-sm font-semibold leading-6 text-black/55">{helper}</p> : null}

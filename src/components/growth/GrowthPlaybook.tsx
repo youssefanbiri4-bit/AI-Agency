@@ -36,7 +36,7 @@ interface MetricCardProps {
   label: string;
   value: number | string;
   previousValue?: number;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ReactNode;
   format?: 'number' | 'percent' | 'currency' | 'days';
   target?: number;
 }
@@ -45,7 +45,7 @@ function MetricCard({
   label,
   value,
   previousValue,
-  icon: Icon,
+  icon,
   format = 'number',
   target,
 }: MetricCardProps) {
@@ -65,10 +65,7 @@ function MetricCard({
             'flex h-10 w-10 items-center justify-center rounded-lg',
             isAboveTarget === true ? 'bg-success/10' : isAboveTarget === false ? 'bg-warning/10' : 'bg-primary/10'
           )}>
-            <Icon className={cn(
-              'h-5 w-5',
-              isAboveTarget === true ? 'text-success' : isAboveTarget === false ? 'text-warning' : 'text-primary'
-            )} />
+            {icon}
           </div>
           <div>
             <p className="text-sm text-foreground-muted">{label}</p>
@@ -165,42 +162,42 @@ export function GrowthPlaybook({ metrics, className }: GrowthPlaybookProps) {
         <MetricCard
           label="Total Signups"
           value={metrics.signups}
-          icon={Users}
+          icon={<Users className="h-5 w-5 text-primary" />}
           format="number"
         />
         <MetricCard
           label="Activations"
           value={metrics.activations}
           previousValue={Math.round(metrics.signups * 0.6)}
-          icon={CheckCircle2}
+          icon={<CheckCircle2 className="h-5 w-5 text-primary" />}
           format="number"
           target={Math.round(metrics.signups * 0.7)}
         />
         <MetricCard
           label="Conversion Rate"
           value={metrics.conversionRate}
-          icon={Target}
+          icon={<Target className="h-5 w-5 text-primary" />}
           format="percent"
           target={5}
         />
         <MetricCard
           label="7-Day Retention"
           value={metrics.retention7d}
-          icon={TrendingUp}
+          icon={<TrendingUp className="h-5 w-5 text-primary" />}
           format="percent"
           target={40}
         />
         <MetricCard
           label="30-Day Retention"
           value={metrics.retention30d}
-          icon={BarChart3}
+          icon={<BarChart3 className="h-5 w-5 text-primary" />}
           format="percent"
           target={25}
         />
         <MetricCard
           label="NPS Score"
           value={metrics.nps}
-          icon={TrendingUp}
+          icon={<TrendingUp className="h-5 w-5 text-primary" />}
           format="number"
           target={50}
         />

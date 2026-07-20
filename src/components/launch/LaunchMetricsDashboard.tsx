@@ -38,13 +38,13 @@ function MetricCard({
   label,
   value,
   previousValue,
-  icon: Icon,
+  icon,
   format = 'number',
 }: {
   label: string;
   value: number;
   previousValue?: number;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ReactNode;
   format?: 'number' | 'percent' | 'currency' | 'days';
 }) {
   const change = previousValue !== undefined && previousValue > 0
@@ -56,7 +56,7 @@ function MetricCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <Icon className="h-5 w-5 text-primary" />
+            {icon}
           </div>
           <div>
             <p className="text-sm text-foreground-muted">{label}</p>
@@ -139,26 +139,26 @@ export function LaunchMetricsDashboard({
           label="Total Signups"
           value={metrics.signups}
           previousValue={previousMetrics?.signups}
-          icon={Users}
+          icon={<Users className="h-5 w-5 text-primary" />}
         />
         <MetricCard
           label="Activations"
           value={metrics.activations}
           previousValue={previousMetrics?.activations}
-          icon={Target}
+          icon={<Target className="h-5 w-5 text-primary" />}
         />
         <MetricCard
           label="Conversion Rate"
           value={metrics.conversionRate}
           previousValue={previousMetrics?.conversionRate}
-          icon={TrendingUp}
+          icon={<TrendingUp className="h-5 w-5 text-primary" />}
           format="percent"
         />
         <MetricCard
           label="Revenue"
           value={metrics.revenue}
           previousValue={previousMetrics?.revenue}
-          icon={BarChart3}
+          icon={<BarChart3 className="h-5 w-5 text-primary" />}
           format="currency"
         />
       </div>
@@ -169,26 +169,26 @@ export function LaunchMetricsDashboard({
           label="Active Users"
           value={metrics.activeUsers}
           previousValue={previousMetrics?.activeUsers}
-          icon={Users}
+          icon={<Users className="h-5 w-5 text-primary" />}
         />
         <MetricCard
           label="Time to First Action"
           value={metrics.timeToFirstAction}
           previousValue={previousMetrics?.timeToFirstAction}
-          icon={Clock}
+          icon={<Clock className="h-5 w-5 text-primary" />}
           format="days"
         />
         <MetricCard
           label="Support Tickets"
           value={metrics.supportTickets}
           previousValue={previousMetrics?.supportTickets}
-          icon={Zap}
+          icon={<Zap className="h-5 w-5 text-primary" />}
         />
         <MetricCard
           label="NPS Score"
           value={metrics.nps}
           previousValue={previousMetrics?.nps}
-          icon={TrendingUp}
+          icon={<TrendingUp className="h-5 w-5 text-primary" />}
         />
       </div>
 

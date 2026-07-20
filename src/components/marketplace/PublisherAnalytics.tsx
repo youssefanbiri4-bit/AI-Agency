@@ -33,25 +33,25 @@ export function PublisherAnalytics({ stats, className }: PublisherAnalyticsProps
         <StatCard
           label="Published Agents"
           value={stats.totalPublished}
-          icon={Users}
+          icon={<Users className="h-5 w-5" />}
           color="primary"
         />
         <StatCard
           label="Total Installs"
           value={stats.totalInstalls}
-          icon={Download}
+          icon={<Download className="h-5 w-5" />}
           color="success"
         />
         <StatCard
           label="Total Revenue"
           value={`$${stats.totalRevenue.toFixed(2)}`}
-          icon={DollarSign}
+          icon={<DollarSign className="h-5 w-5" />}
           color="warning"
         />
         <StatCard
           label="Average Rating"
           value={stats.averageRating > 0 ? stats.averageRating.toFixed(1) : 'N/A'}
-          icon={Star}
+          icon={<Star className="h-5 w-5" />}
           color="info"
         />
       </div>
@@ -107,17 +107,17 @@ export function PublisherAnalytics({ stats, className }: PublisherAnalyticsProps
         />
         <div className="space-y-3 p-6">
           <Tip
-            icon={TrendingUp}
+            icon={<TrendingUp className="h-4 w-4 text-primary" />}
             title="Set competitive pricing"
             description="Research similar agents and price competitively. Free agents build reputation, paid agents generate revenue."
           />
           <Tip
-            icon={Star}
+            icon={<Star className="h-4 w-4 text-primary" />}
             title="Earn 5-star ratings"
             description="High-quality agents with good reviews rank higher and get more installs."
           />
           <Tip
-            icon={BarChart3}
+            icon={<BarChart3 className="h-4 w-4 text-primary" />}
             title="Track your analytics"
             description="Monitor install trends and adjust your strategy based on what works."
           />
@@ -132,12 +132,12 @@ export function PublisherAnalytics({ stats, className }: PublisherAnalyticsProps
 function StatCard({
   label,
   value,
-  icon: Icon,
+  icon,
   color,
 }: {
   label: string;
   value: string | number;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ReactNode;
   color: 'primary' | 'success' | 'warning' | 'info';
 }) {
   const colorStyles: Record<string, string> = {
@@ -151,7 +151,7 @@ function StatCard({
     <div className="rounded-xl border border-border bg-surface-elevated p-5">
       <div className="flex items-center justify-between">
         <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg', colorStyles[color])}>
-          <Icon className="h-5 w-5" />
+          {icon}
         </div>
       </div>
       <p className="mt-4 text-2xl font-black text-foreground">{value}</p>
@@ -163,18 +163,18 @@ function StatCard({
 // ─── Tip ────────────────────────────────────────────────────────────
 
 function Tip({
-  icon: Icon,
+  icon,
   title,
   description,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ReactNode;
   title: string;
   description: string;
 }) {
   return (
     <div className="flex gap-3">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-        <Icon className="h-4 w-4 text-primary" />
+        {icon}
       </div>
       <div>
         <h4 className="font-bold text-foreground">{title}</h4>

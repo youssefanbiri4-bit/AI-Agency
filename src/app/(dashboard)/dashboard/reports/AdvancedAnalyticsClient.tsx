@@ -218,18 +218,18 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricTile label="Total content items" value={filtered.content.length} helper="Filtered workspace records" icon={Layers3} />
-        <MetricTile label="Ready content" value={readyContent} helper="Ready for next workflow step" icon={CheckCircle2} />
-        <MetricTile label="Scheduled content" value={scheduledContent} helper="Items with scheduled state" icon={CalendarClock} />
-        <MetricTile label="Published content" value={publishedContent} helper="Provider-confirmed records" icon={CheckCircle2} />
-        <MetricTile label="Failed / setup required" value={failedOrSetup} helper="Needs operator review" icon={AlertTriangle} />
-        <MetricTile label="Total tasks" value={filtered.tasks.length} helper="Task records in range" icon={Clipboard} />
-        <MetricTile label="Completed tasks" value={completedTasks} helper="Completed task status only" icon={CheckCircle2} />
-        <MetricTile label="Tasks needing review" value={tasksNeedingReview} helper="Manager review queue" icon={Gauge} />
-        <MetricTile label="Active projects" value={activeProjects} helper="Project status is active" icon={FolderKanban} />
-        <MetricTile label="Deployed releases" value={deployedReleases} helper="Release status is deployed" icon={ExternalLink} />
-        <MetricTile label="Provider blockers" value={providerBlockers} helper="Configured provider readiness" icon={RadioTower} />
-        <MetricTile label="Latest backup status" value={latestBackup ? label(latestBackup.status) : 'No backup'} helper={latestBackup ? formatDateTime(latestBackup.created_at) : 'No backup history yet'} icon={ShieldCheck} />
+        <MetricTile label="Total content items" value={filtered.content.length} helper="Filtered workspace records" icon={<Layers3 className="h-5 w-5" />} />
+        <MetricTile label="Ready content" value={readyContent} helper="Ready for next workflow step" icon={<CheckCircle2 className="h-5 w-5" />} />
+        <MetricTile label="Scheduled content" value={scheduledContent} helper="Items with scheduled state" icon={<CalendarClock className="h-5 w-5" />} />
+        <MetricTile label="Published content" value={publishedContent} helper="Provider-confirmed records" icon={<CheckCircle2 className="h-5 w-5" />} />
+        <MetricTile label="Failed / setup required" value={failedOrSetup} helper="Needs operator review" icon={<AlertTriangle className="h-5 w-5" />} />
+        <MetricTile label="Total tasks" value={filtered.tasks.length} helper="Task records in range" icon={<Clipboard className="h-5 w-5" />} />
+        <MetricTile label="Completed tasks" value={completedTasks} helper="Completed task status only" icon={<CheckCircle2 className="h-5 w-5" />} />
+        <MetricTile label="Tasks needing review" value={tasksNeedingReview} helper="Manager review queue" icon={<Gauge className="h-5 w-5" />} />
+        <MetricTile label="Active projects" value={activeProjects} helper="Project status is active" icon={<FolderKanban className="h-5 w-5" />} />
+        <MetricTile label="Deployed releases" value={deployedReleases} helper="Release status is deployed" icon={<ExternalLink className="h-5 w-5" />} />
+        <MetricTile label="Provider blockers" value={providerBlockers} helper="Configured provider readiness" icon={<RadioTower className="h-5 w-5" />} />
+        <MetricTile label="Latest backup status" value={latestBackup ? label(latestBackup.status) : 'No backup'} helper={latestBackup ? formatDateTime(latestBackup.created_at) : 'No backup history yet'} icon={<ShieldCheck className="h-5 w-5" />} />
       </div>
 
       {activeTab === 'advanced' ? (
@@ -241,10 +241,10 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
               <CountBars counts={analytics.contentTypeCounts} total={filtered.content.length} emptyText="No content type data yet" />
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricTile label="Missing creative assets" value={missingCreativeAssets} icon={AlertTriangle} />
-              <MetricTile label="Missing schedule time" value={missingSchedule} icon={CalendarClock} />
-              <MetricTile label="Blocked by provider" value={blockedByProvider} icon={RadioTower} />
-              <MetricTile label="Manual-only items" value={manualOnly} icon={Clipboard} />
+              <MetricTile label="Missing creative assets" value={missingCreativeAssets} icon={<AlertTriangle className="h-5 w-5" />} />
+              <MetricTile label="Missing schedule time" value={missingSchedule} icon={<CalendarClock className="h-5 w-5" />} />
+              <MetricTile label="Blocked by provider" value={blockedByProvider} icon={<RadioTower className="h-5 w-5" />} />
+              <MetricTile label="Manual-only items" value={manualOnly} icon={<Clipboard className="h-5 w-5" />} />
             </div>
           </AnalyticsSection>
 
@@ -274,12 +274,12 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
 
           <AnalyticsSection title="Scheduler Analytics" description="Read-only scheduler status from Content Studio records. Scheduler behavior is unchanged.">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <MetricTile label="Scheduled pending" value={scheduledPending} icon={CalendarClock} />
-              <MetricTile label="Scheduler succeeded" value={schedulerSucceeded} icon={CheckCircle2} />
-              <MetricTile label="Scheduler failed" value={schedulerFailed} icon={AlertTriangle} />
-              <MetricTile label="Setup required" value={filtered.content.filter((item) => item.scheduled_execution_status === 'setup_required').length} icon={RadioTower} />
-              <MetricTile label="Approval pending" value={filtered.content.filter((item) => item.scheduled_execution_status === 'approval_pending').length} icon={Gauge} />
-              <MetricTile label="Processing" value={schedulerProcessing} icon={Sparkles} />
+              <MetricTile label="Scheduled pending" value={scheduledPending} icon={<CalendarClock className="h-5 w-5" />} />
+              <MetricTile label="Scheduler succeeded" value={schedulerSucceeded} icon={<CheckCircle2 className="h-5 w-5" />} />
+              <MetricTile label="Scheduler failed" value={schedulerFailed} icon={<AlertTriangle className="h-5 w-5" />} />
+              <MetricTile label="Setup required" value={filtered.content.filter((item) => item.scheduled_execution_status === 'setup_required').length} icon={<RadioTower className="h-5 w-5" />} />
+              <MetricTile label="Approval pending" value={filtered.content.filter((item) => item.scheduled_execution_status === 'approval_pending').length} icon={<Gauge className="h-5 w-5" />} />
+              <MetricTile label="Processing" value={schedulerProcessing} icon={<Sparkles className="h-5 w-5" />} />
             </div>
             <p className="mt-4 rounded-2xl border border-black/7 bg-[#F1F7F7]/62 p-4 text-sm font-semibold leading-6 text-black/58">
               {data.schedulerLine}
@@ -309,12 +309,12 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
           </AnalyticsSection>
           <AnalyticsSection title="Recovery Analytics" description="Operational recovery signals from failed content, notifications, and provider attempts.">
             <div className="grid gap-3 sm:grid-cols-2">
-              <MetricTile label="Failed content" value={filtered.content.filter((item) => item.status === 'failed').length} icon={AlertTriangle} />
-              <MetricTile label="Setup required" value={filtered.content.filter((item) => item.status === 'setup_required').length} icon={RadioTower} />
-              <MetricTile label="Approval pending" value={filtered.content.filter((item) => item.status === 'approval_pending').length} icon={Gauge} />
-              <MetricTile label="Token missing attempts" value={filtered.attempts.filter((attempt) => attempt.status === 'token_missing').length} icon={ShieldCheck} />
-              <MetricTile label="Manual-only skipped" value={filtered.attempts.filter((attempt) => attempt.status === 'manual_only').length} icon={Clipboard} />
-              <MetricTile label="Unsupported attempts" value={filtered.attempts.filter((attempt) => attempt.status === 'unsupported').length} icon={AlertTriangle} />
+              <MetricTile label="Failed content" value={filtered.content.filter((item) => item.status === 'failed').length} icon={<AlertTriangle className="h-5 w-5" />} />
+              <MetricTile label="Setup required" value={filtered.content.filter((item) => item.status === 'setup_required').length} icon={<RadioTower className="h-5 w-5" />} />
+              <MetricTile label="Approval pending" value={filtered.content.filter((item) => item.status === 'approval_pending').length} icon={<Gauge className="h-5 w-5" />} />
+              <MetricTile label="Token missing attempts" value={filtered.attempts.filter((attempt) => attempt.status === 'token_missing').length} icon={<ShieldCheck className="h-5 w-5" />} />
+              <MetricTile label="Manual-only skipped" value={filtered.attempts.filter((attempt) => attempt.status === 'manual_only').length} icon={<Clipboard className="h-5 w-5" />} />
+              <MetricTile label="Unsupported attempts" value={filtered.attempts.filter((attempt) => attempt.status === 'unsupported').length} icon={<AlertTriangle className="h-5 w-5" />} />
             </div>
             <div className="mt-5">
               <CountBars counts={analytics.notificationSeverityCounts} total={filtered.notifications.length} emptyText="No notification data yet" />
@@ -334,10 +334,10 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
           </AnalyticsSection>
           <AnalyticsSection title="Prompt Library Analytics" description="Prompt counts by safe metadata only. Prompt body content is not displayed here.">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricTile label="Total prompts" value={filtered.prompts.length} icon={Library} />
-              <MetricTile label="Favorite prompts" value={filtered.prompts.filter((prompt) => prompt.is_favorite).length} icon={Sparkles} />
-              <MetricTile label="Most copied count" value={Math.max(0, ...filtered.prompts.map((prompt) => prompt.usage_count))} icon={Clipboard} />
-              <MetricTile label="Recently used" value={filtered.prompts.filter((prompt) => prompt.last_used_at && inRange(prompt.last_used_at, range)).length} icon={Gauge} />
+              <MetricTile label="Total prompts" value={filtered.prompts.length} icon={<Library className="h-5 w-5" />} />
+              <MetricTile label="Favorite prompts" value={filtered.prompts.filter((prompt) => prompt.is_favorite).length} icon={<Sparkles className="h-5 w-5" />} />
+              <MetricTile label="Most copied count" value={Math.max(0, ...filtered.prompts.map((prompt) => prompt.usage_count))} icon={<Clipboard className="h-5 w-5" />} />
+              <MetricTile label="Recently used" value={filtered.prompts.filter((prompt) => prompt.last_used_at && inRange(prompt.last_used_at, range)).length} icon={<Gauge className="h-5 w-5" />} />
             </div>
             <div className="mt-5 grid gap-5 lg:grid-cols-2">
               <CountBars counts={analytics.promptCategoryCounts} total={filtered.prompts.length} emptyText="No prompt categories yet" />
@@ -346,12 +346,12 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
           </AnalyticsSection>
           <AnalyticsSection title="Creative Assets Analytics" description="Metadata-only asset analytics. Binary files are not loaded or exported.">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricTile label="Total assets" value={filtered.assets.length} icon={Layers3} />
-              <MetricTile label="Image assets" value={filtered.assets.filter((asset) => !asset.is_video).length} icon={Layers3} />
-              <MetricTile label="Video assets" value={filtered.assets.filter((asset) => asset.is_video).length} icon={Layers3} />
-              <MetricTile label="Linked assets" value={filtered.assets.filter((asset) => asset.is_linked).length} icon={CheckCircle2} />
-              <MetricTile label="Unlinked assets" value={unlinkedAssets} icon={AlertTriangle} />
-              <MetricTile label="Missing media URL" value={assetsMissingMedia} icon={AlertTriangle} />
+              <MetricTile label="Total assets" value={filtered.assets.length} icon={<Layers3 className="h-5 w-5" />} />
+              <MetricTile label="Image assets" value={filtered.assets.filter((asset) => !asset.is_video).length} icon={<Layers3 className="h-5 w-5" />} />
+              <MetricTile label="Video assets" value={filtered.assets.filter((asset) => asset.is_video).length} icon={<Layers3 className="h-5 w-5" />} />
+              <MetricTile label="Linked assets" value={filtered.assets.filter((asset) => asset.is_linked).length} icon={<CheckCircle2 className="h-5 w-5" />} />
+              <MetricTile label="Unlinked assets" value={unlinkedAssets} icon={<AlertTriangle className="h-5 w-5" />} />
+              <MetricTile label="Missing media URL" value={assetsMissingMedia} icon={<AlertTriangle className="h-5 w-5" />} />
             </div>
             <div className="mt-5 grid gap-5 lg:grid-cols-2">
               <CountBars counts={analytics.assetTypeCounts} total={filtered.assets.length} emptyText="No asset type data yet" />
@@ -373,13 +373,13 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
         <div className="grid gap-6 xl:grid-cols-2">
           <AnalyticsSection title="Project Analytics" description="Workspace project readiness and operational link coverage.">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <MetricTile label="Total projects" value={filtered.projects.length} icon={FolderKanban} />
-              <MetricTile label="Active" value={filtered.projects.filter((project) => project.status === 'active').length} icon={CheckCircle2} />
-              <MetricTile label="Planning" value={filtered.projects.filter((project) => project.status === 'planning').length} icon={Gauge} />
-              <MetricTile label="Ready to deploy" value={filtered.projects.filter((project) => project.status === 'ready_to_deploy').length} icon={ExternalLink} />
-              <MetricTile label="Deployed" value={filtered.projects.filter((project) => project.status === 'deployed').length} icon={CheckCircle2} />
-              <MetricTile label="Missing GitHub URL" value={filtered.projects.filter((project) => !project.github_url).length} icon={AlertTriangle} />
-              <MetricTile label="Missing production URL" value={filtered.projects.filter((project) => !project.production_url).length} icon={AlertTriangle} />
+              <MetricTile label="Total projects" value={filtered.projects.length} icon={<FolderKanban className="h-5 w-5" />} />
+              <MetricTile label="Active" value={filtered.projects.filter((project) => project.status === 'active').length} icon={<CheckCircle2 className="h-5 w-5" />} />
+              <MetricTile label="Planning" value={filtered.projects.filter((project) => project.status === 'planning').length} icon={<Gauge className="h-5 w-5" />} />
+              <MetricTile label="Ready to deploy" value={filtered.projects.filter((project) => project.status === 'ready_to_deploy').length} icon={<ExternalLink className="h-5 w-5" />} />
+              <MetricTile label="Deployed" value={filtered.projects.filter((project) => project.status === 'deployed').length} icon={<CheckCircle2 className="h-5 w-5" />} />
+              <MetricTile label="Missing GitHub URL" value={filtered.projects.filter((project) => !project.github_url).length} icon={<AlertTriangle className="h-5 w-5" />} />
+              <MetricTile label="Missing production URL" value={filtered.projects.filter((project) => !project.production_url).length} icon={<AlertTriangle className="h-5 w-5" />} />
             </div>
             <div className="mt-5">
               <CountBars counts={analytics.projectStatusCounts} total={filtered.projects.length} emptyText="No projects yet" />
@@ -391,18 +391,18 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
               <CountBars counts={analytics.releaseTypeCounts} total={filtered.releases.length} emptyText="No release type data yet" />
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricTile label="Known issues" value={filtered.releases.filter((release) => Boolean(release.known_issues?.trim())).length} icon={AlertTriangle} />
-              <MetricTile label="Build failed" value={filtered.releases.filter((release) => release.build_status === 'failed').length} icon={AlertTriangle} />
-              <MetricTile label="Typecheck failed" value={filtered.releases.filter((release) => release.typecheck_status === 'failed').length} icon={AlertTriangle} />
-              <MetricTile label="Deploy failed" value={filtered.releases.filter((release) => release.deploy_status === 'failed').length} icon={AlertTriangle} />
+              <MetricTile label="Known issues" value={filtered.releases.filter((release) => Boolean(release.known_issues?.trim())).length} icon={<AlertTriangle className="h-5 w-5" />} />
+              <MetricTile label="Build failed" value={filtered.releases.filter((release) => release.build_status === 'failed').length} icon={<AlertTriangle className="h-5 w-5" />} />
+              <MetricTile label="Typecheck failed" value={filtered.releases.filter((release) => release.typecheck_status === 'failed').length} icon={<AlertTriangle className="h-5 w-5" />} />
+              <MetricTile label="Deploy failed" value={filtered.releases.filter((release) => release.deploy_status === 'failed').length} icon={<AlertTriangle className="h-5 w-5" />} />
             </div>
           </AnalyticsSection>
           <AnalyticsSection title="GitHub Workflow Analytics" description="Read-only workflow analytics from imported issues and saved PR reviews. No GitHub writes occur.">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricTile label="Linked GitHub issues" value={filtered.githubIssueLinks.length} icon={GitPullRequest} />
-              <MetricTile label="Issues converted to tasks" value={filtered.githubIssueLinks.length} icon={Clipboard} />
-              <MetricTile label="PR reviews" value={filtered.pullRequestReviews.length} icon={GitPullRequest} />
-              <MetricTile label="High risk PR reviews" value={filtered.pullRequestReviews.filter((review) => ['high', 'critical'].includes(review.risk_level)).length} icon={AlertTriangle} />
+              <MetricTile label="Linked GitHub issues" value={filtered.githubIssueLinks.length} icon={<GitPullRequest className="h-5 w-5" />} />
+              <MetricTile label="Issues converted to tasks" value={filtered.githubIssueLinks.length} icon={<Clipboard className="h-5 w-5" />} />
+              <MetricTile label="PR reviews" value={filtered.pullRequestReviews.length} icon={<GitPullRequest className="h-5 w-5" />} />
+              <MetricTile label="High risk PR reviews" value={filtered.pullRequestReviews.filter((review) => ['high', 'critical'].includes(review.risk_level)).length} icon={<AlertTriangle className="h-5 w-5" />} />
             </div>
             <div className="mt-5 grid gap-5 lg:grid-cols-2">
               <CountBars counts={analytics.prRiskCounts} total={filtered.pullRequestReviews.length} emptyText="No PR review risk data yet" />
@@ -416,10 +416,10 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
         <div className="grid gap-6 xl:grid-cols-2">
           <AnalyticsSection title="Backup Analytics" description="Backup metadata only. Full backup contents and secrets are not displayed.">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricTile label="Latest backup date" value={latestBackup ? formatDateTime(latestBackup.created_at) : 'No backup'} icon={ShieldCheck} />
-              <MetricTile label="Backup records" value={filtered.backups.length} icon={Clipboard} />
-              <MetricTile label="Backup warnings" value={filtered.backups.filter((backup) => Boolean(backup.warnings?.trim())).length} icon={AlertTriangle} />
-              <MetricTile label="Secrets excluded" value="Yes" helper="Backup Center redacts sensitive fields" icon={ShieldCheck} />
+              <MetricTile label="Latest backup date" value={latestBackup ? formatDateTime(latestBackup.created_at) : 'No backup'} icon={<ShieldCheck className="h-5 w-5" />} />
+              <MetricTile label="Backup records" value={filtered.backups.length} icon={<Clipboard className="h-5 w-5" />} />
+              <MetricTile label="Backup warnings" value={filtered.backups.filter((backup) => Boolean(backup.warnings?.trim())).length} icon={<AlertTriangle className="h-5 w-5" />} />
+              <MetricTile label="Secrets excluded" value="Yes" helper="Backup Center redacts sensitive fields" icon={<ShieldCheck className="h-5 w-5" />} />
             </div>
             <div className="mt-5">
               <DataTable
@@ -436,10 +436,10 @@ export function AdvancedAnalyticsClient({ data }: { data: AdvancedAnalyticsData 
           </AnalyticsSection>
           <AnalyticsSection title="Security & System Health Analytics" description="Security audit summaries and current health snapshot. No secrets or raw credentials are shown.">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricTile label="Security issues" value={securityIssues} icon={ShieldCheck} />
-              <MetricTile label="Audit records" value={filtered.securityLogs.length} icon={Clipboard} />
-              <MetricTile label="System health" value={data.systemHealth ? `${data.systemHealth.score}%` : 'Unavailable'} helper={data.systemHealth?.label} icon={Gauge} />
-              <MetricTile label="Needs setup checks" value={data.systemHealth?.needsSetup ?? 0} icon={AlertTriangle} />
+              <MetricTile label="Security issues" value={securityIssues} icon={<ShieldCheck className="h-5 w-5" />} />
+              <MetricTile label="Audit records" value={filtered.securityLogs.length} icon={<Clipboard className="h-5 w-5" />} />
+              <MetricTile label="System health" value={data.systemHealth ? `${data.systemHealth.score}%` : 'Unavailable'} helper={data.systemHealth?.label} icon={<Gauge className="h-5 w-5" />} />
+              <MetricTile label="Needs setup checks" value={data.systemHealth?.needsSetup ?? 0} icon={<AlertTriangle className="h-5 w-5" />} />
             </div>
             <div className="mt-5 grid gap-5 lg:grid-cols-2">
               <CountBars counts={analytics.securitySeverityCounts} total={filtered.securityLogs.length} emptyText="No security audit records yet" />
