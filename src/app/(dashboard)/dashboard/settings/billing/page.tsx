@@ -222,7 +222,7 @@ export default function BillingPage() {
       <SeatBillingInfo memberCount={memberCount} currentPlanId={currentPlanId} />
 
       {/* ===== Enforcement ===== */}
-      <HardLimitsSection currentPlanId={currentPlanId} />
+      <HardLimitsSection />
 
       <div className="text-xs text-foreground-muted">
         This is an internal platform. Usage information is for cost-awareness and planning purposes only.
@@ -682,7 +682,7 @@ function SeatBillingInfo({
   );
 }
 
-function HardLimitsSection(_props: { currentPlanId: BillingPlan }) {
+function HardLimitsSection() {
   const limits = [
     { label: 'AI Generations', description: 'Soft warning at threshold — never blocked' },
     { label: 'Tasks', description: 'Soft warning at threshold — never blocked' },

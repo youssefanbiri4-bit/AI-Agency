@@ -3,17 +3,13 @@ import Link from 'next/link';
 import { generatePageMetadata } from '@/lib/seo/metadata';
 import {
   ArrowRight,
-  BarChart3,
   Bell,
   Bot,
   CheckCircle2,
   ClipboardCheck,
   FileSearch,
-  Globe,
-  Layers3,
   LineChart,
   LockKeyhole,
-  MessageSquare,
   MonitorCheck,
   ShieldCheck,
   Sparkles,

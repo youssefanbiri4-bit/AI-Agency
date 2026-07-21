@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useMemo, useCallback } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { Department, RBACRole } from '@/types/auth';
 

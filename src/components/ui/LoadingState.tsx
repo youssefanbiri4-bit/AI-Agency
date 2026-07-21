@@ -6,10 +6,8 @@ import {
   Loader2,
   Send,
   Sparkles,
-  Wand2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Skeleton } from './Skeleton';
 
 // ---------------------------------------------------------------------------
 // Variant & Props

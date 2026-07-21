@@ -58,13 +58,7 @@ export const FORBIDDEN_PUBLIC_PREFIXES = [
   'CREDENTIALS',
 ] as const;
 
-interface EnvVarCheck {
-  name: string;
-  isPublic: boolean;
-  isSet: boolean;
-  /** If set but looks suspicious */
-  warning?: string;
-}
+
 
 /**
  * Scan environment variables for potential secrets exposure.

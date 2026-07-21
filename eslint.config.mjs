@@ -18,6 +18,8 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
       // Temporary: will be re-enabled as error after data-fetching layer (React Query / SWR)
       // See TODO in MfaSection.tsx and SessionManagementPanel.tsx
       "react-hooks/set-state-in-effect": "warn",

@@ -120,3 +120,17 @@ export async function register() {
     );
   }
 }
+
+export function onRequestError(
+  error: unknown,
+  request: { url: string; method: string; headers: Record<string, string> },
+  context?: Record<string, unknown>
+): void {
+  Sentry.withScope((scope) => {
+    scope.setExtra('request', request);
+    if (context) {
+      scope.setExtra('context', context);
+    }
+    Sentry.captureException(error);
+  });
+}

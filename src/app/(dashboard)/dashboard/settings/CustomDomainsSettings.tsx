@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useActionState } from 'react';
-import { Globe, CheckCircle, XCircle, Clock, AlertTriangle, Plus, Trash2, ExternalLink } from 'lucide-react';
+import { Globe, CheckCircle, XCircle, Clock, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/Card';
-import { Button, buttonStyles } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { addCustomDomainAction, removeCustomDomainAction } from '@/app/(dashboard)/dashboard/settings/actions/white-label';
 import type { WorkspaceBrandingSettingsState } from '@/app/(dashboard)/dashboard/settings/actions/_shared';
 import type { CustomDomain, DomainStatus } from '@/types/white-label';
@@ -76,7 +76,6 @@ export function CustomDomainsSettings({
   };
 
   const domains = state.settings?.customDomains ?? initialData.settings?.customDomains ?? [];
-  const [showInstructions, setShowInstructions] = useState<string | null>(null);
 
   return (
     <Card>

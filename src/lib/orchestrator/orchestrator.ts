@@ -5,11 +5,11 @@ import { logger } from '@/lib/logger';
 import { increment, timing } from '@/lib/monitoring/metrics';
 import { generateTextWithOpenAI, type GenerateTextProviderInput } from '@/lib/ai/text-provider';
 import { executeWithClaude, type ClaudeExecutorInput } from '@/features/agents/services/claude-executor';
-import { estimateOpenAICost, estimateClaudeCost, recordCost } from '@/lib/usage/cost-tracking';
+import { estimateClaudeCost, recordCost } from '@/lib/usage/cost-tracking';
 import { checkCircuit, recordCircuitSuccess, recordCircuitFailure } from '@/lib/circuit-breaker';
 
 import { ToolRegistry, globalToolRegistry } from './tool-registry';
-import { withRetry, withTimeout, classifyError, createErrorResponse } from './error-handler';
+import { withRetry, withTimeout } from './error-handler';
 import {
   OrchestratorError,
   OrchestratorErrorCode,
@@ -18,7 +18,6 @@ import {
   type OrchestrationStep,
   type OrchestrationResult,
   type ToolCall,
-  type ToolCallStatus,
   type ToolExecutionContext,
   type ToolResult,
   type ExecutionHistoryEntry,
@@ -198,9 +197,11 @@ export class AgentFlowOrchestrator {
       stepCount: plan.steps.length,
     });
 
-    this.config.enableMetrics && increment('orchestrator.plan.started', {
-      stepCount: String(plan.steps.length),
-    });
+    if (this.config.enableMetrics) {
+      increment('orchestrator.plan.started', {
+        stepCount: String(plan.steps.length),
+      });
+    }
 
     const levels = this.resolveExecutionOrder(plan.steps);
     const results: ToolCall[] = [];
@@ -309,8 +310,6 @@ export class AgentFlowOrchestrator {
       if (degree === 0) queue.push(id);
     }
 
-    let processed = 0;
-
     while (queue.length > 0) {
       const currentLevel: OrchestrationStep[] = [];
       const levelSize = queue.length;
@@ -319,8 +318,6 @@ export class AgentFlowOrchestrator {
         const nodeId = queue.shift()!;
         const step = stepMap.get(nodeId);
         if (step) currentLevel.push(step);
-        processed++;
-
         for (const neighbor of adjList.get(nodeId) ?? []) {
           const newDegree = (inDegree.get(neighbor) ?? 1) - 1;
           inDegree.set(neighbor, newDegree);
@@ -558,8 +555,6 @@ export class AgentFlowOrchestrator {
           );
         }
 
-        const startTime = Date.now();
-
         const result = await withTimeout(
           () => this.callAgentTool(toolDef, ctx),
           ctx.timeoutMs,
@@ -684,7 +679,6 @@ ${renderedParams}
       );
     }
 
-    const cost = estimateOpenAICost(generationResult.model ?? undefined);
     await recordCost({
       workspaceId: ctx.workspaceId,
       operationType: 'orchestrator_tool',
@@ -755,7 +749,6 @@ ${renderedParams}
           totalPlans
         : 0;
 
-    const cacheHits = 0;
     const errorRate = totalPlans > 0 ? totalFail / totalPlans : 0;
 
     const toolUsageObj: Record<string, number> = {};

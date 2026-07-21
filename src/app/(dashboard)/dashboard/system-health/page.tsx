@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import {
-  Activity,
   AlertTriangle,
   ArrowRight,
   Bot,

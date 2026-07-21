@@ -62,3 +62,4 @@ tmp/
 next-env.d.ts
 supabase/.temp/
 .aider*
+.env*

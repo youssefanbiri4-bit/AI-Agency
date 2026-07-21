@@ -7,7 +7,6 @@ import { escapeCsvField } from '@/lib/csv-utils';
 import {
   bulkDeleteContentStudioItems as dataBulkDeleteContentStudioItems,
   bulkDuplicateContentStudioItems as dataBulkDuplicateContentStudioItems,
-  deleteContentStudioItem,
 } from '@/features/content-studio/data/content-studio';
 import { logSecurityAuditEvent } from '@/lib/security-audit-log';
 import { incrementUsage } from '@/lib/usage/quotas';

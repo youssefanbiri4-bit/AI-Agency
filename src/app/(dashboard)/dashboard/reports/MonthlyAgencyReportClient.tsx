@@ -362,7 +362,6 @@ export function MonthlyAgencyReportClient({
   schedulerLine,
 }: MonthlyAgencyReportClientProps) {
   const toast = useToast();
-  const [now, setNow] = useState<Date | null>(null);
   const [period, setPeriod] = useState<PeriodPreset>('this_month');
   const [reportType, setReportType] = useState<ReportType>('monthly');
   const [customStart, setCustomStart] = useState('');
@@ -370,7 +369,6 @@ export function MonthlyAgencyReportClient({
 
   useEffect(() => {
     const current = new Date();
-    setNow(current);
     setCustomStart(toDateInput(new Date(current.getFullYear(), current.getMonth(), 1)));
     setCustomEnd(toDateInput(current));
   }, []);

@@ -171,7 +171,6 @@ function scoreInputCompleteness(workflow: AgentWorkflowDraft): {
   score: number;
   analysis: InputHealthAnalysis;
 } {
-  const allRequired: Array<{ stepIndex: number; stepName: string; inputs: string[] }> = [];
   const allCovered: Set<string> = new Set();
   const missingByStep: Array<{ stepIndex: number; stepName: string; inputs: string[] }> = [];
   let totalInputs = 0;

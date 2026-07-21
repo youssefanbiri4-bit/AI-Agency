@@ -201,7 +201,7 @@ async function executeNode(
   node: AgentOrchestrationNode,
   outputs: Map<string, AgentNodeResult>,
   workspaceId: string,
-  userId?: string | null,
+  _userId?: string | null,
 ): Promise<AgentNodeResult> {
   const startTime = Date.now();
   const result: AgentNodeResult = {

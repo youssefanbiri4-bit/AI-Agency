@@ -4,7 +4,6 @@
  */
 
 import 'server-only';
-import { assertProductionGate } from '@/lib/production/gate';
 import { requireWorkspaceAccessWithRBAC, getRBACContext, hasPermission } from '@/lib/auth/rbac';
 // Note: workspace context resolved inside the delegated actions for RBAC/dept
 import {

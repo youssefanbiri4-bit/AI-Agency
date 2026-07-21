@@ -218,7 +218,6 @@ class AgentAnalyticsEngine {
     // Longer periods should use larger buckets for meaningful aggregation
     if (logs.length === 0) return [];
 
-    const now = new Date();
     const buckets = new Map<string, { sum: number; count: number }>();
 
     for (const log of logs) {
@@ -520,9 +519,6 @@ class AgentAnalyticsEngine {
 
     // Anomalies
     const anomalies = this.detectAnomalies(period);
-
-    // Trends
-    const allDurations = recentLogs.map((l) => l.durationMs);
 
     analyticsLog.info('Analytics report generated', {
       period,

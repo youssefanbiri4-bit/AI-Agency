@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import {
   TrendingUp, TrendingDown, Minus, AlertTriangle, AlertOctagon,
-  Download, BarChart3, Users, Clock, Zap, Shield, RefreshCw,
+  Download, BarChart3, Users, Clock, Shield, RefreshCw,
 } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button, buttonStyles } from '@/components/ui/Button';
@@ -83,48 +83,6 @@ function TrendCard({ trend }: { trend: ConsumptionTrend }) {
             {trend.dailyAverage}/day avg
           </span>
           <span>Projected: {trend.projectedMonthEnd} by month end</span>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function ConsumptionChart({ data }: { data: DailyConsumption[] }) {
-  const maxTotal = Math.max(...data.map((d) => d.total), 1);
-
-  return (
-    <Card>
-      <CardHeader
-        title="Daily Consumption (30 Days)"
-        description="Stacked usage across all quota types per day"
-      />
-      <div className="p-4 pt-0">
-        <div className="flex items-end gap-px h-32">
-          {data.map((day) => {
-            const pct = (day.total / maxTotal) * 100;
-            return (
-              <div
-                key={day.date}
-                className="flex-1 min-w-0 group relative"
-                style={{ height: `${Math.max(pct, 2)}%` }}
-              >
-                <div className="w-full h-full bg-violet-500/80 rounded-t-sm hover:bg-violet-500 transition-colors" />
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-10 bg-surface-elevated border border-border rounded-lg px-3 py-2 shadow-lg text-xs whitespace-nowrap">
-                  <p className="font-bold">{new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                  <p className="text-foreground-muted">Total: {day.total}</p>
-                  {Object.entries(day.byType).filter(([, v]) => v > 0).map(([type, count]) => (
-                    <p key={type} className="text-foreground-muted">
-                      {type.replace(/_/g, ' ')}: {count}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex justify-between text-xs text-foreground-muted mt-2">
-          <span>{data[0] ? new Date(data[0].date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
-          <span>{data[data.length - 1] ? new Date(data[data.length - 1].date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
         </div>
       </div>
     </Card>

@@ -5,7 +5,7 @@ import { getWorkspace } from '@/lib/data/workspaces-server';
 import { getTaskById, updateTaskExecutionState } from '@/features/tasks/data/tasks';
 import { createErrorResponse, AppError, ErrorLevel } from '@/lib/error-handler';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { checkSlidingWindowRateLimit, buildIpRateLimitKey, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
+import { checkSlidingWindowRateLimit } from '@/lib/sliding-window-rate-limit';
 import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
 
 const jsonValueSchema: z.ZodType<import('@/types').JsonValue> = z.lazy(() =>

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { AgentType, JsonObject, JsonValue } from '@/types';
+import type { AgentType, JsonValue } from '@/types';
 export type { JsonValue };
 
 // ─── Tool System Types ──────────────────────────────────────────────────────────

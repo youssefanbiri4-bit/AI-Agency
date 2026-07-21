@@ -5,7 +5,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { snapshotSystemHealth } from '@/lib/health/system-health-check';
 
 /** Check whether the incoming request carries a valid user session. */
-async function isAuthenticated(_req: Request): Promise<boolean> {
+async function isAuthenticated(): Promise<boolean> {
   try {
     const supabase = await createSupabaseServerClient();
     const { data } = await supabase.auth.getUser();
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
   const timestamp = new Date().toISOString();
 
   try {
-    const authenticated = await isAuthenticated(req);
+    const authenticated = await isAuthenticated();
 
     if (authenticated) {
       // Authenticated: return full detailed health including service statuses.

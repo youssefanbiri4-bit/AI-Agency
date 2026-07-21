@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useActionState } from 'react';
-import { Palette, Eye, EyeOff, Upload, RotateCcw } from 'lucide-react';
+import { Palette, Eye, EyeOff } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button, buttonStyles } from '@/components/ui/Button';
 import { saveWhiteLabelAction } from '@/app/(dashboard)/dashboard/settings/actions/white-label';

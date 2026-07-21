@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useActionState } from 'react';
-import { Shield, Key, CheckCircle, XCircle, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button, buttonStyles } from '@/components/ui/Button';
-import { saveSSOProviderAction, removeSSOProviderAction } from '@/app/(dashboard)/dashboard/settings/actions/white-label';
+import { saveSSOProviderAction } from '@/app/(dashboard)/dashboard/settings/actions/white-label';
 import type { WorkspaceBrandingSettingsState } from '@/app/(dashboard)/dashboard/settings/actions/_shared';
 import type { SSOProviderConfig, SSOProviderType } from '@/types/white-label';
 import { SSO_PROVIDER_INFO, defaultSSOProviderConfig } from '@/types/white-label';
@@ -24,11 +24,11 @@ const PROVIDER_COLORS: Record<SSOProviderType, string> = {
 function ProviderCard({
   provider,
   onToggle,
-  isPending,
+  isPending: _isPending,
 }: {
   provider: SSOProviderConfig;
   onToggle: (provider: SSOProviderConfig) => void;
-  isPending: boolean;
+  isPending?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const info = SSO_PROVIDER_INFO[provider.type];

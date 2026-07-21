@@ -179,8 +179,8 @@ interface AnimatedListProps {
 export function AnimatedList({
   children,
   className,
-  staggerDelay = 80,
-  baseDelay = 0,
+  staggerDelay: _staggerDelay = 80,
+  baseDelay: _baseDelay = 0,
   as: Tag = 'div',
   animationKey,
 }: AnimatedListProps) {
@@ -242,8 +242,8 @@ export function StaggerGrid({
   children,
   className,
   columns,
-  staggerDelay = 60,
-  baseDelay = 0,
+  staggerDelay: _staggerDelay = 60,
+  baseDelay: _baseDelay = 0,
 }: StaggerGridProps) {
   return (
     <div

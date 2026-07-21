@@ -232,7 +232,6 @@ export async function generateAgentRanking(
   const { templates } = await import('@/lib/agent-library/templates');
   const maxResults = config.maxResults ?? 50;
   const includeInactive = config.includeInactive ?? false;
-  const period = config.period ?? 'monthly';
   const generatedAt = new Date().toISOString();
 
   // Score each agent across all dimensions

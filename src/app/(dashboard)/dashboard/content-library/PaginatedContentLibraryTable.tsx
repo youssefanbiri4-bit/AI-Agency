@@ -61,7 +61,6 @@ export function PaginatedContentLibraryTable({ items }: PaginatedContentLibraryT
     goToPage,
   } = usePagination(items, 50);
 
-  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
   const pageItemIds = useMemo(() => pageItems.map((item) => item.id), [pageItems]);
   const { selectedIds, toggle, toggleRange, selectAll, clear, isAllSelected, isSomeSelected } =
     useRowSelection();

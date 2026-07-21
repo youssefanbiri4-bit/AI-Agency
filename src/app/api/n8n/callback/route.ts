@@ -18,7 +18,7 @@ import type { JsonObject, JsonValue, TaskStatus } from '@/types';
 import { genericServerSetupMessage, setupBlockerMessage } from '@/lib/safe-messages';
 import { increment } from '@/lib/monitoring/metrics';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { checkSlidingWindowRateLimit, buildIpRateLimitKey, RATE_LIMIT_ACTIONS } from '@/lib/sliding-window-rate-limit';
+import { checkSlidingWindowRateLimit, buildIpRateLimitKey } from '@/lib/sliding-window-rate-limit';
 import { checkPayloadSize, PAYLOAD_LIMITS } from '@/lib/payload-limit';
 import { getRequestId, nowISO } from '@/lib/api-response';
 import {
