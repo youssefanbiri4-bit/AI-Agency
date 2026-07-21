@@ -13,7 +13,7 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
-vi.mock('@/lib/data/tasks', () => ({
+vi.mock('@/features/tasks/data/tasks', () => ({
   listTasks: (...args: unknown[]) => listTasksMock(...args),
   markStaleProcessingTaskFailed: (...args: unknown[]) => markStaleProcessingTaskFailedMock(...args),
 }));

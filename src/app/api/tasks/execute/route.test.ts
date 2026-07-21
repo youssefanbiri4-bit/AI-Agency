@@ -12,7 +12,7 @@ vi.mock('@/lib/data/workspaces-server', () => ({
   getWorkspace: vi.fn(),
 }));
 
-vi.mock('@/lib/data/tasks', () => ({
+vi.mock('@/features/tasks/data/tasks', () => ({
   updateTaskExecutionState: vi.fn().mockResolvedValue({ data: { id: 'task-1' }, error: null }),
   getTaskById: vi.fn().mockResolvedValue({ data: { id: 'task-1' }, error: null }),
 }));

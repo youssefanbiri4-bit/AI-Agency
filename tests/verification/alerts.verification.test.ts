@@ -85,11 +85,11 @@ describe('Alerts — dispatchAlert routing', () => {
     expect(resendCall).toBeTruthy();
     expect(slackCall).toBeTruthy();
 
-    const slackBody = JSON.parse(String((slackCall![1] as any).body));
+    const slackBody = JSON.parse(String((slackCall![1] as { body: string }).body));
     expect(slackBody.text).toBe('Disk full');
     expect(JSON.stringify(slackBody)).toContain('ws-123');
 
-    const emailBody = JSON.parse(String((resendCall![1] as any).body));
+    const emailBody = JSON.parse(String((resendCall![1] as { body: string }).body));
     expect(emailBody.subject).toContain('[CRITICAL]');
     expect(emailBody.to).toContain('ops@example.com');
   });
@@ -118,7 +118,7 @@ describe('Alerts — health degradation + error rate', () => {
       String(c[0]).includes('hooks.slack.com'),
     );
     expect(call).toBeTruthy();
-    const body = JSON.parse(String((call![1] as any).body));
+    const body = JSON.parse(String((call![1] as { body: string }).body));
     expect(JSON.stringify(body)).toContain('health');
     expect(JSON.stringify(body)).toContain('ws-9');
   });
@@ -133,7 +133,7 @@ describe('Alerts — health degradation + error rate', () => {
     expect(safeFetchMock).toHaveBeenCalled();
 
     const call = safeFetchMock.mock.calls.find((c) => String(c[0]).includes('hooks.slack.com'));
-    const body = JSON.parse(String((call![1] as any).body));
+    const body = JSON.parse(String((call![1] as { body: string }).body));
     expect(JSON.stringify(body)).toContain('error-rate');
   });
 });
@@ -144,7 +144,7 @@ describe('Alerts — quota alerts', () => {
     await vi.waitFor(() => expect(safeFetchMock).toHaveBeenCalled());
 
     const call = safeFetchMock.mock.calls.find((c) => String(c[0]).includes('hooks.slack.com'));
-    const body = JSON.parse(String((call![1] as any).body));
+    const body = JSON.parse(String((call![1] as { body: string }).body));
     expect(JSON.stringify(body)).toContain('quota');
   });
 

@@ -79,7 +79,6 @@ export function useKeyboardShortcuts(
   options: KeyboardShortcutsOptions = {}
 ) {
   const { element, debug } = options;
-  const registeredRef = useRef(false);
 
   // Register shortcuts on mount, clean up on unmount
   useEffect(() => {
@@ -127,7 +126,6 @@ export function useKeyboardShortcuts(
           if (shortcut.ignoreWhenEditing && isEditing) continue;
 
           if (debug) {
-            // eslint-disable-next-line no-console
             console.log(
               `[KeyboardShortcut] ${formatShortcutForDisplay(shortcut)} → ${shortcut.description}`
             );
@@ -205,7 +203,10 @@ export function useCmdK(onToggle: () => void) {
 
 export function useCmdEnter(onSubmit: () => void, enabled = true) {
   const onSubmitRef = useRef(onSubmit);
-  onSubmitRef.current = onSubmit;
+
+  useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  }, [onSubmit]);
 
   useEffect(() => {
     if (!enabled) return;

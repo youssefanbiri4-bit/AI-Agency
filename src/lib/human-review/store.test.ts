@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 
 const storeMemoryMock = vi.fn();
 const recallMemoriesMock = vi.fn();
@@ -25,10 +25,23 @@ vi.mock('@/lib/memory/long-term', () => ({
 }));
 
 describe('human-review store (unconfigured)', () => {
+  const savedSupabaseUrl = process.env.SUPABASE_URL;
+  const savedServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   beforeEach(() => {
+    // The store decides "unconfigured" by checking these env vars, which is
+    // independent of the getSupabaseAdmin mock. Clear them so the test does
+    // not depend on the ambient environment.
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     vi.resetModules();
     storeMemoryMock.mockReset();
     recallMemoriesMock.mockReset();
+  });
+
+  afterAll(() => {
+    if (savedSupabaseUrl !== undefined) process.env.SUPABASE_URL = savedSupabaseUrl;
+    if (savedServiceRoleKey !== undefined) process.env.SUPABASE_SERVICE_ROLE_KEY = savedServiceRoleKey;
   });
 
   it('returns unconfigured result when Supabase is missing', async () => {

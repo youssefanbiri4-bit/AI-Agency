@@ -48,7 +48,7 @@ const mockDataCreateTask = vi.fn().mockResolvedValue({
   error: null,
   isConfigured: true,
 });
-vi.mock('@/lib/data/tasks', () => ({
+vi.mock('@/features/tasks/data/tasks', () => ({
   createTask: (...args: unknown[]) => mockDataCreateTask(...args),
   getTaskById: vi.fn().mockResolvedValue({ data: { id: 'task-1', status: 'pending' }, error: null }),
   listTasks: vi.fn().mockResolvedValue({ data: [], error: null, isConfigured: true }),
@@ -62,7 +62,7 @@ vi.mock('@/lib/data/agents', () => ({
 }));
 
 const mockExecuteTask = vi.fn().mockResolvedValue({ data: { success: true }, error: null, isConfigured: true });
-vi.mock('@/lib/tasks/task-service', () => ({
+vi.mock('@/features/tasks/service/task-service', () => ({
   taskService: { executeTask: (...args: unknown[]) => mockExecuteTask(...args) },
 }));
 
@@ -93,14 +93,14 @@ describe('Task Lifecycle - smoke tests', () => {
       description: 'Test',
     });
 
-    expect(mockEnforceQuota).toHaveBeenCalledWith('ws-1', 'tasks');
+    expect(mockCheckQuota).toHaveBeenCalledWith('ws-1', 'tasks');
     expect(mockAssertProductionGate).toHaveBeenCalledWith('ws-1');
     expect(mockDataCreateTask).toHaveBeenCalled();
-    expect(mockIncrementUsage).toHaveBeenCalledWith('ws-1', 'tasks', 1, 'user-1');
+    expect(mockIncrementUsage).toHaveBeenCalledWith('ws-1', 'tasks', 1);
   });
 
   it('gatedCreateTask blocks when quota exceeded', async () => {
-    mockEnforceQuota.mockRejectedValueOnce(new Error('Task quota exceeded.'));
+    mockCheckQuota.mockResolvedValueOnce({ allowed: false, current: 100, limit: 100, percentUsed: 100, message: 'Task quota exceeded.' });
 
     const { gatedCreateTask } = await import('@/actions/tasks');
     await expect(
@@ -155,14 +155,14 @@ describe('Task Lifecycle - smoke tests', () => {
     const { gatedExecuteTask } = await import('@/actions/tasks');
     await gatedExecuteTask('task-1', 'ws-1');
 
-    expect(mockEnforceQuota).toHaveBeenCalledWith('ws-1', 'ai_generations');
+    expect(mockCheckQuota).toHaveBeenCalledWith('ws-1', 'ai_generations');
     expect(mockAssertProductionGate).toHaveBeenCalledWith('ws-1');
     expect(mockExecuteTask).toHaveBeenCalledWith('task-1', 'ws-1');
-    expect(mockIncrementUsage).toHaveBeenCalledWith('ws-1', 'ai_generations', 1, 'user-1');
+    expect(mockIncrementUsage).toHaveBeenCalledWith('ws-1', 'ai_generations', 1);
   });
 
   it('gatedExecuteTask blocks when AI generation quota exceeded', async () => {
-    mockEnforceQuota.mockRejectedValueOnce(new Error('AI generation quota exceeded.'));
+    mockCheckQuota.mockResolvedValueOnce({ allowed: false, current: 100, limit: 100, percentUsed: 100, message: 'AI generation quota exceeded.' });
 
     const { gatedExecuteTask } = await import('@/actions/tasks');
     await expect(gatedExecuteTask('task-1', 'ws-1')).rejects.toThrow('AI generation quota exceeded');

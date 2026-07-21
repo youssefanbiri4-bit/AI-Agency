@@ -13,6 +13,30 @@ import { emptyDataResult, errorDataResult, type DataResult } from './types';
 
 const marketplaceLog = logger.child('data:marketplace');
 
+interface MarketplaceStatsAgentRow {
+  id: string;
+  name?: string | null;
+  role?: string | null;
+  description?: string | null;
+  category: string | null;
+  icon?: string | null;
+  accent_color?: string | null;
+  usage_count: number | null;
+  metadata: Record<string, unknown> | null;
+}
+
+interface MarketplaceSellerAgentRow {
+  id: string;
+  name: string | null;
+  usage_count: number | null;
+  metadata: Record<string, unknown> | null;
+}
+
+interface MarketplaceSellerPurchaseRow {
+  amount_usd: number | null;
+  agent_id: string | null;
+}
+
 // ─── Types ──────────────────────────────────────────────────────────
 
 export interface MarketplaceAgent {
@@ -677,9 +701,8 @@ export async function getMarketplaceStats(): Promise<DataResult<MarketplaceStats
         .eq('status', 'completed'),
     ]);
 
-    const agents = (agentsResult.data ?? []) as unknown as any[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const purchases: any[] = purchasesResult.data ?? [];
+    const agents = (agentsResult.data ?? []) as unknown as MarketplaceStatsAgentRow[];
+    const purchases: MarketplaceSellerPurchaseRow[] = (purchasesResult.data ?? []) as MarketplaceSellerPurchaseRow[];
 
     // Total agents
     const totalAgents = agents.length;
@@ -720,12 +743,12 @@ export async function getMarketplaceStats(): Promise<DataResult<MarketplaceStats
       .slice(0, 6)
       .map((agent) => ({
         id: agent.id,
-        name: agent.name,
-        role: agent.role,
-        description: agent.description,
-        category: agent.category,
-        icon: agent.icon,
-        accentColor: agent.accent_color,
+        name: agent.name ?? '',
+        role: agent.role ?? '',
+        description: agent.description ?? '',
+        category: agent.category ?? '',
+        icon: agent.icon ?? '',
+        accentColor: agent.accent_color ?? '',
         instructions: '',
         inputs: [],
         outputs: [],
@@ -806,8 +829,8 @@ export async function getPublisherAnalytics(
         .eq('status', 'completed'),
     ]);
 
-    const agents = (agentsResult.data ?? []) as unknown as any[];
-    const purchases = (purchasesResult.data ?? []) as unknown as any[];
+    const agents = (agentsResult.data ?? []) as unknown as MarketplaceSellerAgentRow[];
+    const purchases = (purchasesResult.data ?? []) as unknown as MarketplaceSellerPurchaseRow[];
 
     const totalPublished = agents.length;
     const totalInstalls = agents.reduce((sum, a) => sum + (a.usage_count ?? 0), 0);
@@ -829,12 +852,12 @@ export async function getPublisherAnalytics(
     // Top agents by revenue
     const agentRevenue = new Map<string, number>();
     for (const p of purchases) {
-      agentRevenue.set(p.agent_id, (agentRevenue.get(p.agent_id) ?? 0) + p.amount_usd);
+      agentRevenue.set(p.agent_id ?? '', (agentRevenue.get(p.agent_id ?? '') ?? 0) + (p.amount_usd ?? 0));
     }
 
     const topAgents = agents
       .map((a) => ({
-        name: a.name,
+        name: a.name ?? '',
         installs: a.usage_count ?? 0,
         revenue: agentRevenue.get(a.id) ?? 0,
       }))

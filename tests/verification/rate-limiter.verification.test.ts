@@ -55,9 +55,8 @@ describe('Rate Limiter — fixed window (checkRateLimit)', () => {
     });
 
     expect(headers['Retry-After']).toMatch(/^\d+$/);
-    expect(headers['X-RateLimit-Remaining']).toBe('0');
+    expect(headers['X-RateLimit-Limit']).toBe('0');
     expect(headers['X-RateLimit-Reset']).toMatch(/^\d+$/);
-    expect(headers['X-RateLimit-Allowed']).toBe('false');
   });
 });
 

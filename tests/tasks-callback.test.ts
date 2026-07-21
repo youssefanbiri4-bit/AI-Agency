@@ -32,8 +32,8 @@ vi.mock('@/lib/supabase-server', () => ({
 const mockUpdateTaskExecutionState = vi.fn();
 const mockCreateTaskEvent = vi.fn();
 const mockCreateNotification = vi.fn();
-vi.mock('@/lib/data/tasks', async () => {
-  const actual = await vi.importActual('@/lib/data/tasks');
+vi.mock('@/features/tasks/data/tasks', async () => {
+  const actual = await vi.importActual('@/features/tasks/data/tasks');
   return {
     ...actual,
     updateTaskExecutionState: (...args: unknown[]) => mockUpdateTaskExecutionState(...args),

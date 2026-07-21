@@ -48,12 +48,16 @@ export function resolveEffectiveDepartment(options: {
 }): Department | null {
   const { assignedDepartment, role, cookieDepartment, preferenceDepartment } = options;
 
-  // Preference wins over cookie (server-side saved preference has highest priority)
-  if (hasPermission(role, 'admin') && isDepartment(preferenceDepartment)) {
+  // A saved server-side preference has the highest priority — it wins
+  // regardless of role (the caller enforces admin-only where required).
+  if (isDepartment(preferenceDepartment)) {
     return preferenceDepartment;
   }
 
-  if (hasPermission(role, 'admin') && isDepartment(cookieDepartment)) {
+  // Only fall back to the cookie when a preference was never loaded
+  // (undefined). An explicitly-empty preference (null) means the admin
+  // has no saved override, so the stale cookie must be ignored.
+  if (preferenceDepartment === undefined && hasPermission(role, 'admin') && isDepartment(cookieDepartment)) {
     return cookieDepartment;
   }
 

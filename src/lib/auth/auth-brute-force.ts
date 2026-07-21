@@ -5,10 +5,10 @@ import {
   AUTH_BRUTE_FORCE_LIMIT,
   AUTH_BRUTE_FORCE_WINDOW_MS,
   AUTH_LOCKOUT_WINDOW_MS,
-  checkRateLimit,
-  clearRateLimitKey,
-  peekRateLimit,
   checkRateLimitLockout,
+  clearRateLimitKey,
+  inMemoryRateLimitStore,
+  peekRateLimit,
   setRateLimitLockout,
 } from '@/lib/rate-limit';
 
@@ -233,15 +233,15 @@ export async function recordAuthAttempt(
   const keys = buildAuthBruteForceKeys(action, clientIp, email);
   const emailLimits = getAuthBruteForceLimits(email);
 
+  // Auth attempt tracking is in-memory only (see peekRateLimit/checkRateLimitLockout).
+  // Write directly to the module-level singleton so reads see the increments.
   await Promise.all([
-    // IP-based — always standard limits
-    checkRateLimit({
+    inMemoryRateLimitStore.check({
       key: keys.attemptIp,
       limit: AUTH_BRUTE_FORCE_LIMIT,
       windowMs: AUTH_BRUTE_FORCE_WINDOW_MS,
     }),
-    // Email-based — may have higher limits for special emails
-    checkRateLimit({
+    inMemoryRateLimitStore.check({
       key: keys.attemptEmail,
       limit: emailLimits.limit,
       windowMs: emailLimits.windowMs,
@@ -264,14 +264,14 @@ export async function recordAuthFailure(
   const emailLimits = getAuthBruteForceLimits(email);
 
   const [ipFailure, emailFailure] = await Promise.all([
-    // IP-based — always standard limits
-    checkRateLimit({
+    // IP-based — always standard limits (in-memory only)
+    inMemoryRateLimitStore.check({
       key: keys.failureIp,
       limit: AUTH_BRUTE_FORCE_LIMIT,
       windowMs: AUTH_BRUTE_FORCE_WINDOW_MS,
     }),
-    // Email-based — may have higher limits for special emails
-    checkRateLimit({
+    // Email-based — may have higher limits for special emails (in-memory only)
+    inMemoryRateLimitStore.check({
       key: keys.failureEmail,
       limit: emailLimits.limit,
       windowMs: emailLimits.windowMs,

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, ChevronRight, ChevronLeft, CheckCircle2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/utils';
 
 interface TourStep {
   id: string;
@@ -31,7 +30,6 @@ export function GuidedTour({
   storageKey = 'default',
 }: GuidedTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [highlightedEl, setHighlightedEl] = useState<Element | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -47,26 +45,11 @@ export function GuidedTour({
     const step = steps[currentStep];
     if (step.targetSelector) {
       const el = document.querySelector(step.targetSelector);
-      setHighlightedEl(el);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
   }, [currentStep, steps, isOpen]);
-
-  const handleNext = useCallback(() => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1);
-    } else {
-      handleComplete();
-    }
-  }, [currentStep, steps.length]);
-
-  const handlePrev = useCallback(() => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
-    }
-  }, []);
 
   const handleComplete = useCallback(() => {
     try {
@@ -81,6 +64,20 @@ export function GuidedTour({
     } catch {}
     onDismiss();
   }, [storageKey, onDismiss]);
+
+  const handleNext = useCallback(() => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep((prev) => prev + 1);
+    } else {
+      handleComplete();
+    }
+  }, [currentStep, steps.length, handleComplete]);
+
+  const handlePrev = useCallback(() => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1);
+    }
+  }, []);
 
   if (!isOpen || steps.length === 0) return null;
 

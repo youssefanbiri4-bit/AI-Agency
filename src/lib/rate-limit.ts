@@ -85,6 +85,11 @@ export class InMemoryRateLimitStore implements RateLimitStore {
     this.lockouts.delete(key);
   }
 
+  reset(): void {
+    this.buckets.clear();
+    this.lockouts.clear();
+  }
+
   setLockout(key: string, windowMs: number): void {
     this.lockouts.set(key, { until: Date.now() + windowMs });
   }
@@ -153,7 +158,7 @@ class UpstashRateLimitStore implements RateLimitStore {
   }
 }
 
-const inMemoryRateLimitStore = new InMemoryRateLimitStore();
+export const inMemoryRateLimitStore = new InMemoryRateLimitStore();
 let activeRateLimitStore: RateLimitStore | null = null;
 let activeRateLimitStoreMode: RateLimitStoreMode = 'memory';
 
@@ -174,6 +179,10 @@ function createConfiguredRateLimitStore() {
 
 export function setRateLimitStore(store: RateLimitStore) {
   activeRateLimitStore = store;
+  // Auth brute-force read/write paths use the module-level in-memory singleton
+  // for speed and reliability. Resetting it here keeps tests isolated without
+  // changing that design (record/read always hit the same singleton).
+  inMemoryRateLimitStore.reset();
 }
 
 export function getRateLimitStore() {

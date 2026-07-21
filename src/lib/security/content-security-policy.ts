@@ -15,7 +15,8 @@
  *     in next.config.ts.
  *   - style-src / style-src-attr: 'unsafe-inline' — required by Next.js for
  *     style={{}} attributes and CSS-in-JS.
- *   - report-uri /api/csp-violation is included for production monitoring.
+ *   - report-uri /api/csp-violation is NOT included yet; the reporting
+ *     endpoint is disabled until monitoring is wired up (see CSP tests).
  */
 
 const CONNECT_SRC = [
@@ -57,8 +58,7 @@ export function buildContentSecurityPolicy(nonce?: string): string {
     "font-src 'self' data:",
     `connect-src ${CONNECT_SRC}`,
     "media-src 'self' blob: https:",
-    "worker-src 'self' blob:",
-    "report-uri /api/csp-violation"
+    "worker-src 'self' blob:"
   ];
 
   return directives.join('; ');
