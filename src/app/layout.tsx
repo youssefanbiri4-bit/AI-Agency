@@ -119,9 +119,30 @@ export default async function RootLayout({
 }>) {
   const nonce = (await headers()).get('x-nonce') ?? undefined;
 
+  const cspDirectives = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "object-src 'none'",
+    nonce
+      ? `script-src 'strict-dynamic' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval'`
+      : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline'",
+    "style-src-attr 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https: wss: https://*.supabase.co https://*.ingest.sentry.io https://api.openai.com https://graph.facebook.com https://graph.instagram.com https://oauth2.googleapis.com https://googleads.googleapis.com https://api.pinterest.com https://api.github.com",
+    "media-src 'self' blob: https:",
+    "worker-src 'self' blob:",
+    "upgrade-insecure-requests",
+    "report-uri /api/csp-violation",
+  ];
+
   return (
     <html lang="ar" dir="rtl" className="h-full scroll-smooth" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
+        <meta httpEquiv="Content-Security-Policy" content={cspDirectives.join('; ')} />
         <Script src="/agentflow-language-init.js" strategy="beforeInteractive" nonce={nonce} />
         {/* JSON-LD Structured Data */}
         <script
