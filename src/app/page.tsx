@@ -35,22 +35,22 @@ import { getExperimentVariant } from '@/lib/marketing/experiments';
 
 const features = [
   {
-    icon: Users,
+    icon: <Users className="h-5 w-5" />,
     title: 'Configured agent catalog',
     description: 'Coordinate research, growth, sales, support, and reporting specialists from one clean workspace.',
   },
   {
-    icon: ClipboardCheck,
+    icon: <ClipboardCheck className="h-5 w-5" />,
     title: 'Structured task intake',
     description: 'Create clear briefs with priority, department context, agent parameters, and review-ready work records.',
   },
   {
-    icon: MonitorCheck,
+    icon: <MonitorCheck className="h-5 w-5" />,
     title: 'Readiness controls',
     description: 'See what is ready, what is guarded, and what still needs production configuration.',
   },
   {
-    icon: LineChart,
+    icon: <LineChart className="h-5 w-5" />,
     title: 'Reporting foundation',
     description: 'Prepare reporting views that populate only after real task and review data exists.',
   },
@@ -58,32 +58,32 @@ const features = [
 
 const trustItems = [
   {
-    icon: ClipboardCheck,
+    icon: <ClipboardCheck className="h-5 w-5" />,
     title: 'Task management',
     description: 'Plan and organize client-ready agent work with consistent status and priority metadata.',
   },
   {
-    icon: Activity,
+    icon: <Activity className="h-5 w-5" />,
     title: 'Agent readiness',
     description: 'Review the configured catalog without inventing live operational status.',
   },
   {
-    icon: CheckCircle2,
+    icon: <CheckCircle2 className="h-5 w-5" />,
     title: 'Review system',
     description: 'Evaluate completed outputs and collect feedback before work moves forward.',
   },
   {
-    icon: BarChart3,
+    icon: <BarChart3 className="h-5 w-5" />,
     title: 'Reports',
     description: 'Use honest empty states until real task, review, and reporting data is stored.',
   },
   {
-    icon: ShieldCheck,
+    icon: <ShieldCheck className="h-5 w-5" />,
     title: 'Supabase workspace setup',
     description: 'Authenticated workspace persistence is prepared without exposing private keys in the browser.',
   },
   {
-    icon: Workflow,
+    icon: <Workflow className="h-5 w-5" />,
     title: 'Future n8n workflow integration',
     description: 'Workflow execution can be connected later through protected server-side routes.',
   },
@@ -238,19 +238,15 @@ export default async function Home() {
               />
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {trustItems.map((item) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <article key={item.title} className="card-lift min-w-0 rounded-lg border border-[#F7CBCA]/10 bg-white/70 p-5 shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] hover:border-[#F7CBCA]/24">
-                      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-[#D5E5E5]/62 text-[#F7CBCA]">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <h3 className="font-bold text-black">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-black/62">{item.description}</p>
-                    </article>
-                  );
-                })}
+                {trustItems.map((item) => (
+                  <article key={item.title} className="card-lift min-w-0 rounded-lg border border-[#F7CBCA]/10 bg-white/70 p-5 shadow-[0_18px_42px_rgba(93,107,107,0.06)] backdrop-blur-[14px] [-webkit-backdrop-filter:blur(14px)] hover:border-[#F7CBCA]/24">
+                    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-[#D5E5E5]/62 text-[#F7CBCA]">
+                      {item.icon}
+                    </div>
+                    <h3 className="font-bold text-black">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-black/62">{item.description}</p>
+                  </article>
+                ))}
               </div>
             </div>
           </div>
@@ -272,20 +268,16 @@ export default async function Home() {
                 </p>
                 <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {[
-                    { icon: BarChart3, label: 'Department reporting' },
-                    { icon: FileSearch, label: 'Agent task visibility' },
-                    { icon: LockKeyhole, label: 'Server-side integration posture' },
-                    { icon: CheckCircle2, label: 'Review-ready outcomes' },
-                  ].map((item) => {
-                    const Icon = item.icon;
-
-                    return (
-                      <div key={item.label} className="flex min-w-0 items-center gap-3 rounded-lg border border-black/8 bg-[#D5E5E5]/35 p-3 text-sm font-bold text-black/68">
-                        <Icon className="h-4 w-4 text-[#F7CBCA]" />
-                        <span className="min-w-0">{item.label}</span>
-                      </div>
-                    );
-                  })}
+                    { icon: <BarChart3 className="h-4 w-4 text-[#F7CBCA]" />, label: 'Department reporting' },
+                    { icon: <FileSearch className="h-4 w-4 text-[#F7CBCA]" />, label: 'Agent task visibility' },
+                    { icon: <LockKeyhole className="h-4 w-4 text-[#F7CBCA]" />, label: 'Server-side integration posture' },
+                    { icon: <CheckCircle2 className="h-4 w-4 text-[#F7CBCA]" />, label: 'Review-ready outcomes' },
+                  ].map((item) => (
+                    <div key={item.label} className="flex min-w-0 items-center gap-3 rounded-lg border border-black/8 bg-[#D5E5E5]/35 p-3 text-sm font-bold text-black/68">
+                      {item.icon}
+                      <span className="min-w-0">{item.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 

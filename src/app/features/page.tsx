@@ -24,32 +24,32 @@ import { FeatureCard } from '@/components/marketing/FeatureCard';
 
 const coreFeatures = [
   {
-    icon: Bot,
+    icon: <Bot className="h-5 w-5" />,
     title: 'AI Agent Catalog',
     description: '27 specialized agents across research, content, sales, and engineering workflows. Configure, assign, and review output from one workspace.',
   },
   {
-    icon: ClipboardCheck,
+    icon: <ClipboardCheck className="h-5 w-5" />,
     title: 'Structured Task Intake',
     description: 'Create clear briefs with priority, department context, agent parameters, and review-ready work records — no more scattered instructions.',
   },
   {
-    icon: MonitorCheck,
+    icon: <MonitorCheck className="h-5 w-5" />,
     title: 'Readiness Controls',
     description: 'See what is ready, what is guarded, and what still needs production configuration. No fake status indicators.',
   },
   {
-    icon: LineChart,
+    icon: <LineChart className="h-5 w-5" />,
     title: 'Reporting Foundation',
     description: 'Prepare reporting views that populate only after real task and review data exists. Honest empty states until you have data.',
   },
   {
-    icon: Workflow,
+    icon: <Workflow className="h-5 w-5" />,
     title: 'Workflow Automation',
     description: 'Connect n8n workflows for automated task execution, content publishing, and campaign operations through protected server-side routes.',
   },
   {
-    icon: Users,
+    icon: <Users className="h-5 w-5" />,
     title: 'Team Collaboration',
     description: 'Multi-workspace support with RBAC. Assign roles, control access by department, and keep client work isolated.',
   },
@@ -245,24 +245,21 @@ export default function FeaturesPage() {
 
               <div className="grid gap-4">
                 {[
-                  { icon: LockKeyhole, title: 'Row-Level Security', description: 'Every database query is scoped to your workspace and role.' },
-                  { icon: ShieldCheck, title: 'Encrypted Tokens', description: 'OAuth tokens and API keys are encrypted at rest and never exposed to the browser.' },
-                  { icon: FileSearch, title: 'Audit Logging', description: 'Security-sensitive events are logged for review and compliance.' },
-                  { icon: Bell, title: 'Alerting', description: 'Real-time alerts for errors, quota usage, and security events via email and Slack.' },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.title} className="flex items-start gap-4 rounded-xl border border-black/8 bg-white/70 p-5 backdrop-blur-[14px]">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#D5E5E5]/62 text-[#F7CBCA]">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-black">{item.title}</h3>
-                        <p className="mt-1 text-sm leading-5 text-black/54">{item.description}</p>
-                      </div>
+                  { icon: <LockKeyhole className="h-5 w-5" />, title: 'Row-Level Security', description: 'Every database query is scoped to your workspace and role.' },
+                  { icon: <ShieldCheck className="h-5 w-5" />, title: 'Encrypted Tokens', description: 'OAuth tokens and API keys are encrypted at rest and never exposed to the browser.' },
+                  { icon: <FileSearch className="h-5 w-5" />, title: 'Audit Logging', description: 'Security-sensitive events are logged for review and compliance.' },
+                  { icon: <Bell className="h-5 w-5" />, title: 'Alerting', description: 'Real-time alerts for errors, quota usage, and security events via email and Slack.' },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-start gap-4 rounded-xl border border-black/8 bg-white/70 p-5 backdrop-blur-[14px]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#D5E5E5]/62 text-[#F7CBCA]">
+                      {item.icon}
                     </div>
-                  );
-                })}
+                    <div>
+                      <h3 className="font-bold text-black">{item.title}</h3>
+                      <p className="mt-1 text-sm leading-5 text-black/54">{item.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

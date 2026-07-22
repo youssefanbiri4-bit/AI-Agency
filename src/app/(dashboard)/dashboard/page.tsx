@@ -23,7 +23,7 @@ import {
   countUnreadNotifications,
 } from '@/lib/data/notifications';
 import type { NotificationRecord } from '@/types/database';
-import { getMetaConnectionStatus, getGoogleAdsConnectionStatus } from '@/lib/data/ad-connections';
+import { getMetaConnectionStatus, getGoogleAdsConnectionStatus, type GoogleAdsConnectionStatusData } from '@/lib/data/ad-connections';
 import { getGoogleAdsConfigReadiness } from '@/lib/ads/google-ads';
 import { getPinterestConfigReadiness } from '@/lib/ads/pinterest';
 import { getContentStudioSchedulerReadiness } from '@/lib/content-studio/scheduler';
@@ -253,131 +253,176 @@ async function DashboardContent() {
     creativeAssetsError: creativeAssetsResult.error,
   });
 
-  const { tasks, events, taskStats } = dashboardResult.data;
-  const contentItems = contentItemsResult.data;
-  const creativeAssets = creativeAssetsResult.data;
-  const publishAttempts = attemptsResult.data;
-  const projects = projectsResult.data;
-  const releases = releasesResult.data;
-  const projectSnapshot = buildProjectSnapshot(projects);
-  const releaseSnapshot = buildReleaseSnapshot(releases);
-  const contentStatusCounts = {
-    ...Object.fromEntries(contentStatuses.map((status) => [status, 0])),
-    ...countBy(contentItems.map((item) => item.status)),
-  } as Record<string, number>;
-  const manualOnlyCount = contentItems.filter(isManualOnlyItem).length;
-  const assetIdsInUse = new Set(contentItems.flatMap((item) => item.asset_ids));
-  const unlinkedAssets = creativeAssets.filter((asset) => !assetIdsInUse.has(asset.id));
-  const schedulerReadiness = getContentStudioSchedulerReadiness();
-  const googleAdsReadiness = getGoogleAdsConfigReadiness();
-  const pinterestReadiness = getPinterestConfigReadiness();
-  const openAIReadiness = checkOpenAITextProviderReadiness();
-  traceWorkspace('provider readiness snapshot uses local DB/env only');
-  const metaMetadata = readObject(metaConnectionResult.data?.metadata);
-  const selectedPage = safeString(metaMetadata.selected_facebook_page_name);
-  const selectedInstagram = safeString(metaMetadata.selected_instagram_business_account_name);
-  const selectedMetaAdAccount = safeString(metaMetadata.selected_meta_ad_account_name);
-  const selectedPinterestBoard = null;
-  const googleConnection = googleAdsConnectionResult.data;
-  const metaEnvironmentMissing = getMetaEnvironmentMissing();
-  const facebookReadiness = workspaceId && userId
-    ? {
-        state: getMetaProviderState({
-          missingEnvironment: metaEnvironmentMissing,
-          status: metaConnectionResult.data?.status,
-          requiredSelection: selectedPage,
-        }),
-      }
-    : fallbackProviderReadiness();
-  const instagramReadiness = workspaceId && userId
-    ? {
-        state: getMetaProviderState({
-          missingEnvironment: metaEnvironmentMissing,
-          status: metaConnectionResult.data?.status,
-          requiredSelection: selectedInstagram,
-        }),
-      }
-    : fallbackProviderReadiness();
-  const googleProviderReadiness = workspaceId && userId
-    ? {
-        state: getGoogleAdsProviderState({
-          isConfigured: googleAdsReadiness.isConfigured,
-          status: googleConnection?.status,
-        }),
-      }
-    : fallbackProviderReadiness();
-  const pinterestProviderReadiness = {
-    state: getPinterestProviderState(),
-  };
-  const providerRows: ProviderRow[] = [
-    {
-      name: 'OpenAI',
-      status: getReadinessState(openAIReadiness),
-      nextAction: openAIReadiness.isReady ? openAIReadiness.message : 'Add API key and confirm quota/quota.',
-    },
-    {
-      name: 'Meta / Instagram / Facebook',
-      status: getReadinessState(facebookReadiness ?? instagramReadiness ?? {}),
-      nextAction:
-        selectedPage || selectedInstagram || selectedMetaAdAccount
-          ? 'Review selected Page, Instagram account, scopes, and Ad Account.'
-          : 'Connect Meta and select publishing targets.',
-    },
-    {
-      name: 'Google Ads',
-      status: getReadinessState(googleProviderReadiness ?? googleAdsReadiness),
-      nextAction:
-        googleAdsReadiness.isConfigured && googleConnection?.status === 'connected'
-          ? 'Confirm customer ID and developer token approval before paused drafts.'
-          : 'Complete OAuth, customer ID, and developer token setup.',
-    },
-    {
-      name: 'Pinterest',
-      status: getReadinessState(pinterestProviderReadiness ?? pinterestReadiness),
-      nextAction: selectedPinterestBoard ? 'Board selected. Verify OAuth remains connected.' : 'Open Settings to verify Pinterest OAuth and selected board.',
-    },
-    {
-      name: 'LinkedIn',
-      status: 'manual_only' as ReadinessState,
-      nextAction: 'Manual-only copy workflow until real LinkedIn OAuth/publishing is implemented.',
-    },
-    {
-      name: 'Scheduler',
-      status: schedulerReadiness.isConfigured ? 'ready' : ('setup_required' as ReadinessState),
-      nextAction: schedulerReadiness.message,
-    },
-  ];
-  const activeProviders = providerRows.filter((provider) => provider.status === 'ready').length;
-  const todayActions = buildTodayActions({ contentItems, tasks, unlinkedAssets });
-  const usageData = usageWidgetResult.data as UsageWidgetData;
-  const notificationsPreview = notificationsPreviewResult.data as NotificationRecord[];
-  const unreadCount = unreadCountResult.data as number;
-  const t = getServerTranslator('en');
-  const role = membershipResult.data?.role;
-  const isAdmin = role === 'owner' || role === 'admin';
-  const canRunScheduler = isAdmin;
-  const recentContent = contentItems.slice(0, 4);
-  const recentTasks = tasks.slice(0, 4);
-  const recentEvents = events.slice(0, 3);
-  const myTasks = tasks.filter((task) => task.user_id === userId).slice(0, 5);
-  const myDrafts = contentItems
-    .filter((item) => item.status === 'draft' && item.created_by === userId)
-    .slice(0, 5);
-  const awaitingReview = tasks.filter((task) => task.status === 'needs_review').slice(0, 5);
-  const pageError =
-    workspaceResult.error ||
-    dashboardResult.error ||
-    contentItemsResult.error ||
-    creativeAssetsResult.error ||
-    attemptsResult.error ||
-    projectsResult.error ||
-    releasesResult.error ||
-    membershipResult.error ||
-    metaConnectionResult.error ||
-    googleAdsConnectionResult.error ||
-    usageWidgetResult.error ||
-    notificationsPreviewResult.error ||
-    unreadCountResult.error;
+  const dashboardData = dashboardResult.data ?? emptyDashboardData;
+  const { tasks, events, taskStats } = dashboardData;
+
+  let contentItems: ContentStudioItemWithAssets[] = contentItemsResult.data ?? [];
+  let creativeAssets: CreativeAssetRecord[] = creativeAssetsResult.data ?? [];
+  let publishAttempts: ContentStudioPublishAttemptRecord[] = attemptsResult.data ?? [];
+  let projects: ProjectRecord[] = projectsResult.data ?? [];
+  let releases: ReleaseRecord[] = releasesResult.data ?? [];
+
+  let projectSnapshot = buildProjectSnapshot([]);
+  let releaseSnapshot = buildReleaseSnapshot([]);
+  let contentStatusCounts: Record<string, number> = {};
+  let manualOnlyCount = 0;
+  let unlinkedAssets: CreativeAssetRecord[] = [];
+  let schedulerReadiness = getContentStudioSchedulerReadiness();
+  let googleAdsReadiness = getGoogleAdsConfigReadiness();
+  let pinterestReadiness = getPinterestConfigReadiness();
+  let openAIReadiness = checkOpenAITextProviderReadiness();
+  let metaMetadata: Record<string, unknown> = {};
+  let selectedPage: string | null = null;
+  let selectedInstagram: string | null = null;
+  let selectedMetaAdAccount: string | null = null;
+  let selectedPinterestBoard: string | null = null;
+  let googleConnection: GoogleAdsConnectionStatusData | null = null;
+  let metaEnvironmentMissing: string[] = [];
+  let facebookReadiness: ReturnType<typeof fallbackProviderReadiness> = fallbackProviderReadiness();
+  let instagramReadiness: ReturnType<typeof fallbackProviderReadiness> = fallbackProviderReadiness();
+  let googleProviderReadiness: ReturnType<typeof fallbackProviderReadiness> = fallbackProviderReadiness();
+  let pinterestProviderReadiness: ReturnType<typeof fallbackProviderReadiness> = fallbackProviderReadiness();
+  let providerRows: ProviderRow[] = [];
+  let activeProviders = 0;
+  let todayActions: ReturnType<typeof buildTodayActions> = [];
+  let usageData: UsageWidgetData = { plan: 'Internal Free Tier', quotas: [] };
+  let notificationsPreview: NotificationRecord[] = [];
+  let unreadCount = 0;
+  let t = getServerTranslator('en');
+  let role: string | undefined;
+  let isAdmin = false;
+  let canRunScheduler = false;
+  let recentContent: ContentStudioItemWithAssets[] = [];
+  let recentTasks: typeof tasks = [];
+  let recentEvents: typeof events = [];
+  let myTasks: typeof tasks = [];
+  let myDrafts: ContentStudioItemWithAssets[] = [];
+  let awaitingReview: typeof tasks = [];
+  let pageError: string | null = null;
+
+  try {
+    projectSnapshot = buildProjectSnapshot(projects);
+    releaseSnapshot = buildReleaseSnapshot(releases);
+    contentStatusCounts = {
+      ...Object.fromEntries(contentStatuses.map((status) => [status, 0])),
+      ...countBy(contentItems.map((item) => item.status)),
+    } as Record<string, number>;
+    manualOnlyCount = contentItems.filter(isManualOnlyItem).length;
+    const assetIdsInUse = new Set(contentItems.flatMap((item) => item.asset_ids));
+    unlinkedAssets = creativeAssets.filter((asset) => !assetIdsInUse.has(asset.id));
+    schedulerReadiness = getContentStudioSchedulerReadiness();
+    googleAdsReadiness = getGoogleAdsConfigReadiness();
+    pinterestReadiness = getPinterestConfigReadiness();
+    openAIReadiness = checkOpenAITextProviderReadiness();
+    traceWorkspace('provider readiness snapshot uses local DB/env only');
+    metaMetadata = readObject(metaConnectionResult.data?.metadata);
+    selectedPage = safeString(metaMetadata?.selected_facebook_page_name);
+    selectedInstagram = safeString(metaMetadata?.selected_instagram_business_account_name);
+    selectedMetaAdAccount = safeString(metaMetadata?.selected_meta_ad_account_name);
+    selectedPinterestBoard = null;
+    googleConnection = googleAdsConnectionResult.data;
+    metaEnvironmentMissing = getMetaEnvironmentMissing();
+    facebookReadiness = workspaceId && userId
+      ? {
+          state: getMetaProviderState({
+            missingEnvironment: metaEnvironmentMissing,
+            status: metaConnectionResult.data?.status,
+            requiredSelection: selectedPage,
+          }),
+        }
+      : fallbackProviderReadiness();
+    instagramReadiness = workspaceId && userId
+      ? {
+          state: getMetaProviderState({
+            missingEnvironment: metaEnvironmentMissing,
+            status: metaConnectionResult.data?.status,
+            requiredSelection: selectedInstagram,
+          }),
+        }
+      : fallbackProviderReadiness();
+    googleProviderReadiness = workspaceId && userId
+      ? {
+          state: getGoogleAdsProviderState({
+            isConfigured: googleAdsReadiness.isConfigured,
+            status: googleConnection?.status,
+          }),
+        }
+      : fallbackProviderReadiness();
+    pinterestProviderReadiness = {
+      state: getPinterestProviderState(),
+    };
+    providerRows = [
+      {
+        name: 'OpenAI',
+        status: getReadinessState(openAIReadiness),
+        nextAction: openAIReadiness.isReady ? openAIReadiness.message : 'Add API key and confirm quota/quota.',
+      },
+      {
+        name: 'Meta / Instagram / Facebook',
+        status: getReadinessState(facebookReadiness ?? instagramReadiness ?? {}),
+        nextAction:
+          selectedPage || selectedInstagram || selectedMetaAdAccount
+            ? 'Review selected Page, Instagram account, scopes, and Ad Account.'
+            : 'Connect Meta and select publishing targets.',
+      },
+      {
+        name: 'Google Ads',
+        status: getReadinessState(googleProviderReadiness ?? googleAdsReadiness),
+        nextAction:
+          googleAdsReadiness.isConfigured && googleConnection?.status === 'connected'
+            ? 'Confirm customer ID and developer token approval before paused drafts.'
+            : 'Complete OAuth, customer ID, and developer token setup.',
+      },
+      {
+        name: 'Pinterest',
+        status: getReadinessState(pinterestProviderReadiness ?? pinterestReadiness),
+        nextAction: selectedPinterestBoard ? 'Board selected. Verify OAuth remains connected.' : 'Open Settings to verify Pinterest OAuth and selected board.',
+      },
+      {
+        name: 'LinkedIn',
+        status: 'manual_only' as ReadinessState,
+        nextAction: 'Manual-only copy workflow until real LinkedIn OAuth/publishing is implemented.',
+      },
+      {
+        name: 'Scheduler',
+        status: schedulerReadiness.isConfigured ? 'ready' : ('setup_required' as ReadinessState),
+        nextAction: schedulerReadiness.message,
+      },
+    ];
+    activeProviders = providerRows.filter((provider) => provider.status === 'ready').length;
+    todayActions = buildTodayActions({ contentItems, tasks, unlinkedAssets });
+    usageData = (usageWidgetResult.data ?? { plan: 'Internal Free Tier', quotas: [] }) as UsageWidgetData;
+    notificationsPreview = (notificationsPreviewResult.data ?? []) as NotificationRecord[];
+    unreadCount = (unreadCountResult.data ?? 0) as number;
+    t = getServerTranslator('en');
+    role = membershipResult.data?.role;
+    isAdmin = role === 'owner' || role === 'admin';
+    canRunScheduler = isAdmin;
+    recentContent = contentItems.slice(0, 4);
+    recentTasks = tasks.slice(0, 4);
+    recentEvents = events.slice(0, 3);
+    myTasks = tasks.filter((task) => task.user_id === userId).slice(0, 5);
+    myDrafts = contentItems
+      .filter((item) => item.status === 'draft' && item.created_by === userId)
+      .slice(0, 5);
+    awaitingReview = tasks.filter((task) => task.status === 'needs_review').slice(0, 5);
+    pageError =
+      workspaceResult.error ||
+      dashboardResult.error ||
+      contentItemsResult.error ||
+      creativeAssetsResult.error ||
+      attemptsResult.error ||
+      projectsResult.error ||
+      releasesResult.error ||
+      membershipResult.error ||
+      metaConnectionResult.error ||
+      googleAdsConnectionResult.error ||
+      usageWidgetResult.error ||
+      notificationsPreviewResult.error ||
+      unreadCountResult.error;
+  } catch (error) {
+    console.error('Dashboard Data Processing Crash:', error);
+  }
 
   return (
     <div className="-mx-4 -my-6 min-h-screen bg-[var(--theme-background,#F1F7F7)] px-4 py-6 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">

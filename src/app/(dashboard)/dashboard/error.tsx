@@ -15,11 +15,7 @@ export default function DashboardError({
 }) {
   useEffect(() => {
     console.error('[dashboard] render boundary caught an error', error);
-    console.error('!!! DASHBOARD SERVER CRASH DETAILS !!!', {
-      message: error.message,
-      digest: error.digest,
-      stack: error.stack,
-    });
+    console.error('!!! EXPOSED DASHBOARD CRASH !!!', { message: error.message, stack: error.stack, digest: error.digest });
   }, [error]);
 
   return (
